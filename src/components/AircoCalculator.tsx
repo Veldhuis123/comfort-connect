@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Calculator, Wind, Thermometer, Home, Check, Plus, Trash2, Camera, Upload, X, Mail, MessageCircle, Send, User, Phone, FileDown, Scale } from "lucide-react";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
@@ -7,14 +7,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/lib/api";
+import { api, Product } from "@/lib/api";
 import ProductCompare, { CompareProduct } from "@/components/ProductCompare";
 
-// Import product images
+// Fallback product images
 import daikinBasicImg from "@/assets/airco-daikin-basic.jpg";
 import daikinPremiumImg from "@/assets/airco-daikin-premium.jpg";
 import haierBasicImg from "@/assets/airco-haier-basic.jpg";
 import haierPremiumImg from "@/assets/airco-haier-premium.jpg";
+
+const fallbackImages: Record<string, string> = {
+  "daikin-perfera": daikinBasicImg,
+  "daikin-stylish": daikinPremiumImg,
+  "haier-tundra": haierBasicImg,
+  "haier-flexis": haierPremiumImg,
+};
 
 interface AircoUnit {
   id: string;
@@ -44,55 +51,11 @@ interface UploadedPhoto {
   category: string;
 }
 
-const aircoUnits: AircoUnit[] = [
-  {
-    id: "daikin-perfera",
-    name: "Perfera",
-    brand: "Daikin",
-    capacity: "2.5 kW",
-    minM2: 15,
-    maxM2: 30,
-    basePrice: 1499,
-    image: daikinBasicImg,
-    features: ["Stille werking (19 dB)", "Wifi bediening", "Koelen & verwarmen", "Flash Streamer"],
-    energyLabel: "A+++"
-  },
-  {
-    id: "daikin-stylish",
-    name: "Stylish",
-    brand: "Daikin",
-    capacity: "3.5 kW",
-    minM2: 25,
-    maxM2: 45,
-    basePrice: 1899,
-    image: daikinPremiumImg,
-    features: ["Design model", "Coanda-effect", "Smart Home ready", "Luchtzuivering"],
-    energyLabel: "A+++"
-  },
-  {
-    id: "haier-tundra",
-    name: "Tundra Plus",
-    brand: "Haier",
-    capacity: "2.6 kW",
-    minM2: 15,
-    maxM2: 35,
-    basePrice: 1199,
-    image: haierBasicImg,
-    features: ["Self Clean", "Wifi bediening", "Koelen & verwarmen", "Turbo mode"],
-    energyLabel: "A++"
-  },
-  {
-    id: "haier-flexis",
-    name: "Flexis Plus",
-    brand: "Haier",
-    capacity: "5.0 kW",
-    minM2: 40,
-    maxM2: 70,
-    basePrice: 2299,
-    image: haierPremiumImg,
-    features: ["Premium design", "Smart AI", "UV-C sterilisatie", "Luchtzuivering"],
-    energyLabel: "A+++"
-  }
+const defaultAircoUnits: AircoUnit[] = [
+  { id: "daikin-perfera", name: "Perfera", brand: "Daikin", capacity: "2.5 kW", minM2: 15, maxM2: 30, basePrice: 1499, image: daikinBasicImg, features: ["Stille werking (19 dB)", "Wifi bediening", "Koelen & verwarmen", "Flash Streamer"], energyLabel: "A+++" },
+  { id: "daikin-stylish", name: "Stylish", brand: "Daikin", capacity: "3.5 kW", minM2: 25, maxM2: 45, basePrice: 1899, image: daikinPremiumImg, features: ["Design model", "Coanda-effect", "Smart Home ready", "Luchtzuivering"], energyLabel: "A+++" },
+  { id: "haier-tundra", name: "Tundra Plus", brand: "Haier", capacity: "2.6 kW", minM2: 15, maxM2: 35, basePrice: 1199, image: haierBasicImg, features: ["Self Clean", "Wifi bediening", "Koelen & verwarmen", "Turbo mode"], energyLabel: "A++" },
+  { id: "haier-flexis", name: "Flexis Plus", brand: "Haier", capacity: "5.0 kW", minM2: 40, maxM2: 70, basePrice: 2299, image: haierPremiumImg, features: ["Premium design", "Smart AI", "UV-C sterilisatie", "Luchtzuivering"], energyLabel: "A+++" },
 ];
 
 const roomTypes = [
@@ -130,6 +93,8 @@ const systemTypes = [
 
 const AircoCalculator = () => {
   const { toast } = useToast();
+  const [aircoUnits, setAircoUnits] = useState<AircoUnit[]>(defaultAircoUnits);
+  const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState<Room[]>([
     { id: "1", name: "Ruimte 1", size: "", ceilingHeight: "2.5", type: "living" }
   ]);
@@ -149,6 +114,35 @@ const AircoCalculator = () => {
   const [systemType, setSystemType] = useState<string>("single");
   const [compareProducts, setCompareProducts] = useState<string[]>([]);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
+  // Load products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const apiProducts = await api.getProducts("airco");
+        if (apiProducts.length > 0) {
+          const mapped = apiProducts.map((p: Product): AircoUnit => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+            capacity: String((p.specs as Record<string, unknown>).capacity) || "",
+            minM2: Number((p.specs as Record<string, unknown>).min_m2) || 0,
+            maxM2: Number((p.specs as Record<string, unknown>).max_m2) || 0,
+            basePrice: p.base_price,
+            image: p.image_url || fallbackImages[p.id] || daikinBasicImg,
+            features: p.features,
+            energyLabel: String((p.specs as Record<string, unknown>).energy_label) || "A++",
+          }));
+          setAircoUnits(mapped);
+        }
+      } catch (err) {
+        console.log("Using fallback airco units (API not available)");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const toggleCompare = (unitId: string) => {
     if (compareProducts.includes(unitId)) {

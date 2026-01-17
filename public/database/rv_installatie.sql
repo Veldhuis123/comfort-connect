@@ -170,6 +170,21 @@ INSERT INTO airco_units (id, name, brand, capacity, min_m2, max_m2, base_price, 
 -- Standaard producten invoegen (nieuwe tabel)
 -- =============================================
 
+-- Airco's
+INSERT INTO products (id, name, brand, category, base_price, description, specs, features, sort_order) VALUES
+('daikin-perfera', 'Perfera', 'Daikin', 'airco', 1499.00, 'Stille en efficiënte split-unit airco',
+ '{"capacity": "2.5 kW", "min_m2": 15, "max_m2": 30, "energy_label": "A+++"}',
+ '["Stille werking (19 dB)", "Wifi bediening", "Koelen & verwarmen", "Flash Streamer"]', 1),
+('daikin-stylish', 'Stylish', 'Daikin', 'airco', 1899.00, 'Design airco met premium functies',
+ '{"capacity": "3.5 kW", "min_m2": 25, "max_m2": 45, "energy_label": "A+++"}',
+ '["Design model", "Coanda-effect", "Smart Home ready", "Luchtzuivering"]', 2),
+('haier-tundra', 'Tundra Plus', 'Haier', 'airco', 1199.00, 'Voordelige airco met slimme functies',
+ '{"capacity": "2.6 kW", "min_m2": 15, "max_m2": 35, "energy_label": "A++"}',
+ '["Self Clean", "Wifi bediening", "Koelen & verwarmen", "Turbo mode"]', 3),
+('haier-flexis', 'Flexis Plus', 'Haier', 'airco', 2299.00, 'Premium airco voor grote ruimtes',
+ '{"capacity": "5.0 kW", "min_m2": 40, "max_m2": 70, "energy_label": "A+++"}',
+ '["Premium design", "Smart AI", "UV-C sterilisatie", "Luchtzuivering"]', 4);
+
 -- UniFi Routers
 INSERT INTO products (id, name, brand, category, base_price, description, specs, features, sort_order) VALUES
 ('udm-se', 'Dream Machine SE', 'UniFi', 'unifi_router', 499.00, 'All-in-one router met PoE+ switch en NVR', 
