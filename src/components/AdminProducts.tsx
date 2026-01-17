@@ -25,6 +25,23 @@ import {
   Plus, Trash2, Edit, Eye, EyeOff, Upload, X, 
   Image as ImageIcon, GripVertical, Save
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const categoryLabels: Record<ProductCategory, string> = {
   airco: "Airco's",
@@ -34,6 +51,7 @@ const categoryLabels: Record<ProductCategory, string> = {
   unifi_camera: "UniFi Camera's",
   battery: "Thuisaccu's",
   charger: "Laadpalen",
+  solar: "Zonnepanelen",
 };
 
 const categoryOptions: ProductCategory[] = [
@@ -44,6 +62,7 @@ const categoryOptions: ProductCategory[] = [
   'unifi_camera',
   'battery',
   'charger',
+  'solar',
 ];
 
 const defaultSpecs: Record<ProductCategory, Record<string, unknown>> = {
@@ -54,6 +73,7 @@ const defaultSpecs: Record<ProductCategory, Record<string, unknown>> = {
   unifi_camera: { resolution: "4MP", ip_rating: "", night_vision: "" },
   battery: { capacity: 0, warranty: "10 jaar", cycles: 0 },
   charger: { power: 22, type: "home", connectivity: "" },
+  solar: { watt_peak: 400, efficiency: "21%", warranty: "25 jaar" },
 };
 
 interface AdminProductsProps {
@@ -68,7 +88,20 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
+  const [hasOrderChanged, setHasOrderChanged] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   
   const [formData, setFormData] = useState<CreateProduct>({
     id: "",
@@ -102,7 +135,45 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
 
   useEffect(() => {
     fetchProducts();
+    setHasOrderChanged(false);
   }, [selectedCategory]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setProducts((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+      setHasOrderChanged(true);
+    }
+  };
+
+  const handleSaveOrder = async () => {
+    setSavingOrder(true);
+    try {
+      const sortedProducts = products.map((p, index) => ({
+        id: p.id,
+        sort_order: index,
+      }));
+      await api.updateProductSort(sortedProducts);
+      setHasOrderChanged(false);
+      toast({
+        title: "Volgorde opgeslagen",
+        description: "De productvolgorde is bijgewerkt",
+      });
+    } catch (err) {
+      toast({
+        title: "Fout",
+        description: "Kon volgorde niet opslaan",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingOrder(false);
+    }
+  };
 
   const handleAdd = () => {
     setEditingProduct(null);
@@ -364,6 +435,35 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
             </div>
           </div>
         );
+      case 'solar':
+        return (
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="text-sm font-medium">Vermogen (Wp)</label>
+              <Input
+                type="number"
+                value={Number(specs.watt_peak) || 0}
+                onChange={(e) => updateSpec("watt_peak", parseInt(e.target.value))}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Efficiëntie</label>
+              <Input
+                value={String(specs.efficiency || "")}
+                onChange={(e) => updateSpec("efficiency", e.target.value)}
+                placeholder="bijv. 21.5%"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Garantie</label>
+              <Input
+                value={String(specs.warranty || "")}
+                onChange={(e) => updateSpec("warranty", e.target.value)}
+                placeholder="bijv. 25 jaar"
+              />
+            </div>
+          </div>
+        );
       default:
         return (
           <div>
@@ -382,14 +482,170 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
     }
   };
 
+  // Sortable Product Row Component
+  const SortableProductRow = ({ product }: { product: Product }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: product.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`border rounded-lg p-4 flex gap-4 bg-background ${
+          !product.is_active ? "opacity-50" : ""
+        } ${isDragging ? "shadow-lg ring-2 ring-accent" : ""}`}
+      >
+        {/* Drag Handle */}
+        <div
+          {...attributes}
+          {...listeners}
+          className="flex items-center cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="w-5 h-5 text-muted-foreground" />
+        </div>
+
+        {/* Product Image */}
+        <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0 relative group">
+          {product.image_url ? (
+            <>
+              <img
+                src={product.image_url}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+              <button
+                onClick={() => handleDeleteImage(product.id)}
+                className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+            </>
+          ) : (
+            <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors">
+              {uploadingImage === product.id ? (
+                <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+              ) : (
+                <Upload className="w-6 h-6 text-muted-foreground" />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(product.id, file);
+                }}
+              />
+            </label>
+          )}
+        </div>
+
+        {/* Product Info */}
+        <div className="flex-1">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="font-semibold">{product.name}</h4>
+                <Badge variant={product.is_active ? "default" : "secondary"}>
+                  {product.is_active ? "Actief" : "Inactief"}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{product.brand}</p>
+              {product.description && (
+                <p className="text-sm mt-1">{product.description}</p>
+              )}
+            </div>
+            <p className="text-lg font-bold text-accent">
+              €{product.base_price.toLocaleString("nl-NL")},-
+            </p>
+          </div>
+          
+          {product.features.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {product.features.slice(0, 3).map((f, i) => (
+                <Badge key={i} variant="outline" className="text-xs">
+                  {f}
+                </Badge>
+              ))}
+              {product.features.length > 3 && (
+                <Badge variant="outline" className="text-xs">
+                  +{product.features.length - 3}
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleToggle(product.id)}
+            title={product.is_active ? "Deactiveren" : "Activeren"}
+          >
+            {product.is_active ? (
+              <Eye className="w-4 h-4" />
+            ) : (
+              <EyeOff className="w-4 h-4" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleEdit(product)}
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleDelete(product.id)}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Productbeheer</CardTitle>
-          <CardDescription>Beheer producten per categorie</CardDescription>
+          <CardDescription>
+            Beheer producten per categorie - sleep om volgorde te wijzigen
+          </CardDescription>
         </div>
         <div className="flex gap-2">
+          {hasOrderChanged && (
+            <Button 
+              onClick={handleSaveOrder} 
+              disabled={savingOrder}
+              variant="secondary"
+            >
+              {savingOrder ? (
+                <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              Volgorde Opslaan
+            </Button>
+          )}
           <Select value={selectedCategory} onValueChange={(v) => onCategoryChange(v as ProductCategory)}>
             <SelectTrigger className="w-[200px]">
               <SelectValue />
@@ -414,119 +670,22 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
         ) : products.length === 0 ? (
           <p className="text-muted-foreground">Geen producten in deze categorie</p>
         ) : (
-          <div className="space-y-4">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className={`border rounded-lg p-4 flex gap-4 ${
-                  !product.is_active ? "opacity-50" : ""
-                }`}
-              >
-                {/* Product Image */}
-                <div className="w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0 relative group">
-                  {product.image_url ? (
-                    <>
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        onClick={() => handleDeleteImage(product.id)}
-                        className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                      >
-                        <X className="w-6 h-6 text-white" />
-                      </button>
-                    </>
-                  ) : (
-                    <label className="w-full h-full flex items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors">
-                      {uploadingImage === product.id ? (
-                        <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
-                      ) : (
-                        <Upload className="w-6 h-6 text-muted-foreground" />
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(product.id, file);
-                        }}
-                      />
-                    </label>
-                  )}
-                </div>
-
-                {/* Product Info */}
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold">{product.name}</h4>
-                        <Badge variant={product.is_active ? "default" : "secondary"}>
-                          {product.is_active ? "Actief" : "Inactief"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{product.brand}</p>
-                      {product.description && (
-                        <p className="text-sm mt-1">{product.description}</p>
-                      )}
-                    </div>
-                    <p className="text-lg font-bold text-accent">
-                      €{product.base_price.toLocaleString("nl-NL")},-
-                    </p>
-                  </div>
-                  
-                  {product.features.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {product.features.slice(0, 3).map((f, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
-                          {f}
-                        </Badge>
-                      ))}
-                      {product.features.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{product.features.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleToggle(product.id)}
-                    title={product.is_active ? "Deactiveren" : "Activeren"}
-                  >
-                    {product.is_active ? (
-                      <Eye className="w-4 h-4" />
-                    ) : (
-                      <EyeOff className="w-4 h-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(product)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(product.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={products.map(p => p.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-4">
+                {products.map((product) => (
+                  <SortableProductRow key={product.id} product={product} />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         )}
 
         {/* Product Form Dialog */}

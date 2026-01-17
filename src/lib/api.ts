@@ -261,7 +261,8 @@ export type ProductCategory =
   | 'unifi_accesspoint' 
   | 'unifi_camera' 
   | 'battery' 
-  | 'charger';
+  | 'charger'
+  | 'solar';
 
 export interface Product {
   id: string;
