@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
 import { api, Product } from "@/lib/api";
+import ProductCompare, { CompareCheckbox, CompareProduct } from "./ProductCompare";
 
 import batteryImg from "@/assets/battery-home.jpg";
 import batteryHuaweiImg from "@/assets/battery-huawei.jpg";
@@ -53,6 +54,32 @@ const BatteryCalculator = () => {
   const [feedInRate, setFeedInRate] = useState<number[]>([0.07]);
   const [selectedBattery, setSelectedBattery] = useState<string>("huawei-10");
   const [showResults, setShowResults] = useState(false);
+  const [compareProducts, setCompareProducts] = useState<string[]>([]);
+
+  const toggleCompare = (productId: string) => {
+    if (compareProducts.includes(productId)) {
+      setCompareProducts(compareProducts.filter(id => id !== productId));
+    } else if (compareProducts.length < 4) {
+      setCompareProducts([...compareProducts, productId]);
+    }
+  };
+
+  const getCompareProducts = (): CompareProduct[] => {
+    return batteryOptions.map(battery => ({
+      id: battery.id,
+      name: battery.name,
+      brand: battery.brand,
+      category: "Thuisaccu",
+      price: battery.price,
+      image: getBatteryImage(battery),
+      specs: {
+        "Capaciteit": `${battery.capacity} kWh`,
+        "Garantie": battery.warranty,
+        "Laadcycli": battery.cycles,
+      },
+      features: battery.features,
+    }));
+  };
 
   // Load products from API
   useEffect(() => {
@@ -359,12 +386,18 @@ const BatteryCalculator = () => {
                 <div
                   key={battery.id}
                   onClick={() => setSelectedBattery(battery.id)}
-                  className={`rounded-lg border-2 cursor-pointer transition-all overflow-hidden ${
+                  className={`relative rounded-lg border-2 cursor-pointer transition-all overflow-hidden ${
                     selectedBattery === battery.id
                       ? "border-accent bg-accent/5"
                       : "border-border hover:border-accent/50"
                   }`}
                 >
+                  <CompareCheckbox
+                    productId={battery.id}
+                    isSelected={compareProducts.includes(battery.id)}
+                    onToggle={toggleCompare}
+                    disabled={compareProducts.length >= 4}
+                  />
                   {/* Product Image */}
                   <div className="h-28 bg-muted/30 overflow-hidden">
                     <img 
@@ -517,6 +550,13 @@ const BatteryCalculator = () => {
           </Card>
         )}
       </div>
+
+      {/* Product Compare */}
+      <ProductCompare
+        products={getCompareProducts()}
+        category="Thuisaccu"
+        maxCompare={4}
+      />
     </div>
   );
 };
