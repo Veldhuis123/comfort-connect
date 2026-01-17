@@ -115,6 +115,17 @@ const pipeColors = [
   { id: "bruin", label: "Bruin", color: "#8B4513" },
 ];
 
+const insulationClasses = [
+  { id: "30", label: "Goed geïsoleerd", factor: 30, description: "Nieuwbouw of recent gerenoveerd" },
+  { id: "40", label: "Gemiddeld geïsoleerd", factor: 40, description: "Woning uit jaren 80-2000" },
+  { id: "50", label: "Matig geïsoleerd", factor: 50, description: "Oudere woning of veel glas" },
+];
+
+const systemTypes = [
+  { id: "single", label: "Losse units", description: "Elke ruimte een aparte buitenunit" },
+  { id: "multisplit", label: "Multi-split", description: "Één buitenunit voor meerdere ruimtes" },
+];
+
 const AircoCalculator = () => {
   const { toast } = useToast();
   const [rooms, setRooms] = useState<Room[]>([
@@ -131,6 +142,9 @@ const AircoCalculator = () => {
   const [customerPhone, setCustomerPhone] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quoteSubmitted, setQuoteSubmitted] = useState(false);
+  const [insulationClass, setInsulationClass] = useState<string>("40");
+  const [separateGroup, setSeparateGroup] = useState<boolean>(false);
+  const [systemType, setSystemType] = useState<string>("single");
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const addRoom = () => {
@@ -161,12 +175,13 @@ const AircoCalculator = () => {
   };
 
   const calculateTotalRequiredCapacity = () => {
+    const insulation = insulationClasses.find(i => i.id === insulationClass)?.factor || 40;
     return rooms.reduce((total, room) => {
       const size = parseFloat(room.size) || 0;
       const height = parseFloat(room.ceilingHeight) || 2.5;
       const roomFactor = roomTypes.find(r => r.id === room.type)?.factor || 1;
       const volume = size * height;
-      const requiredWatts = volume * 40 * roomFactor;
+      const requiredWatts = volume * insulation * roomFactor;
       return total + (requiredWatts / 1000);
     }, 0);
   };
@@ -183,9 +198,11 @@ const AircoCalculator = () => {
   const calculateTotalPrice = (unit: AircoUnit) => {
     const totalSize = getTotalSize();
     const baseInstallation = totalSize > 40 ? 450 : 350;
-    const roomMultiplier = rooms.length > 1 ? rooms.length * 200 : 0;
+    const roomMultiplier = rooms.length > 1 && systemType === "multisplit" ? rooms.length * 200 : 0;
+    const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * unit.basePrice * 0.8 : 0;
     const pipeLengthCost = parseFloat(pipeLength) > 5 ? (parseFloat(pipeLength) - 5) * 25 : 0;
-    return unit.basePrice + baseInstallation + roomMultiplier + pipeLengthCost;
+    const separateGroupCost = separateGroup ? 250 : 0;
+    return unit.basePrice + baseInstallation + roomMultiplier + singleUnitMultiplier + pipeLengthCost + separateGroupCost;
   };
 
   const handleCalculate = () => {
@@ -224,6 +241,8 @@ const AircoCalculator = () => {
     const selectedAirco = aircoUnits.find(u => u.id === selectedUnit);
     const totalSize = getTotalSize();
     const totalCapacity = calculateTotalRequiredCapacity();
+    const insulationLabel = insulationClasses.find(i => i.id === insulationClass)?.label || insulationClass;
+    const systemLabel = systemTypes.find(s => s.id === systemType)?.label || systemType;
     
     let message = `Offerte aanvraag Airco\n\n`;
     message += `📊 Ruimtes:\n`;
@@ -232,9 +251,12 @@ const AircoCalculator = () => {
       message += `  ${index + 1}. ${room.name || roomTypeLabel}: ${room.size}m² (plafond: ${room.ceilingHeight}m)\n`;
     });
     message += `\n📐 Totaal: ${totalSize}m² | Benodigd: ${totalCapacity.toFixed(1)} kW\n`;
+    message += `\n🏠 Isolatieklasse: ${insulationLabel}`;
+    message += `\n⚡ Systeem: ${systemLabel}`;
+    message += `\n🔌 Aparte groep: ${separateGroup ? "Ja (+€250)" : "Nee"}`;
     
     if (selectedAirco) {
-      message += `\n❄️ Geselecteerde airco: ${selectedAirco.brand} ${selectedAirco.name}\n`;
+      message += `\n\n❄️ Geselecteerde airco: ${selectedAirco.brand} ${selectedAirco.name}\n`;
       message += `💰 Indicatieprijs: €${calculateTotalPrice(selectedAirco).toLocaleString('nl-NL')},-\n`;
     }
     
@@ -274,7 +296,10 @@ const AircoCalculator = () => {
       estimated_price: selectedAirco ? calculateTotalPrice(selectedAirco) : undefined,
       pipe_color: selectedColor,
       pipe_length: pipeLength ? parseFloat(pipeLength) : undefined,
-      additional_notes: additionalNotes || undefined
+      additional_notes: additionalNotes || undefined,
+      insulation_class: insulationClass,
+      separate_group: separateGroup,
+      system_type: systemType
     };
 
     try {
@@ -483,6 +508,112 @@ const AircoCalculator = () => {
                     </div>
                   );
                 })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Insulation & System Type */}
+          <Card className="border-2 border-accent/20">
+            <CardHeader className="bg-accent/5">
+              <CardTitle className="flex items-center gap-2 text-xl">
+                🏠 Isolatie & Systeemkeuze
+              </CardTitle>
+              <CardDescription>
+                Bepaalt de benodigde capaciteit en installatiekosten
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              {/* Isolation Class */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-3">
+                  Isolatieklasse woning
+                </label>
+                <div className="grid sm:grid-cols-3 gap-3">
+                  {insulationClasses.map((insulation) => (
+                    <button
+                      key={insulation.id}
+                      onClick={() => setInsulationClass(insulation.id)}
+                      className={`p-4 rounded-lg border-2 transition-all text-left ${
+                        insulationClass === insulation.id 
+                          ? "border-accent bg-accent/10" 
+                          : "border-border hover:border-accent/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-foreground">{insulation.label}</span>
+                        <Badge variant="outline">{insulation.factor} W/m³</Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{insulation.description}</span>
+                      {insulationClass === insulation.id && (
+                        <Check className="w-4 h-4 text-accent absolute top-2 right-2" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* System Type */}
+              {rooms.length > 1 && (
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-3">
+                    Systeemtype
+                  </label>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {systemTypes.map((system) => (
+                      <button
+                        key={system.id}
+                        onClick={() => setSystemType(system.id)}
+                        className={`p-4 rounded-lg border-2 transition-all text-left ${
+                          systemType === system.id 
+                            ? "border-accent bg-accent/10" 
+                            : "border-border hover:border-accent/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-foreground">{system.label}</span>
+                          {systemType === system.id && (
+                            <Check className="w-4 h-4 text-accent" />
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{system.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Separate Electrical Group */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-3">
+                  Aparte groep in meterkast
+                </label>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setSeparateGroup(false)}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                      !separateGroup 
+                        ? "border-accent bg-accent/10" 
+                        : "border-border hover:border-accent/50"
+                    }`}
+                  >
+                    <span className="font-medium">Nee, niet nodig</span>
+                    {!separateGroup && <Check className="w-4 h-4 text-accent" />}
+                  </button>
+                  <button
+                    onClick={() => setSeparateGroup(true)}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                      separateGroup 
+                        ? "border-accent bg-accent/10" 
+                        : "border-border hover:border-accent/50"
+                    }`}
+                  >
+                    <span className="font-medium">Ja, graag (+€250)</span>
+                    {separateGroup && <Check className="w-4 h-4 text-accent" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Een aparte groep zorgt voor stabiele stroomvoorziening en is soms verplicht
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -742,6 +873,9 @@ const AircoCalculator = () => {
                     setCustomerEmail("");
                     setCustomerPhone("");
                     setAdditionalNotes("");
+                    setInsulationClass("40");
+                    setSeparateGroup(false);
+                    setSystemType("single");
                   }}
                 >
                   Nieuwe Berekening
