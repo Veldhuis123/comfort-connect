@@ -601,6 +601,8 @@ const ChargingStationCalculator = () => {
         products={getCompareProducts()}
         category="Laadpaal"
         maxCompare={4}
+        selectedProducts={compareProducts}
+        onToggleProduct={toggleCompare}
       />
     </div>
   );

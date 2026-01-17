@@ -556,6 +556,8 @@ const BatteryCalculator = () => {
         products={getCompareProducts()}
         category="Thuisaccu"
         maxCompare={4}
+        selectedProducts={compareProducts}
+        onToggleProduct={toggleCompare}
       />
     </div>
   );

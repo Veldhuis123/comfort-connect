@@ -33,32 +33,57 @@ interface ProductCompareProps {
   products: CompareProduct[];
   category: string;
   maxCompare?: number;
+  selectedProducts?: string[];
+  onToggleProduct?: (productId: string) => void;
 }
 
-const ProductCompare = ({ products, category, maxCompare = 4 }: ProductCompareProps) => {
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+const ProductCompare = ({ 
+  products, 
+  category, 
+  maxCompare = 4,
+  selectedProducts: externalSelectedProducts,
+  onToggleProduct
+}: ProductCompareProps) => {
+  const [internalSelectedProducts, setInternalSelectedProducts] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
+  // Use external state if provided, otherwise use internal state
+  const selectedProducts = externalSelectedProducts ?? internalSelectedProducts;
+  const setSelectedProducts = onToggleProduct 
+    ? undefined  // Don't set directly if controlled
+    : setInternalSelectedProducts;
+
   const toggleProduct = (productId: string) => {
-    if (selectedProducts.includes(productId)) {
-      setSelectedProducts(selectedProducts.filter(id => id !== productId));
-    } else if (selectedProducts.length < maxCompare) {
-      setSelectedProducts([...selectedProducts, productId]);
+    if (onToggleProduct) {
+      onToggleProduct(productId);
+    } else if (setSelectedProducts) {
+      if (selectedProducts.includes(productId)) {
+        setSelectedProducts(selectedProducts.filter(id => id !== productId));
+      } else if (selectedProducts.length < maxCompare) {
+        setSelectedProducts([...selectedProducts, productId]);
+      }
     }
   };
 
   const addProductToCompare = (productId: string) => {
     if (!selectedProducts.includes(productId) && selectedProducts.length < maxCompare) {
-      setSelectedProducts([...selectedProducts, productId]);
+      toggleProduct(productId);
     }
   };
 
   const removeFromCompare = (productId: string) => {
-    setSelectedProducts(selectedProducts.filter(id => id !== productId));
+    if (selectedProducts.includes(productId)) {
+      toggleProduct(productId);
+    }
   };
 
   const clearAll = () => {
-    setSelectedProducts([]);
+    if (onToggleProduct) {
+      // Clear all by toggling each selected product
+      selectedProducts.forEach(id => onToggleProduct(id));
+    } else if (setSelectedProducts) {
+      setSelectedProducts([]);
+    }
   };
 
   const getSelectedProductsData = () => {
