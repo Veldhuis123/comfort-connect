@@ -10,23 +10,28 @@ import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
 import ProductCompare, { CompareProduct } from "@/components/ProductCompare";
 
 import unifiApImg from "@/assets/unifi-ap.jpg";
+import unifiApProImg from "@/assets/unifi-ap-pro.jpg";
+import unifiApU7Img from "@/assets/unifi-ap-u7.jpg";
 import unifiRouterImg from "@/assets/unifi-udm-se.jpg";
+import unifiUcgUltraImg from "@/assets/unifi-ucg-ultra.jpg";
 import unifiSwitchImg from "@/assets/unifi-switch.jpg";
+import unifiSwitchProImg from "@/assets/unifi-switch-pro.jpg";
 import unifiCameraBulletImg from "@/assets/unifi-camera-bullet.jpg";
 import unifiCameraDomeImg from "@/assets/unifi-camera-dome.jpg";
+import unifiCameraG5Img from "@/assets/unifi-camera-g5.jpg";
 import unifiDoorbellImg from "@/assets/unifi-doorbell.jpg";
 
 const productImages: Record<string, string> = {
   "udm-se": unifiRouterImg,
-  "ucg-ultra": unifiRouterImg,
+  "ucg-ultra": unifiUcgUltraImg,
   "usw-lite-8-poe": unifiSwitchImg,
-  "usw-pro-24-poe": unifiSwitchImg,
+  "usw-pro-24-poe": unifiSwitchProImg,
   "u6-lite": unifiApImg,
-  "u6-pro": unifiApImg,
-  "u7-pro": unifiApImg,
+  "u6-pro": unifiApProImg,
+  "u7-pro": unifiApU7Img,
   "g4-bullet": unifiCameraBulletImg,
   "g4-dome": unifiCameraDomeImg,
-  "g5-pro": unifiCameraBulletImg,
+  "g5-pro": unifiCameraG5Img,
   "g4-doorbell-pro": unifiDoorbellImg,
 };
 
