@@ -1,24 +1,29 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Sun, Wind, Wifi } from "lucide-react";
+import { Sun, Wind, Wifi, Battery, Car } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AircoCalculator from "@/components/AircoCalculator";
-import SolarCalculator from "@/components/SolarCalculator";
+import PVCalculator from "@/components/PVCalculator";
+import BatteryCalculator from "@/components/BatteryCalculator";
 import UniFiCalculator from "@/components/UniFiCalculator";
+import ChargingStationCalculator from "@/components/ChargingStationCalculator";
 
-// Calculator settings stored in localStorage for admin control
 export interface CalculatorSettings {
   airco: { enabled: boolean; name: string };
-  solar: { enabled: boolean; name: string };
+  pv: { enabled: boolean; name: string };
+  battery: { enabled: boolean; name: string };
   unifi: { enabled: boolean; name: string };
+  charging: { enabled: boolean; name: string };
 }
 
 export const defaultCalculatorSettings: CalculatorSettings = {
   airco: { enabled: true, name: "Airco" },
-  solar: { enabled: true, name: "Zonnepanelen" },
+  pv: { enabled: true, name: "Zonnepanelen" },
+  battery: { enabled: true, name: "Thuisaccu" },
   unifi: { enabled: true, name: "UniFi Netwerk" },
+  charging: { enabled: true, name: "Laadpalen" },
 };
 
 export const getCalculatorSettings = (): CalculatorSettings => {
@@ -85,31 +90,40 @@ const Calculators = () => {
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                 Bereken eenvoudig de kosten en besparingen voor airconditioning, 
-                zonnepanelen, thuisaccu's en netwerk oplossingen.
+                zonnepanelen, thuisaccu's, laadpalen en netwerk oplossingen.
               </p>
             </div>
 
             <Tabs defaultValue={defaultTab} className="max-w-6xl mx-auto">
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 mb-8">
+              <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-5 mb-8">
                 {settings.airco.enabled && (
-                  <TabsTrigger value="airco" className="flex items-center gap-2">
+                  <TabsTrigger value="airco" className="flex items-center gap-1 text-xs sm:text-sm">
                     <Wind className="w-4 h-4" />
                     <span className="hidden sm:inline">{settings.airco.name}</span>
-                    <span className="sm:hidden">Airco</span>
                   </TabsTrigger>
                 )}
-                {settings.solar.enabled && (
-                  <TabsTrigger value="solar" className="flex items-center gap-2">
+                {settings.pv.enabled && (
+                  <TabsTrigger value="pv" className="flex items-center gap-1 text-xs sm:text-sm">
                     <Sun className="w-4 h-4" />
-                    <span className="hidden sm:inline">{settings.solar.name}</span>
-                    <span className="sm:hidden">Solar</span>
+                    <span className="hidden sm:inline">{settings.pv.name}</span>
+                  </TabsTrigger>
+                )}
+                {settings.battery.enabled && (
+                  <TabsTrigger value="battery" className="flex items-center gap-1 text-xs sm:text-sm">
+                    <Battery className="w-4 h-4" />
+                    <span className="hidden sm:inline">{settings.battery.name}</span>
+                  </TabsTrigger>
+                )}
+                {settings.charging.enabled && (
+                  <TabsTrigger value="charging" className="flex items-center gap-1 text-xs sm:text-sm">
+                    <Car className="w-4 h-4" />
+                    <span className="hidden sm:inline">{settings.charging.name}</span>
                   </TabsTrigger>
                 )}
                 {settings.unifi.enabled && (
-                  <TabsTrigger value="unifi" className="flex items-center gap-2">
+                  <TabsTrigger value="unifi" className="flex items-center gap-1 text-xs sm:text-sm">
                     <Wifi className="w-4 h-4" />
                     <span className="hidden sm:inline">{settings.unifi.name}</span>
-                    <span className="sm:hidden">UniFi</span>
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -120,9 +134,21 @@ const Calculators = () => {
                 </TabsContent>
               )}
               
-              {settings.solar.enabled && (
-                <TabsContent value="solar">
-                  <SolarCalculator />
+              {settings.pv.enabled && (
+                <TabsContent value="pv">
+                  <PVCalculator />
+                </TabsContent>
+              )}
+              
+              {settings.battery.enabled && (
+                <TabsContent value="battery">
+                  <BatteryCalculator />
+                </TabsContent>
+              )}
+              
+              {settings.charging.enabled && (
+                <TabsContent value="charging">
+                  <ChargingStationCalculator />
                 </TabsContent>
               )}
               
