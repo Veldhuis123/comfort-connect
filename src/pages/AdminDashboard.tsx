@@ -12,9 +12,11 @@ import { Switch } from "@/components/ui/switch";
 import { 
   LogOut, Star, MessageSquare, FileText, Settings, Plus, 
   Trash2, Eye, EyeOff, Check, X, Mail, Phone, Calendar,
-  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen
+  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen, Package
 } from "lucide-react";
 import EBoekhoudenSync from "@/components/EBoekhoudenSync";
+import AdminProducts from "@/components/AdminProducts";
+import { ProductCategory } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +45,7 @@ const AdminDashboard = () => {
 
   // Calculator settings state
   const [calculatorSettings, setCalculatorSettings] = useState<CalculatorSettings>(defaultCalculatorSettings);
+  const [productCategory, setProductCategory] = useState<ProductCategory>('airco');
 
   // Review form state
   const [showReviewForm, setShowReviewForm] = useState(false);
