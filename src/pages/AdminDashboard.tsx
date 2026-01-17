@@ -12,8 +12,9 @@ import { Switch } from "@/components/ui/switch";
 import { 
   LogOut, Star, MessageSquare, FileText, Settings, Plus, 
   Trash2, Eye, EyeOff, Check, X, Mail, Phone, Calendar,
-  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car
+  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen
 } from "lucide-react";
+import EBoekhoudenSync from "@/components/EBoekhoudenSync";
 import {
   Dialog,
   DialogContent,
@@ -285,6 +286,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="calculators">
               <Calculator className="w-4 h-4 mr-2" />
               Calculatoren
+            </TabsTrigger>
+            <TabsTrigger value="boekhouden">
+              <BookOpen className="w-4 h-4 mr-2" />
+              e-Boekhouden
             </TabsTrigger>
           </TabsList>
 
@@ -719,6 +724,11 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* e-Boekhouden Tab */}
+          <TabsContent value="boekhouden">
+            <EBoekhoudenSync />
           </TabsContent>
         </Tabs>
       </main>
