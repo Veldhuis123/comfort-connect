@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { Wifi, Camera, Calculator, Check, Router, Shield, Plus, Minus, Euro } from "lucide-react";
+import { Wifi, Camera, Calculator, Check, Router, Shield, Plus, Minus, Euro, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
+
+import unifiApImg from "@/assets/unifi-ap.jpg";
 
 interface NetworkProduct {
   id: string;
@@ -116,6 +120,7 @@ interface SelectedProduct {
 }
 
 const UniFiCalculator = () => {
+  const { toast } = useToast();
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
   const [buildingSize, setBuildingSize] = useState<string>("100");
   const [floors, setFloors] = useState<string>("1");
@@ -192,6 +197,75 @@ const UniFiCalculator = () => {
       (accessPoints * perAPCost) + 
       (cameras * perCameraCost) + 
       ((totalProducts - accessPoints - cameras) * otherDeviceCost);
+  };
+
+  const handleExportPDF = async () => {
+    const { doc, yPos: startY } = await createPDFBase({ title: "UniFi Netwerk Offerte" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPos = startY;
+
+    // Building info
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Situatie", 20, yPos);
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    doc.text(`Oppervlakte: ${buildingSize} m²`, 25, yPos); yPos += 6;
+    doc.text(`Verdiepingen: ${floors}`, 25, yPos); yPos += 6;
+    doc.text(`Buitenbereik: ${outdoorCoverage ? "Ja" : "Nee"}`, 25, yPos); yPos += 15;
+
+    // Selected products
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Geselecteerde Producten", 20, yPos);
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+
+    selectedProducts.forEach(({ product, quantity }) => {
+      doc.text(`${quantity}x ${product.name}`, 25, yPos);
+      doc.text(`€${(product.price * quantity).toLocaleString("nl-NL")},-`, pageWidth - 50, yPos);
+      yPos += 6;
+    });
+
+    yPos += 5;
+    doc.text("Installatie & configuratie", 25, yPos);
+    doc.text(`€${calculateInstallationCost().toLocaleString("nl-NL")},-`, pageWidth - 50, yPos);
+    yPos += 10;
+
+    doc.setDrawColor(0, 102, 204);
+    doc.line(20, yPos, pageWidth - 20, yPos);
+    yPos += 8;
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 102, 204);
+    doc.text("Totaal:", 25, yPos);
+    doc.text(`€${getTotalPrice().toLocaleString("nl-NL")},-`, pageWidth - 50, yPos);
+    yPos += 15;
+
+    // Included services
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.text("Inbegrepen bij installatie:", 20, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text("• Professionele montage van alle apparatuur", 25, yPos); yPos += 5;
+    doc.text("• Netwerk configuratie en optimalisatie", 25, yPos); yPos += 5;
+    doc.text("• UniFi Controller setup", 25, yPos); yPos += 5;
+    doc.text("• App configuratie op uw telefoon", 25, yPos); yPos += 5;
+    doc.text("• Uitleg en handleiding", 25, yPos);
+
+    addPDFFooter(doc);
+    savePDF(doc, "UniFi-Offerte");
+    
+    toast({
+      title: "PDF gedownload!",
+      description: "Uw UniFi netwerk offerte is opgeslagen.",
+    });
   };
 
   const recommendation = calculateRecommendation();
@@ -435,12 +509,16 @@ const UniFiCalculator = () => {
                 <p className="text-muted-foreground">
                   Interesse? Vraag een vrijblijvende offerte aan.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
                   <Button size="lg" asChild>
                     <a href="/#contact">Offerte Aanvragen</a>
                   </Button>
                   <Button size="lg" variant="outline" asChild>
                     <a href="tel:0613629947">Bel voor Advies</a>
+                  </Button>
+                  <Button size="lg" variant="secondary" onClick={handleExportPDF}>
+                    <FileDown className="w-5 h-5 mr-2" />
+                    Download PDF
                   </Button>
                 </div>
               </div>
