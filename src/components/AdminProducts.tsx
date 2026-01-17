@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { 
   Plus, Trash2, Edit, Eye, EyeOff, Upload, X, 
-  Image as ImageIcon, GripVertical, Save
+  Image as ImageIcon, GripVertical, Save, Search
 } from "lucide-react";
 import {
   DndContext,
@@ -90,6 +90,7 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
   const [hasOrderChanged, setHasOrderChanged] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const sensors = useSensors(
@@ -136,7 +137,20 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
   useEffect(() => {
     fetchProducts();
     setHasOrderChanged(false);
+    setSearchQuery("");
   }, [selectedCategory]);
+
+  // Filter products based on search query
+  const filteredProducts = products.filter((product) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(query) ||
+      product.brand.toLowerCase().includes(query) ||
+      (product.description && product.description.toLowerCase().includes(query)) ||
+      product.id.toLowerCase().includes(query)
+    );
+  });
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -624,44 +638,65 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>Productbeheer</CardTitle>
-          <CardDescription>
-            Beheer producten per categorie - sleep om volgorde te wijzigen
-          </CardDescription>
-        </div>
-        <div className="flex gap-2">
-          {hasOrderChanged && (
-            <Button 
-              onClick={handleSaveOrder} 
-              disabled={savingOrder}
-              variant="secondary"
-            >
-              {savingOrder ? (
-                <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2" />
-              ) : (
-                <Save className="w-4 h-4 mr-2" />
-              )}
-              Volgorde Opslaan
+      <CardHeader className="space-y-4">
+        <div className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Productbeheer</CardTitle>
+            <CardDescription>
+              Beheer producten per categorie - sleep om volgorde te wijzigen
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            {hasOrderChanged && (
+              <Button 
+                onClick={handleSaveOrder} 
+                disabled={savingOrder}
+                variant="secondary"
+              >
+                {savingOrder ? (
+                  <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Volgorde Opslaan
+              </Button>
+            )}
+            <Select value={selectedCategory} onValueChange={(v) => onCategoryChange(v as ProductCategory)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {categoryOptions.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {categoryLabels[cat]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleAdd}>
+              <Plus className="w-4 h-4 mr-2" />
+              Product Toevoegen
             </Button>
+          </div>
+        </div>
+        
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Zoek op naam, merk of beschrijving..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
           )}
-          <Select value={selectedCategory} onValueChange={(v) => onCategoryChange(v as ProductCategory)}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {categoryOptions.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {categoryLabels[cat]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={handleAdd}>
-            <Plus className="w-4 h-4 mr-2" />
-            Product Toevoegen
-          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -669,23 +704,32 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
           <p className="text-muted-foreground">Laden...</p>
         ) : products.length === 0 ? (
           <p className="text-muted-foreground">Geen producten in deze categorie</p>
+        ) : filteredProducts.length === 0 ? (
+          <p className="text-muted-foreground">Geen producten gevonden voor "{searchQuery}"</p>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={products.map(p => p.id)}
-              strategy={verticalListSortingStrategy}
+          <>
+            {searchQuery && (
+              <p className="text-sm text-muted-foreground mb-4">
+                {filteredProducts.length} van {products.length} producten gevonden
+              </p>
+            )}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              <div className="space-y-4">
-                {products.map((product) => (
-                  <SortableProductRow key={product.id} product={product} />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+              <SortableContext
+                items={filteredProducts.map(p => p.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-4">
+                  {filteredProducts.map((product) => (
+                    <SortableProductRow key={product.id} product={product} />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </>
         )}
 
         {/* Product Form Dialog */}
