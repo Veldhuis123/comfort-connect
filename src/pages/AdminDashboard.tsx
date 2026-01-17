@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { 
   LogOut, Star, MessageSquare, FileText, Settings, Plus, 
   Trash2, Eye, EyeOff, Check, X, Mail, Phone, Calendar,
-  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi
+  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car
 } from "lucide-react";
 import {
   Dialog,
@@ -599,7 +599,7 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                {/* Solar Calculator */}
+                {/* PV Calculator */}
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
@@ -607,22 +607,78 @@ const AdminDashboard = () => {
                     </div>
                     <div className="flex-1">
                       <Input
-                        value={calculatorSettings.solar.name}
-                        onChange={(e) => handleUpdateCalculatorSetting("solar", "name", e.target.value)}
+                        value={calculatorSettings.pv.name}
+                        onChange={(e) => handleUpdateCalculatorSetting("pv", "name", e.target.value)}
                         className="font-medium mb-1 max-w-[200px]"
                       />
                       <p className="text-sm text-muted-foreground">
-                        Zonnepanelen en thuisaccu's met terugverdientijd
+                        Zonnepanelen berekening met terugverdientijd
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm text-muted-foreground">
-                      {calculatorSettings.solar.enabled ? "Actief" : "Inactief"}
+                      {calculatorSettings.pv.enabled ? "Actief" : "Inactief"}
                     </span>
                     <Switch
-                      checked={calculatorSettings.solar.enabled}
-                      onCheckedChange={(checked) => handleUpdateCalculatorSetting("solar", "enabled", checked)}
+                      checked={calculatorSettings.pv.enabled}
+                      onCheckedChange={(checked) => handleUpdateCalculatorSetting("pv", "enabled", checked)}
+                    />
+                  </div>
+                </div>
+
+                {/* Battery Calculator */}
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                      <Battery className="w-6 h-6 text-accent" />
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        value={calculatorSettings.battery.name}
+                        onChange={(e) => handleUpdateCalculatorSetting("battery", "name", e.target.value)}
+                        className="font-medium mb-1 max-w-[200px]"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Thuisaccu berekening met extra besparing
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {calculatorSettings.battery.enabled ? "Actief" : "Inactief"}
+                    </span>
+                    <Switch
+                      checked={calculatorSettings.battery.enabled}
+                      onCheckedChange={(checked) => handleUpdateCalculatorSetting("battery", "enabled", checked)}
+                    />
+                  </div>
+                </div>
+
+                {/* Charging Calculator */}
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                      <Car className="w-6 h-6 text-accent" />
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        value={calculatorSettings.charging.name}
+                        onChange={(e) => handleUpdateCalculatorSetting("charging", "name", e.target.value)}
+                        className="font-medium mb-1 max-w-[200px]"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Laadpalen met besparing t.o.v. benzine
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {calculatorSettings.charging.enabled ? "Actief" : "Inactief"}
+                    </span>
+                    <Switch
+                      checked={calculatorSettings.charging.enabled}
+                      onCheckedChange={(checked) => handleUpdateCalculatorSetting("charging", "enabled", checked)}
                     />
                   </div>
                 </div>
