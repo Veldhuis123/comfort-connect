@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sun, Battery, Calculator, Zap, Euro, TrendingUp, Home, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import ProductCompare, { CompareCheckbox, CompareProduct } from "./ProductCompare";
+import { api, Product } from "@/lib/api";
 
 interface SolarPanel {
   id: string;
@@ -27,7 +28,7 @@ interface BatteryOption {
   features: string[];
 }
 
-const solarPanels: SolarPanel[] = [
+const defaultSolarPanels: SolarPanel[] = [
   {
     id: "longi-400",
     name: "Hi-MO 5",
@@ -115,6 +116,8 @@ const roofOrientations = [
 ];
 
 const SolarCalculator = () => {
+  const [solarPanels, setSolarPanels] = useState<SolarPanel[]>(defaultSolarPanels);
+  const [loading, setLoading] = useState(true);
   const [yearlyUsage, setYearlyUsage] = useState<string>("3500");
   const [roofOrientation, setRoofOrientation] = useState<string>("south");
   const [roofArea, setRoofArea] = useState<string>("30");
@@ -123,6 +126,32 @@ const SolarCalculator = () => {
   const [selectedBattery, setSelectedBattery] = useState<string>("no-battery");
   const [showResults, setShowResults] = useState(false);
   const [compareProducts, setCompareProducts] = useState<string[]>([]);
+
+  // Load products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const apiProducts = await api.getProducts("solar");
+        if (apiProducts.length > 0) {
+          const mapped = apiProducts.map((p: Product): SolarPanel => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+            wattPeak: Number((p.specs as Record<string, unknown>).watt_peak) || 400,
+            pricePerPanel: p.base_price,
+            warranty: String((p.specs as Record<string, unknown>).warranty) || "25 jaar",
+            efficiency: String((p.specs as Record<string, unknown>).efficiency) || "21%",
+          }));
+          setSolarPanels(mapped);
+        }
+      } catch (err) {
+        console.log("Using fallback solar panels (API not available)");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const toggleCompare = (productId: string) => {
     if (compareProducts.includes(productId)) {

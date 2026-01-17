@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS products (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     brand VARCHAR(50) NOT NULL,
-    category ENUM('airco', 'unifi_router', 'unifi_switch', 'unifi_accesspoint', 'unifi_camera', 'battery', 'charger') NOT NULL,
+    category ENUM('airco', 'unifi_router', 'unifi_switch', 'unifi_accesspoint', 'unifi_camera', 'battery', 'charger', 'solar') NOT NULL,
     
     -- Prijzen
     base_price DECIMAL(10,2) NOT NULL,
@@ -274,6 +274,21 @@ INSERT INTO products (id, name, brand, category, base_price, description, specs,
 ('charge-amps-halo', 'Halo', 'Charge Amps', 'charger', 1599.00, 'Premium design laadpaal',
  '{"power": 22, "type": "home", "integrated_cable": true}',
  '["Premium design", "Geïntegreerde kabel", "RFID", "4G connectiviteit"]', 7);
+
+-- Zonnepanelen
+INSERT INTO products (id, name, brand, category, base_price, description, specs, features, sort_order) VALUES
+('longi-400', 'Hi-MO 5', 'LONGi', 'solar', 180.00, 'Hoogrendement mono-kristallijn paneel',
+ '{"watt_peak": 400, "efficiency": "20.9%", "warranty": "25 jaar"}',
+ '["400Wp vermogen", "20.9% rendement", "25 jaar productgarantie", "Mono-kristallijn"]', 1),
+('jinko-410', 'Tiger Neo', 'Jinko Solar', 'solar', 195.00, 'N-type technologie voor maximale opbrengst',
+ '{"watt_peak": 410, "efficiency": "21.3%", "warranty": "25 jaar"}',
+ '["410Wp vermogen", "21.3% rendement", "N-type technologie", "Lage degradatie"]', 2),
+('canadian-420', 'HiKu6', 'Canadian Solar', 'solar', 210.00, 'Premium paneel met toprendement',
+ '{"watt_peak": 420, "efficiency": "21.5%", "warranty": "25 jaar"}',
+ '["420Wp vermogen", "21.5% rendement", "Premium kwaliteit", "Uitstekende garantie"]', 3),
+('trina-430', 'Vertex S+', 'Trina Solar', 'solar', 225.00, 'Nieuwste generatie hoogrendement paneel',
+ '{"watt_peak": 430, "efficiency": "21.8%", "warranty": "25 jaar"}',
+ '["430Wp vermogen", "21.8% rendement", "Vertex technologie", "Topkwaliteit"]', 4);
 
 -- =============================================
 -- Voorbeeld admin gebruiker (wijzig wachtwoord!)
