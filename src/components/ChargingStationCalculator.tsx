@@ -8,6 +8,18 @@ import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
 
 import chargerImg from "@/assets/charger-home.jpg";
+import chargerEaseeImg from "@/assets/charger-easee.jpg";
+import chargerWallboxImg from "@/assets/charger-wallbox.jpg";
+
+const chargerImages: Record<string, string> = {
+  "alfen-eve-single": chargerImg,
+  "alfen-eve-single-22": chargerImg,
+  "easee-home": chargerEaseeImg,
+  "easee-charge": chargerEaseeImg,
+  "webasto-unite": chargerImg,
+  "wallbox-pulsar-plus": chargerWallboxImg,
+  "charge-amps-halo": chargerImg,
+};
 
 interface ChargingStation {
   id: string;
@@ -410,35 +422,45 @@ const ChargingStationCalculator = () => {
                 <div
                   key={station.id}
                   onClick={() => setSelectedStation(station.id)}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  className={`rounded-lg border-2 cursor-pointer transition-all overflow-hidden ${
                     selectedStation === station.id
                       ? "border-accent bg-accent/5"
                       : "border-border hover:border-accent/50"
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground">{station.brand}</p>
-                      <h4 className="font-semibold">{station.name}</h4>
-                    </div>
-                    {selectedStation === station.id && (
-                      <Check className="w-5 h-5 text-accent" />
-                    )}
+                  {/* Product Image */}
+                  <div className="h-28 bg-muted/30 overflow-hidden">
+                    <img 
+                      src={chargerImages[station.id] || chargerImg}
+                      alt={`${station.brand} ${station.name}`}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <Badge variant="secondary" className="mb-2">
-                    {station.power} kW
-                  </Badge>
-                  <ul className="space-y-1 text-sm text-muted-foreground mb-3">
-                    {station.features.slice(0, 3).map((feature) => (
-                      <li key={feature} className="flex items-center gap-1">
-                        <span className="w-1 h-1 bg-accent rounded-full" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-lg font-bold text-accent">
-                    €{station.price.toLocaleString("nl-NL")},-
-                  </p>
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">{station.brand}</p>
+                        <h4 className="font-semibold">{station.name}</h4>
+                      </div>
+                      {selectedStation === station.id && (
+                        <Check className="w-5 h-5 text-accent" />
+                      )}
+                    </div>
+                    <Badge variant="secondary" className="mb-2">
+                      {station.power} kW
+                    </Badge>
+                    <ul className="space-y-1 text-sm text-muted-foreground mb-3">
+                      {station.features.slice(0, 3).map((feature) => (
+                        <li key={feature} className="flex items-center gap-1">
+                          <span className="w-1 h-1 bg-accent rounded-full" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-lg font-bold text-accent">
+                      €{station.price.toLocaleString("nl-NL")},-
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>

@@ -9,6 +9,17 @@ import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
 
 import batteryImg from "@/assets/battery-home.jpg";
+import batteryHuaweiImg from "@/assets/battery-huawei.jpg";
+import batteryBydImg from "@/assets/battery-byd.jpg";
+
+const batteryImages: Record<string, string> = {
+  "huawei-5": batteryHuaweiImg,
+  "huawei-10": batteryHuaweiImg,
+  "huawei-15": batteryHuaweiImg,
+  "byd-10": batteryBydImg,
+  "byd-12": batteryBydImg,
+  "pylontech-7": batteryImg,
+};
 
 interface BatteryOption {
   id: string;
@@ -367,39 +378,49 @@ const BatteryCalculator = () => {
                 <div
                   key={battery.id}
                   onClick={() => setSelectedBattery(battery.id)}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  className={`rounded-lg border-2 cursor-pointer transition-all overflow-hidden ${
                     selectedBattery === battery.id
                       ? "border-accent bg-accent/5"
                       : "border-border hover:border-accent/50"
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground">{battery.brand}</p>
-                      <h4 className="font-semibold">{battery.name}</h4>
-                    </div>
-                    {selectedBattery === battery.id && (
-                      <Check className="w-5 h-5 text-accent" />
-                    )}
+                  {/* Product Image */}
+                  <div className="h-28 bg-muted/30 overflow-hidden">
+                    <img 
+                      src={batteryImages[battery.id] || batteryImg}
+                      alt={`${battery.brand} ${battery.name}`}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <Badge variant="secondary" className="mb-2">
-                    {battery.capacity} kWh
-                  </Badge>
-                  <ul className="space-y-1 text-sm text-muted-foreground mb-3">
-                    {battery.features.slice(0, 2).map((feature) => (
-                      <li key={feature} className="flex items-center gap-1">
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">{battery.brand}</p>
+                        <h4 className="font-semibold">{battery.name}</h4>
+                      </div>
+                      {selectedBattery === battery.id && (
+                        <Check className="w-5 h-5 text-accent" />
+                      )}
+                    </div>
+                    <Badge variant="secondary" className="mb-2">
+                      {battery.capacity} kWh
+                    </Badge>
+                    <ul className="space-y-1 text-sm text-muted-foreground mb-3">
+                      {battery.features.slice(0, 2).map((feature) => (
+                        <li key={feature} className="flex items-center gap-1">
+                          <span className="w-1 h-1 bg-accent rounded-full" />
+                          {feature}
+                        </li>
+                      ))}
+                      <li className="flex items-center gap-1">
                         <span className="w-1 h-1 bg-accent rounded-full" />
-                        {feature}
+                        {battery.cycles} laadcycli
                       </li>
-                    ))}
-                    <li className="flex items-center gap-1">
-                      <span className="w-1 h-1 bg-accent rounded-full" />
-                      {battery.cycles} laadcycli
-                    </li>
-                  </ul>
-                  <p className="text-lg font-bold text-accent">
-                    €{battery.price.toLocaleString("nl-NL")},-
-                  </p>
+                    </ul>
+                    <p className="text-lg font-bold text-accent">
+                      €{battery.price.toLocaleString("nl-NL")},-
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
