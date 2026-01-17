@@ -6,6 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 
+// Import product images
+import daikinBasicImg from "@/assets/airco-daikin-basic.jpg";
+import daikinPremiumImg from "@/assets/airco-daikin-premium.jpg";
+import haierBasicImg from "@/assets/airco-haier-basic.jpg";
+import haierPremiumImg from "@/assets/airco-haier-premium.jpg";
+
 interface AircoUnit {
   id: string;
   name: string;
@@ -36,51 +42,51 @@ interface UploadedPhoto {
 
 const aircoUnits: AircoUnit[] = [
   {
-    id: "basic",
-    name: "Comfort Basic",
+    id: "daikin-perfera",
+    name: "Perfera",
     brand: "Daikin",
     capacity: "2.5 kW",
     minM2: 15,
     maxM2: 30,
-    basePrice: 1299,
-    image: "https://images.unsplash.com/photo-1631545806609-aeecaf1a0aed?w=400&h=300&fit=crop",
-    features: ["Stille werking", "Wifi bediening", "Koelen & verwarmen"],
-    energyLabel: "A++"
+    basePrice: 1499,
+    image: daikinBasicImg,
+    features: ["Stille werking (19 dB)", "Wifi bediening", "Koelen & verwarmen", "Flash Streamer"],
+    energyLabel: "A+++"
   },
   {
-    id: "premium",
-    name: "Comfort Plus",
-    brand: "Mitsubishi",
+    id: "daikin-stylish",
+    name: "Stylish",
+    brand: "Daikin",
     capacity: "3.5 kW",
     minM2: 25,
     maxM2: 45,
-    basePrice: 1699,
-    image: "https://images.unsplash.com/photo-1625961332771-3f40b0e2bdcf?w=400&h=300&fit=crop",
-    features: ["Ultra stil", "Smart Home ready", "Luchtzuivering", "Koelen & verwarmen"],
+    basePrice: 1899,
+    image: daikinPremiumImg,
+    features: ["Design model", "Coanda-effect", "Smart Home ready", "Luchtzuivering"],
     energyLabel: "A+++"
   },
   {
-    id: "deluxe",
-    name: "Design Deluxe",
-    brand: "LG",
+    id: "haier-tundra",
+    name: "Tundra Plus",
+    brand: "Haier",
+    capacity: "2.6 kW",
+    minM2: 15,
+    maxM2: 35,
+    basePrice: 1199,
+    image: haierBasicImg,
+    features: ["Self Clean", "Wifi bediening", "Koelen & verwarmen", "Turbo mode"],
+    energyLabel: "A++"
+  },
+  {
+    id: "haier-flexis",
+    name: "Flexis Plus",
+    brand: "Haier",
     capacity: "5.0 kW",
     minM2: 40,
     maxM2: 70,
-    basePrice: 2199,
-    image: "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=300&fit=crop",
-    features: ["Stijlvol design", "Dual inverter", "Ionisator", "App bediening", "Koelen & verwarmen"],
-    energyLabel: "A+++"
-  },
-  {
-    id: "multi",
-    name: "Multi-Split Systeem",
-    brand: "Samsung",
-    capacity: "7.0 kW",
-    minM2: 60,
-    maxM2: 100,
-    basePrice: 3499,
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
-    features: ["Meerdere ruimtes", "WindFree cooling", "AI Energy Mode", "5 jaar garantie"],
+    basePrice: 2299,
+    image: haierPremiumImg,
+    features: ["Premium design", "Smart AI", "UV-C sterilisatie", "Luchtzuivering"],
     energyLabel: "A+++"
   }
 ];
