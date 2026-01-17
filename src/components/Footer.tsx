@@ -10,7 +10,7 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <img src={logo} alt="R. Veldhuis Installatie" className="h-16 w-auto brightness-0 invert" />
+              <img src={logo} alt="R. Veldhuis Installatie" className="h-16 w-auto" />
             </div>
             <p className="text-primary-foreground/70">
               Uw specialist voor airco, verwarming, elektra, water en riolering.
