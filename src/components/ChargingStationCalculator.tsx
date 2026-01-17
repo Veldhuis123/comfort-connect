@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Car, Calculator, Zap, Euro, Check, FileDown, Plug, Home, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,12 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
+import { api, Product } from "@/lib/api";
 
 import chargerImg from "@/assets/charger-home.jpg";
 import chargerEaseeImg from "@/assets/charger-easee.jpg";
 import chargerWallboxImg from "@/assets/charger-wallbox.jpg";
 
-const chargerImages: Record<string, string> = {
+const fallbackImages: Record<string, string> = {
   "alfen-eve-single": chargerImg,
   "alfen-eve-single-22": chargerImg,
   "easee-home": chargerEaseeImg,
@@ -25,84 +26,22 @@ interface ChargingStation {
   id: string;
   name: string;
   brand: string;
-  power: number; // kW
+  power: number;
   price: number;
   features: string[];
   type: "home" | "business";
   smartFeatures: boolean;
+  image?: string;
 }
 
-const chargingStations: ChargingStation[] = [
-  {
-    id: "alfen-eve-single",
-    name: "Eve Single Pro-line",
-    brand: "Alfen",
-    power: 11,
-    price: 1299,
-    features: ["11 kW laden", "MID-gecertificeerd", "RFID", "App bediening"],
-    type: "home",
-    smartFeatures: true,
-  },
-  {
-    id: "alfen-eve-single-22",
-    name: "Eve Single Pro-line",
-    brand: "Alfen",
-    power: 22,
-    price: 1599,
-    features: ["22 kW laden", "MID-gecertificeerd", "RFID", "App bediening"],
-    type: "home",
-    smartFeatures: true,
-  },
-  {
-    id: "easee-home",
-    name: "Home",
-    brand: "Easee",
-    power: 22,
-    price: 899,
-    features: ["Compact design", "WiFi/4G", "Smart laden", "Load balancing"],
-    type: "home",
-    smartFeatures: true,
-  },
-  {
-    id: "easee-charge",
-    name: "Charge",
-    brand: "Easee",
-    power: 22,
-    price: 999,
-    features: ["Zakelijk gebruik", "WiFi/4G", "Smart laden", "Facturatie mogelijk"],
-    type: "business",
-    smartFeatures: true,
-  },
-  {
-    id: "webasto-unite",
-    name: "Unite",
-    brand: "Webasto",
-    power: 22,
-    price: 1199,
-    features: ["22 kW laden", "OCPP", "RFID", "Kabel management"],
-    type: "business",
-    smartFeatures: true,
-  },
-  {
-    id: "wallbox-pulsar-plus",
-    name: "Pulsar Plus",
-    brand: "Wallbox",
-    power: 22,
-    price: 799,
-    features: ["Compact", "App bediening", "Power sharing", "Eco-Smart"],
-    type: "home",
-    smartFeatures: true,
-  },
-  {
-    id: "charge-amps-halo",
-    name: "Halo",
-    brand: "Charge Amps",
-    power: 22,
-    price: 1599,
-    features: ["Premium design", "Geïntegreerde kabel", "RFID", "4G connectiviteit"],
-    type: "home",
-    smartFeatures: true,
-  },
+const defaultChargingStations: ChargingStation[] = [
+  { id: "alfen-eve-single", name: "Eve Single Pro-line", brand: "Alfen", power: 11, price: 1299, features: ["11 kW laden", "MID-gecertificeerd", "RFID", "App bediening"], type: "home", smartFeatures: true },
+  { id: "alfen-eve-single-22", name: "Eve Single Pro-line", brand: "Alfen", power: 22, price: 1599, features: ["22 kW laden", "MID-gecertificeerd", "RFID", "App bediening"], type: "home", smartFeatures: true },
+  { id: "easee-home", name: "Home", brand: "Easee", power: 22, price: 899, features: ["Compact design", "WiFi/4G", "Smart laden", "Load balancing"], type: "home", smartFeatures: true },
+  { id: "easee-charge", name: "Charge", brand: "Easee", power: 22, price: 999, features: ["Zakelijk gebruik", "WiFi/4G", "Smart laden", "Facturatie mogelijk"], type: "business", smartFeatures: true },
+  { id: "webasto-unite", name: "Unite", brand: "Webasto", power: 22, price: 1199, features: ["22 kW laden", "OCPP", "RFID", "Kabel management"], type: "business", smartFeatures: true },
+  { id: "wallbox-pulsar-plus", name: "Pulsar Plus", brand: "Wallbox", power: 22, price: 799, features: ["Compact", "App bediening", "Power sharing", "Eco-Smart"], type: "home", smartFeatures: true },
+  { id: "charge-amps-halo", name: "Halo", brand: "Charge Amps", power: 22, price: 1599, features: ["Premium design", "Geïntegreerde kabel", "RFID", "4G connectiviteit"], type: "home", smartFeatures: true },
 ];
 
 const installationTypes = [
@@ -113,14 +52,48 @@ const installationTypes = [
 
 const ChargingStationCalculator = () => {
   const { toast } = useToast();
+  const [chargingStations, setChargingStations] = useState<ChargingStation[]>(defaultChargingStations);
+  const [loading, setLoading] = useState(true);
   const [locationType, setLocationType] = useState<"home" | "business">("home");
   const [yearlyKm, setYearlyKm] = useState<string>("15000");
-  const [consumption, setConsumption] = useState<string>("18"); // kWh per 100km
+  const [consumption, setConsumption] = useState<string>("18");
   const [electricityPrice, setElectricityPrice] = useState<string>("0.25");
   const [hasSolarPanels, setHasSolarPanels] = useState(false);
   const [selectedStation, setSelectedStation] = useState<string>("easee-home");
   const [installationType, setInstallationType] = useState<string>("standard");
   const [showResults, setShowResults] = useState(false);
+
+  // Load products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const apiProducts = await api.getProducts("charger");
+        if (apiProducts.length > 0) {
+          const mapped = apiProducts.map((p: Product): ChargingStation => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+            power: Number((p.specs as Record<string, unknown>).power) || 22,
+            price: p.base_price,
+            features: p.features,
+            type: ((p.specs as Record<string, unknown>).type as "home" | "business") || "home",
+            smartFeatures: true,
+            image: p.image_url || undefined,
+          }));
+          setChargingStations(mapped);
+        }
+      } catch (err) {
+        console.log("Using fallback charging stations (API not available)");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const getChargerImage = (station: ChargingStation) => {
+    return station.image || fallbackImages[station.id] || chargerImg;
+  };
 
   const calculateYearlyConsumption = () => {
     const km = parseFloat(yearlyKm) || 0;
@@ -431,7 +404,7 @@ const ChargingStationCalculator = () => {
                   {/* Product Image */}
                   <div className="h-28 bg-muted/30 overflow-hidden">
                     <img 
-                      src={chargerImages[station.id] || chargerImg}
+                      src={getChargerImage(station)}
                       alt={`${station.brand} ${station.name}`}
                       className="w-full h-full object-cover"
                     />
