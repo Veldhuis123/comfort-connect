@@ -9,6 +9,25 @@ import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
 
 import unifiApImg from "@/assets/unifi-ap.jpg";
+import unifiRouterImg from "@/assets/unifi-udm-se.jpg";
+import unifiSwitchImg from "@/assets/unifi-switch.jpg";
+import unifiCameraBulletImg from "@/assets/unifi-camera-bullet.jpg";
+import unifiCameraDomeImg from "@/assets/unifi-camera-dome.jpg";
+import unifiDoorbellImg from "@/assets/unifi-doorbell.jpg";
+
+const productImages: Record<string, string> = {
+  "udm-se": unifiRouterImg,
+  "ucg-ultra": unifiRouterImg,
+  "usw-lite-8-poe": unifiSwitchImg,
+  "usw-pro-24-poe": unifiSwitchImg,
+  "u6-lite": unifiApImg,
+  "u6-pro": unifiApImg,
+  "u7-pro": unifiApImg,
+  "g4-bullet": unifiCameraBulletImg,
+  "g4-dome": unifiCameraDomeImg,
+  "g5-pro": unifiCameraBulletImg,
+  "g4-doorbell-pro": unifiDoorbellImg,
+};
 
 interface NetworkProduct {
   id: string;
@@ -394,21 +413,30 @@ const UniFiCalculator = () => {
                     return (
                       <div
                         key={product.id}
-                        className={`p-4 rounded-lg border-2 transition-all ${
+                        className={`rounded-lg border-2 transition-all overflow-hidden ${
                           quantity > 0
                             ? "border-accent bg-accent/5"
                             : "border-border hover:border-accent/50"
                         }`}
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-semibold">{product.name}</h4>
-                            <p className="text-sm text-muted-foreground">{product.description}</p>
-                          </div>
-                          <p className="text-lg font-bold text-accent whitespace-nowrap ml-4">
-                            €{product.price},-
-                          </p>
+                        {/* Product Image */}
+                        <div className="h-32 bg-muted/30 overflow-hidden">
+                          <img 
+                            src={productImages[product.id] || unifiApImg}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
+                        <div className="p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="font-semibold">{product.name}</h4>
+                              <p className="text-sm text-muted-foreground">{product.description}</p>
+                            </div>
+                            <p className="text-lg font-bold text-accent whitespace-nowrap ml-4">
+                              €{product.price},-
+                            </p>
+                          </div>
                         <ul className="flex flex-wrap gap-2 mb-3">
                           {product.features.slice(0, 3).map((feature) => (
                             <Badge key={feature} variant="secondary" className="text-xs">
@@ -433,6 +461,7 @@ const UniFiCalculator = () => {
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
+                        </div>
                         </div>
                       </div>
                     );
