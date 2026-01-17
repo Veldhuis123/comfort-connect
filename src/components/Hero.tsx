@@ -11,11 +11,12 @@ const Hero = () => {
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" />
+      <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-background to-primary/5" />
       
-      {/* Decorative elements */}
+      {/* Decorative elements - matching logo colors */}
       <div className="absolute top-1/4 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+      <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-accent/15 rounded-full blur-2xl" />
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl">
@@ -30,8 +31,8 @@ const Hero = () => {
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl">
-            Professionele installatie van airco, verwarming, elektra, water en riolering. 
-            Vakmanschap waar u op kunt vertrouwen.
+            R. Veldhuis Installatie biedt professionele installatie van airco, verwarming, 
+            elektra, water en riolering. Vakmanschap waar u op kunt vertrouwen.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-12">

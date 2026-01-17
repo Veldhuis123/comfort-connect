@@ -13,30 +13,30 @@
   :root {
     /* Background & Foreground */
     --background: 0 0% 100%;
-    --foreground: 215 25% 15%;
+    --foreground: 240 60% 25%;
 
     /* Card */
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 240 60% 25%;
 
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 240 60% 25%;
 
-    /* Primary - Deep Navy Blue (Trust, Professionalism) */
-    --primary: 215 50% 23%;
+    /* Primary - Deep Navy Blue from RVI logo */
+    --primary: 240 60% 28%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary */
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 215 25% 15%;
+    /* Secondary - Light Sky Blue from RVI logo */
+    --secondary: 200 100% 96%;
+    --secondary-foreground: 240 60% 25%;
 
     /* Muted */
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 15% 50%;
+    --muted: 200 30% 96%;
+    --muted-foreground: 240 30% 45%;
 
-    /* Accent - Warm Orange (Energy, Action) */
-    --accent: 25 95% 53%;
+    /* Accent - Sky Blue from RVI logo */
+    --accent: 197 90% 55%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive */
@@ -44,60 +44,60 @@
     --destructive-foreground: 0 0% 100%;
 
     /* Border & Input */
-    --border: 214 25% 90%;
-    --input: 214 25% 90%;
-    --ring: 25 95% 53%;
+    --border: 200 30% 90%;
+    --input: 200 30% 90%;
+    --ring: 197 90% 55%;
 
     --radius: 0.75rem;
 
     /* Sidebar */
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 215 25% 15%;
-    --sidebar-primary: 215 50% 23%;
+    --sidebar-foreground: 240 60% 25%;
+    --sidebar-primary: 240 60% 28%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 25 95% 53%;
+    --sidebar-accent: 197 90% 55%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 214 25% 90%;
-    --sidebar-ring: 25 95% 53%;
+    --sidebar-border: 200 30% 90%;
+    --sidebar-ring: 197 90% 55%;
   }
 
   .dark {
-    --background: 215 30% 10%;
-    --foreground: 210 20% 95%;
+    --background: 240 50% 8%;
+    --foreground: 200 30% 95%;
 
-    --card: 215 30% 12%;
-    --card-foreground: 210 20% 95%;
+    --card: 240 50% 10%;
+    --card-foreground: 200 30% 95%;
 
-    --popover: 215 30% 12%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 240 50% 10%;
+    --popover-foreground: 200 30% 95%;
 
-    --primary: 210 20% 95%;
-    --primary-foreground: 215 50% 23%;
+    --primary: 200 30% 95%;
+    --primary-foreground: 240 60% 28%;
 
-    --secondary: 215 25% 18%;
-    --secondary-foreground: 210 20% 95%;
+    --secondary: 240 40% 18%;
+    --secondary-foreground: 200 30% 95%;
 
-    --muted: 215 25% 18%;
-    --muted-foreground: 215 15% 60%;
+    --muted: 240 40% 18%;
+    --muted-foreground: 200 20% 60%;
 
-    --accent: 25 95% 53%;
+    --accent: 197 90% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 30%;
-    --destructive-foreground: 210 20% 95%;
+    --destructive-foreground: 200 30% 95%;
 
-    --border: 215 25% 18%;
-    --input: 215 25% 18%;
-    --ring: 25 95% 53%;
+    --border: 240 40% 18%;
+    --input: 240 40% 18%;
+    --ring: 197 90% 55%;
     
-    --sidebar-background: 215 30% 10%;
-    --sidebar-foreground: 210 20% 95%;
-    --sidebar-primary: 25 95% 53%;
+    --sidebar-background: 240 50% 8%;
+    --sidebar-foreground: 200 30% 95%;
+    --sidebar-primary: 197 90% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 18%;
-    --sidebar-accent-foreground: 210 20% 95%;
-    --sidebar-border: 215 25% 18%;
-    --sidebar-ring: 25 95% 53%;
+    --sidebar-accent: 240 40% 18%;
+    --sidebar-accent-foreground: 200 30% 95%;
+    --sidebar-border: 240 40% 18%;
+    --sidebar-ring: 197 90% 55%;
   }
 }
 

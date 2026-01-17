@@ -1,4 +1,5 @@
 import { Shield, Clock, Award, ThumbsUp } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const About = () => {
   const stats = [
@@ -50,14 +51,13 @@ const About = () => {
 
           {/* Image/Visual */}
           <div className="relative">
-            <div className="aspect-square bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5 rounded-2xl flex items-center justify-center">
+            <div className="aspect-square bg-gradient-to-br from-accent/20 via-primary/10 to-accent/5 rounded-2xl flex items-center justify-center">
               <div className="text-center p-8">
-                <div className="w-32 h-32 bg-primary rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="text-primary-foreground font-heading font-bold text-5xl">IP</span>
-                </div>
-                <h3 className="font-heading text-2xl font-bold text-foreground mb-2">
-                  InstallatiePro
-                </h3>
+                <img 
+                  src={logo} 
+                  alt="R. Veldhuis Installatie" 
+                  className="w-48 h-auto mx-auto mb-6"
+                />
                 <p className="text-muted-foreground">
                   Uw betrouwbare partner voor alle installaties
                 </p>

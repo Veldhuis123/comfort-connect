@@ -1,3 +1,5 @@
+import logo from "@/assets/logo.png";
+
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
@@ -8,10 +10,7 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-primary-foreground/20 rounded-lg flex items-center justify-center">
-                <span className="font-bold text-xl">I</span>
-              </div>
-              <span className="font-heading font-bold text-xl">InstallatiePro</span>
+              <img src={logo} alt="R. Veldhuis Installatie" className="h-16 w-auto brightness-0 invert" />
             </div>
             <p className="text-primary-foreground/70">
               Uw specialist voor airco, verwarming, elektra, water en riolering.
@@ -42,14 +41,14 @@ const Footer = () => {
             <h4 className="font-heading font-bold text-lg mb-4">Contact</h4>
             <div className="space-y-2 text-primary-foreground/70">
               <p>Tel: 06 - 1234 5678</p>
-              <p>E-mail: info@installatiepro.nl</p>
-              <p>Werkgebied: Regio Amsterdam</p>
+              <p>E-mail: info@rveldhuisinstallatie.nl</p>
+              <p>Werkgebied: Regio Nederland</p>
             </div>
           </div>
         </div>
 
         <div className="border-t border-primary-foreground/20 pt-8 text-center text-primary-foreground/60 text-sm">
-          <p>© {currentYear} InstallatiePro. Alle rechten voorbehouden.</p>
+          <p>© {currentYear} R. Veldhuis Installatie. Alle rechten voorbehouden.</p>
         </div>
       </div>
     </footer>
