@@ -12,10 +12,11 @@ import { Switch } from "@/components/ui/switch";
 import { 
   LogOut, Star, MessageSquare, FileText, Settings, Plus, 
   Trash2, Eye, EyeOff, Check, X, Mail, Phone, Calendar,
-  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen, Package
+  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen, Package, Thermometer
 } from "lucide-react";
 import EBoekhoudenSync from "@/components/EBoekhoudenSync";
 import AdminProducts from "@/components/AdminProducts";
+import AdminInstallations from "@/components/AdminInstallations";
 import { ProductCategory } from "@/lib/api";
 import {
   Dialog,
@@ -293,6 +294,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="products">
               <Package className="w-4 h-4 mr-2" />
               Producten
+            </TabsTrigger>
+            <TabsTrigger value="installations">
+              <Thermometer className="w-4 h-4 mr-2" />
+              Installaties
             </TabsTrigger>
             <TabsTrigger value="boekhouden">
               <BookOpen className="w-4 h-4 mr-2" />
@@ -739,6 +744,11 @@ const AdminDashboard = () => {
               selectedCategory={productCategory} 
               onCategoryChange={setProductCategory} 
             />
+          </TabsContent>
+
+          {/* Installations Tab */}
+          <TabsContent value="installations">
+            <AdminInstallations />
           </TabsContent>
 
           {/* e-Boekhouden Tab */}
