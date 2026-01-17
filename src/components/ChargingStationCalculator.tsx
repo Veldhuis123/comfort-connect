@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
 import { api, Product } from "@/lib/api";
+import ProductCompare, { CompareCheckbox, CompareProduct } from "./ProductCompare";
 
 import chargerImg from "@/assets/charger-home.jpg";
 import chargerEaseeImg from "@/assets/charger-easee.jpg";
@@ -62,6 +63,32 @@ const ChargingStationCalculator = () => {
   const [selectedStation, setSelectedStation] = useState<string>("easee-home");
   const [installationType, setInstallationType] = useState<string>("standard");
   const [showResults, setShowResults] = useState(false);
+  const [compareProducts, setCompareProducts] = useState<string[]>([]);
+
+  const toggleCompare = (productId: string) => {
+    if (compareProducts.includes(productId)) {
+      setCompareProducts(compareProducts.filter(id => id !== productId));
+    } else if (compareProducts.length < 4) {
+      setCompareProducts([...compareProducts, productId]);
+    }
+  };
+
+  const getCompareProducts = (): CompareProduct[] => {
+    return chargingStations.map(station => ({
+      id: station.id,
+      name: station.name,
+      brand: station.brand,
+      category: "Laadpaal",
+      price: station.price,
+      image: getChargerImage(station),
+      specs: {
+        "Vermogen": `${station.power} kW`,
+        "Type": station.type === "home" ? "Particulier" : "Zakelijk",
+        "Smart Features": station.smartFeatures ? "Ja" : "Nee",
+      },
+      features: station.features,
+    }));
+  };
 
   // Load products from API
   useEffect(() => {
@@ -395,12 +422,18 @@ const ChargingStationCalculator = () => {
                 <div
                   key={station.id}
                   onClick={() => setSelectedStation(station.id)}
-                  className={`rounded-lg border-2 cursor-pointer transition-all overflow-hidden ${
+                  className={`relative rounded-lg border-2 cursor-pointer transition-all overflow-hidden ${
                     selectedStation === station.id
                       ? "border-accent bg-accent/5"
                       : "border-border hover:border-accent/50"
                   }`}
                 >
+                  <CompareCheckbox
+                    productId={station.id}
+                    isSelected={compareProducts.includes(station.id)}
+                    onToggle={toggleCompare}
+                    disabled={compareProducts.length >= 4}
+                  />
                   {/* Product Image */}
                   <div className="h-28 bg-muted/30 overflow-hidden">
                     <img 
@@ -562,6 +595,13 @@ const ChargingStationCalculator = () => {
           </Card>
         )}
       </div>
+
+      {/* Product Compare */}
+      <ProductCompare
+        products={getCompareProducts()}
+        category="Laadpaal"
+        maxCompare={4}
+      />
     </div>
   );
 };
