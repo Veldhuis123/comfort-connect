@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
+const { sendContactNotification } = require('../services/email');
 
 const router = express.Router();
 
@@ -57,6 +58,11 @@ router.post('/', async (req, res) => {
       'INSERT INTO contact_messages (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)',
       [name, email, phone, subject, message]
     );
+
+    // Send email notification
+    sendContactNotification({ name, email, phone, subject, message }).catch(err => {
+      console.error('Failed to send contact notification email:', err.message);
+    });
 
     res.status(201).json({ 
       id: result.insertId, 
