@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
+const { sendQuoteNotification } = require('../services/email');
 
 const router = express.Router();
 
@@ -77,6 +78,28 @@ router.post('/', async (req, res) => {
        total_size, total_capacity, selected_airco_id, selected_airco_name, 
        selected_airco_brand, estimated_price, pipe_color, pipe_length, additional_notes]
     );
+
+    // Send email notification (don't wait for it, don't fail if email fails)
+    const quoteData = {
+      id: result.insertId,
+      customer_name,
+      customer_email,
+      customer_phone,
+      rooms,
+      total_size,
+      total_capacity,
+      selected_airco_id,
+      selected_airco_name,
+      selected_airco_brand,
+      estimated_price,
+      pipe_color,
+      pipe_length,
+      additional_notes
+    };
+    
+    sendQuoteNotification(quoteData).catch(err => {
+      console.error('Failed to send quote notification email:', err.message);
+    });
 
     res.status(201).json({ 
       id: result.insertId, 
