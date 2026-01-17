@@ -50,7 +50,8 @@ const validCategories = [
   'unifi_accesspoint', 
   'unifi_camera', 
   'battery', 
-  'charger'
+  'charger',
+  'solar'
 ];
 
 // ============================================
