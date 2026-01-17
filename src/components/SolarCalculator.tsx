@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
+import ProductCompare, { CompareCheckbox, CompareProduct } from "./ProductCompare";
 
 interface SolarPanel {
   id: string;
@@ -121,6 +122,35 @@ const SolarCalculator = () => {
   const [selectedPanel, setSelectedPanel] = useState<string>("longi-400");
   const [selectedBattery, setSelectedBattery] = useState<string>("no-battery");
   const [showResults, setShowResults] = useState(false);
+  const [compareProducts, setCompareProducts] = useState<string[]>([]);
+
+  const toggleCompare = (productId: string) => {
+    if (compareProducts.includes(productId)) {
+      setCompareProducts(compareProducts.filter(id => id !== productId));
+    } else if (compareProducts.length < 4) {
+      setCompareProducts([...compareProducts, productId]);
+    }
+  };
+
+  const getCompareProducts = (): CompareProduct[] => {
+    return solarPanels.map(panel => ({
+      id: panel.id,
+      name: panel.name,
+      brand: panel.brand,
+      category: "Zonnepaneel",
+      price: panel.pricePerPanel,
+      specs: {
+        "Vermogen": `${panel.wattPeak} Wp`,
+        "Efficiëntie": panel.efficiency,
+        "Garantie": panel.warranty,
+      },
+      features: [
+        `${panel.wattPeak} Watt peak`,
+        `${panel.efficiency} efficiëntie`,
+        `${panel.warranty} garantie`,
+      ],
+    }));
+  };
 
   const getOrientationFactor = () => {
     return roofOrientations.find(o => o.id === roofOrientation)?.factor || 1;
@@ -329,13 +359,19 @@ const SolarCalculator = () => {
                 <div
                   key={panel.id}
                   onClick={() => setSelectedPanel(panel.id)}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                  className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     selectedPanel === panel.id
                       ? "border-accent bg-accent/5"
                       : "border-border hover:border-accent/50"
                   }`}
                 >
-                  <div className="flex justify-between items-start mb-3">
+                  <CompareCheckbox
+                    productId={panel.id}
+                    isSelected={compareProducts.includes(panel.id)}
+                    onToggle={toggleCompare}
+                    disabled={compareProducts.length >= 4}
+                  />
+                  <div className="flex justify-between items-start mb-3 pt-6">
                     <div>
                       <p className="text-xs text-muted-foreground">{panel.brand}</p>
                       <h4 className="font-semibold">{panel.name}</h4>
@@ -556,6 +592,15 @@ const SolarCalculator = () => {
           </Card>
         )}
       </div>
+
+      {/* Product Compare */}
+      <ProductCompare
+        products={getCompareProducts()}
+        category="Zonnepaneel"
+        maxCompare={4}
+        selectedProducts={compareProducts}
+        onToggleProduct={toggleCompare}
+      />
     </div>
   );
 };
