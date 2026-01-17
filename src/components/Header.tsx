@@ -10,6 +10,7 @@ const Header = () => {
     { label: "Home", href: "#home" },
     { label: "Diensten", href: "#diensten" },
     { label: "Airco Calculator", href: "#calculator" },
+    { label: "Reviews", href: "#reviews" },
     { label: "Over Mij", href: "#over" },
     { label: "Contact", href: "#contact" },
   ];
