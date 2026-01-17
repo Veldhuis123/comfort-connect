@@ -290,6 +290,10 @@ const AdminDashboard = () => {
               <Calculator className="w-4 h-4 mr-2" />
               Calculatoren
             </TabsTrigger>
+            <TabsTrigger value="products">
+              <Package className="w-4 h-4 mr-2" />
+              Producten
+            </TabsTrigger>
             <TabsTrigger value="boekhouden">
               <BookOpen className="w-4 h-4 mr-2" />
               e-Boekhouden
@@ -727,6 +731,14 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Products Tab */}
+          <TabsContent value="products">
+            <AdminProducts 
+              selectedCategory={productCategory} 
+              onCategoryChange={setProductCategory} 
+            />
           </TabsContent>
 
           {/* e-Boekhouden Tab */}

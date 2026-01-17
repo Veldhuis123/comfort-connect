@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Battery, Calculator, Zap, Euro, TrendingUp, Check, FileDown, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
+import { api, Product } from "@/lib/api";
 
 import batteryImg from "@/assets/battery-home.jpg";
 import batteryHuaweiImg from "@/assets/battery-huawei.jpg";
 import batteryBydImg from "@/assets/battery-byd.jpg";
 
-const batteryImages: Record<string, string> = {
+const fallbackImages: Record<string, string> = {
   "huawei-5": batteryHuaweiImg,
   "huawei-10": batteryHuaweiImg,
   "huawei-15": batteryHuaweiImg,
@@ -30,73 +31,22 @@ interface BatteryOption {
   warranty: string;
   features: string[];
   cycles: number;
+  image?: string;
 }
 
-const batteryOptions: BatteryOption[] = [
-  {
-    id: "huawei-5",
-    name: "LUNA 2000",
-    brand: "Huawei",
-    capacity: 5,
-    price: 3500,
-    warranty: "10 jaar",
-    features: ["Modulair uitbreidbaar", "Noodstroom mogelijk", "Smart monitoring"],
-    cycles: 6000,
-  },
-  {
-    id: "huawei-10",
-    name: "LUNA 2000",
-    brand: "Huawei",
-    capacity: 10,
-    price: 6500,
-    warranty: "10 jaar",
-    features: ["Modulair uitbreidbaar", "Noodstroom mogelijk", "Smart monitoring"],
-    cycles: 6000,
-  },
-  {
-    id: "huawei-15",
-    name: "LUNA 2000",
-    brand: "Huawei",
-    capacity: 15,
-    price: 9500,
-    warranty: "10 jaar",
-    features: ["Modulair uitbreidbaar", "Noodstroom mogelijk", "Smart monitoring"],
-    cycles: 6000,
-  },
-  {
-    id: "byd-10",
-    name: "Battery-Box Premium",
-    brand: "BYD",
-    capacity: 10.2,
-    price: 7200,
-    warranty: "10 jaar",
-    features: ["LFP batterij", "Zeer veilig", "Lange levensduur"],
-    cycles: 8000,
-  },
-  {
-    id: "byd-12",
-    name: "Battery-Box Premium",
-    brand: "BYD",
-    capacity: 12.8,
-    price: 8900,
-    warranty: "10 jaar",
-    features: ["LFP batterij", "Zeer veilig", "Lange levensduur"],
-    cycles: 8000,
-  },
-  {
-    id: "pylontech-7",
-    name: "Force H2",
-    brand: "Pylontech",
-    capacity: 7.1,
-    price: 4800,
-    warranty: "10 jaar",
-    features: ["High voltage", "Modulair", "Compacte installatie"],
-    cycles: 6000,
-  },
+const defaultBatteryOptions: BatteryOption[] = [
+  { id: "huawei-5", name: "LUNA 2000", brand: "Huawei", capacity: 5, price: 3500, warranty: "10 jaar", features: ["Modulair uitbreidbaar", "Noodstroom mogelijk", "Smart monitoring"], cycles: 6000 },
+  { id: "huawei-10", name: "LUNA 2000", brand: "Huawei", capacity: 10, price: 6500, warranty: "10 jaar", features: ["Modulair uitbreidbaar", "Noodstroom mogelijk", "Smart monitoring"], cycles: 6000 },
+  { id: "huawei-15", name: "LUNA 2000", brand: "Huawei", capacity: 15, price: 9500, warranty: "10 jaar", features: ["Modulair uitbreidbaar", "Noodstroom mogelijk", "Smart monitoring"], cycles: 6000 },
+  { id: "byd-10", name: "Battery-Box Premium", brand: "BYD", capacity: 10.2, price: 7200, warranty: "10 jaar", features: ["LFP batterij", "Zeer veilig", "Lange levensduur"], cycles: 8000 },
+  { id: "byd-12", name: "Battery-Box Premium", brand: "BYD", capacity: 12.8, price: 8900, warranty: "10 jaar", features: ["LFP batterij", "Zeer veilig", "Lange levensduur"], cycles: 8000 },
+  { id: "pylontech-7", name: "Force H2", brand: "Pylontech", capacity: 7.1, price: 4800, warranty: "10 jaar", features: ["High voltage", "Modulair", "Compacte installatie"], cycles: 6000 },
 ];
 
 const BatteryCalculator = () => {
   const { toast } = useToast();
+  const [batteryOptions, setBatteryOptions] = useState<BatteryOption[]>(defaultBatteryOptions);
+  const [loading, setLoading] = useState(true);
   const [yearlyUsage, setYearlyUsage] = useState<string>("3500");
   const [solarProduction, setSolarProduction] = useState<string>("4000");
   const [electricityPrice, setElectricityPrice] = useState<number[]>([0.30]);
@@ -104,6 +54,37 @@ const BatteryCalculator = () => {
   const [selectedBattery, setSelectedBattery] = useState<string>("huawei-10");
   const [showResults, setShowResults] = useState(false);
 
+  // Load products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const apiProducts = await api.getProducts("battery");
+        if (apiProducts.length > 0) {
+          const mapped = apiProducts.map((p: Product): BatteryOption => ({
+            id: p.id,
+            name: p.name,
+            brand: p.brand,
+            capacity: Number((p.specs as Record<string, unknown>).capacity) || 0,
+            price: p.base_price,
+            warranty: String((p.specs as Record<string, unknown>).warranty) || "10 jaar",
+            features: p.features,
+            cycles: Number((p.specs as Record<string, unknown>).cycles) || 0,
+            image: p.image_url || undefined,
+          }));
+          setBatteryOptions(mapped);
+        }
+      } catch (err) {
+        console.log("Using fallback battery options (API not available)");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const getBatteryImage = (battery: BatteryOption) => {
+    return battery.image || fallbackImages[battery.id] || batteryImg;
+  };
   const calculateSavings = () => {
     const battery = batteryOptions.find(b => b.id === selectedBattery);
     if (!battery) return { withBattery: 0, withoutBattery: 0, extraSavings: 0 };
@@ -387,7 +368,7 @@ const BatteryCalculator = () => {
                   {/* Product Image */}
                   <div className="h-28 bg-muted/30 overflow-hidden">
                     <img 
-                      src={batteryImages[battery.id] || batteryImg}
+                      src={getBatteryImage(battery)}
                       alt={`${battery.brand} ${battery.name}`}
                       className="w-full h-full object-cover"
                     />

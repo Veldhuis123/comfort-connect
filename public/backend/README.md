@@ -61,6 +61,18 @@ npm start
 - `DELETE /api/airco/:id` - Airco verwijderen (auth)
 - `PATCH /api/airco/:id/toggle` - Actief/inactief wisselen (auth)
 
+### Producten (universeel)
+- `GET /api/products` - Alle actieve producten (public, optioneel ?category=)
+- `GET /api/products/:id` - Product details (public)
+- `GET /api/products/admin/all` - Alle producten (auth, optioneel ?category=)
+- `POST /api/products` - Product toevoegen (auth)
+- `PUT /api/products/:id` - Product bewerken (auth)
+- `DELETE /api/products/:id` - Product verwijderen (auth)
+- `PATCH /api/products/:id/toggle` - Actief/inactief wisselen (auth)
+- `POST /api/products/:id/image` - Afbeelding uploaden (auth)
+- `DELETE /api/products/:id/image` - Afbeelding verwijderen (auth)
+- `PATCH /api/products/sort` - Sorteervolgorde bijwerken (auth)
+
 ### Uploads
 - `POST /api/upload/quote/:quoteId` - Foto's uploaden bij offerte
 - `DELETE /api/upload/:photoId` - Foto verwijderen (auth)

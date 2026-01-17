@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Wifi, Camera, Calculator, Check, Router, Shield, Plus, Minus, Euro, FileDown, Scale } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Wifi, Camera, Calculator, Check, Router, Shield, Plus, Minus, Euro, FileDown, Scale, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
 import ProductCompare, { CompareProduct } from "@/components/ProductCompare";
+import { api, Product } from "@/lib/api";
 
+// Fallback images for when API image is not available
 import unifiApImg from "@/assets/unifi-ap.jpg";
 import unifiApProImg from "@/assets/unifi-ap-pro.jpg";
 import unifiApU7Img from "@/assets/unifi-ap-u7.jpg";
@@ -21,7 +23,7 @@ import unifiCameraDomeImg from "@/assets/unifi-camera-dome.jpg";
 import unifiCameraG5Img from "@/assets/unifi-camera-g5.jpg";
 import unifiDoorbellImg from "@/assets/unifi-doorbell.jpg";
 
-const productImages: Record<string, string> = {
+const fallbackImages: Record<string, string> = {
   "udm-se": unifiRouterImg,
   "ucg-ultra": unifiUcgUltraImg,
   "usw-lite-8-poe": unifiSwitchImg,
@@ -35,6 +37,14 @@ const productImages: Record<string, string> = {
   "g4-doorbell-pro": unifiDoorbellImg,
 };
 
+// Map API category to local category
+const categoryMap: Record<string, "router" | "switch" | "accesspoint" | "camera"> = {
+  unifi_router: "router",
+  unifi_switch: "switch",
+  unifi_accesspoint: "accesspoint",
+  unifi_camera: "camera",
+};
+
 interface NetworkProduct {
   id: string;
   name: string;
@@ -42,101 +52,22 @@ interface NetworkProduct {
   price: number;
   description: string;
   features: string[];
+  image?: string;
 }
 
-const products: NetworkProduct[] = [
-  // Routers/Gateways
-  {
-    id: "udm-se",
-    name: "UniFi Dream Machine SE",
-    category: "router",
-    price: 499,
-    description: "All-in-one router met PoE+ switch en NVR",
-    features: ["8-poorts PoE+ switch", "Ingebouwde NVR", "2.5GbE WAN", "IDS/IPS beveiliging"],
-  },
-  {
-    id: "ucg-ultra",
-    name: "UniFi Cloud Gateway Ultra",
-    category: "router",
-    price: 129,
-    description: "Compacte gateway voor kleinere netwerken",
-    features: ["2.5GbE poort", "Tot 1 Gbps routering", "UniFi OS", "Compact formaat"],
-  },
-  // Switches
-  {
-    id: "usw-lite-8-poe",
-    name: "USW Lite 8 PoE",
-    category: "switch",
-    price: 119,
-    description: "8-poorts switch met 4x PoE",
-    features: ["4 PoE poorten (52W)", "Gigabit", "Compact design", "Stille werking"],
-  },
-  {
-    id: "usw-pro-24-poe",
-    name: "USW Pro 24 PoE",
-    category: "switch",
-    price: 499,
-    description: "24-poorts managed switch met PoE+",
-    features: ["16 PoE+ poorten", "400W budget", "Layer 3", "SFP+ uplinks"],
-  },
-  // Access Points
-  {
-    id: "u6-lite",
-    name: "U6 Lite",
-    category: "accesspoint",
-    price: 99,
-    description: "WiFi 6 access point voor basis gebruik",
-    features: ["WiFi 6 (AX1500)", "PoE powered", "Tot 300+ apparaten", "Dual-band"],
-  },
-  {
-    id: "u6-pro",
-    name: "U6 Pro",
-    category: "accesspoint",
-    price: 159,
-    description: "High-performance WiFi 6 access point",
-    features: ["WiFi 6 (AX5400)", "PoE+ powered", "MU-MIMO", "Band steering"],
-  },
-  {
-    id: "u7-pro",
-    name: "U7 Pro",
-    category: "accesspoint",
-    price: 189,
-    description: "WiFi 7 access point voor maximale snelheid",
-    features: ["WiFi 7 (BE11000)", "6 GHz band", "MLO technologie", "Tri-band"],
-  },
-  // Cameras
-  {
-    id: "g4-bullet",
-    name: "G4 Bullet",
-    category: "camera",
-    price: 199,
-    description: "4MP bullet camera voor buiten",
-    features: ["4MP resolutie", "Weerbestendig (IP67)", "Nachtzicht 25m", "Smart detectie"],
-  },
-  {
-    id: "g4-dome",
-    name: "G4 Dome",
-    category: "camera",
-    price: 199,
-    description: "4MP dome camera voor binnen/buiten",
-    features: ["4MP resolutie", "Vandaalbestendig", "IR nachtzicht", "PoE powered"],
-  },
-  {
-    id: "g5-pro",
-    name: "G5 Pro",
-    category: "camera",
-    price: 449,
-    description: "4K Pro camera met AI functies",
-    features: ["4K resolutie", "AI detectie", "Optische zoom 3x", "Premium kwaliteit"],
-  },
-  {
-    id: "g4-doorbell-pro",
-    name: "G4 Doorbell Pro",
-    category: "camera",
-    price: 299,
-    description: "Smart video deurbel met pakketdetectie",
-    features: ["5MP camera", "Pakketdetectie", "Two-way audio", "Fingerprint reader"],
-  },
+// Default products as fallback
+const defaultProducts: NetworkProduct[] = [
+  { id: "udm-se", name: "UniFi Dream Machine SE", category: "router", price: 499, description: "All-in-one router met PoE+ switch en NVR", features: ["8-poorts PoE+ switch", "Ingebouwde NVR", "2.5GbE WAN", "IDS/IPS beveiliging"] },
+  { id: "ucg-ultra", name: "UniFi Cloud Gateway Ultra", category: "router", price: 129, description: "Compacte gateway voor kleinere netwerken", features: ["2.5GbE poort", "Tot 1 Gbps routering", "UniFi OS", "Compact formaat"] },
+  { id: "usw-lite-8-poe", name: "USW Lite 8 PoE", category: "switch", price: 119, description: "8-poorts switch met 4x PoE", features: ["4 PoE poorten (52W)", "Gigabit", "Compact design", "Stille werking"] },
+  { id: "usw-pro-24-poe", name: "USW Pro 24 PoE", category: "switch", price: 499, description: "24-poorts managed switch met PoE+", features: ["16 PoE+ poorten", "400W budget", "Layer 3", "SFP+ uplinks"] },
+  { id: "u6-lite", name: "U6 Lite", category: "accesspoint", price: 99, description: "WiFi 6 access point voor basis gebruik", features: ["WiFi 6 (AX1500)", "PoE powered", "Tot 300+ apparaten", "Dual-band"] },
+  { id: "u6-pro", name: "U6 Pro", category: "accesspoint", price: 159, description: "High-performance WiFi 6 access point", features: ["WiFi 6 (AX5400)", "PoE+ powered", "MU-MIMO", "Band steering"] },
+  { id: "u7-pro", name: "U7 Pro", category: "accesspoint", price: 189, description: "WiFi 7 access point voor maximale snelheid", features: ["WiFi 7 (BE11000)", "6 GHz band", "MLO technologie", "Tri-band"] },
+  { id: "g4-bullet", name: "G4 Bullet", category: "camera", price: 199, description: "4MP bullet camera voor buiten", features: ["4MP resolutie", "Weerbestendig (IP67)", "Nachtzicht 25m", "Smart detectie"] },
+  { id: "g4-dome", name: "G4 Dome", category: "camera", price: 199, description: "4MP dome camera voor binnen/buiten", features: ["4MP resolutie", "Vandaalbestendig", "IR nachtzicht", "PoE powered"] },
+  { id: "g5-pro", name: "G5 Pro", category: "camera", price: 449, description: "4K Pro camera met AI functies", features: ["4K resolutie", "AI detectie", "Optische zoom 3x", "Premium kwaliteit"] },
+  { id: "g4-doorbell-pro", name: "G4 Doorbell Pro", category: "camera", price: 299, description: "Smart video deurbel met pakketdetectie", features: ["5MP camera", "Pakketdetectie", "Two-way audio", "Fingerprint reader"] },
 ];
 
 interface SelectedProduct {
@@ -146,12 +77,44 @@ interface SelectedProduct {
 
 const UniFiCalculator = () => {
   const { toast } = useToast();
+  const [products, setProducts] = useState<NetworkProduct[]>(defaultProducts);
+  const [loading, setLoading] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
   const [buildingSize, setBuildingSize] = useState<string>("100");
   const [floors, setFloors] = useState<string>("1");
   const [outdoorCoverage, setOutdoorCoverage] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [compareProducts, setCompareProducts] = useState<string[]>([]);
+
+  // Load products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const apiProducts = await api.getProducts("unifi_router,unifi_switch,unifi_accesspoint,unifi_camera");
+        if (apiProducts.length > 0) {
+          const mapped = apiProducts.map((p: Product): NetworkProduct => ({
+            id: p.id,
+            name: p.name,
+            category: categoryMap[p.category] || "router",
+            price: p.base_price,
+            description: p.description || "",
+            features: p.features,
+            image: p.image_url || undefined,
+          }));
+          setProducts(mapped);
+        }
+      } catch (err) {
+        console.log("Using fallback products (API not available)");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const getProductImage = (product: NetworkProduct) => {
+    return product.image || fallbackImages[product.id] || unifiApImg;
+  };
 
   const toggleCompare = (productId: string) => {
     if (compareProducts.includes(productId)) {
@@ -170,7 +133,7 @@ const UniFiCalculator = () => {
         brand: "UniFi",
         category: p.category,
         price: p.price,
-        image: productImages[p.id],
+        image: getProductImage(p),
         specs: {
           Categorie: p.category === "router" ? "Router" : p.category === "switch" ? "Switch" : p.category === "accesspoint" ? "Access Point" : "Camera",
           Prijs: `€${p.price},-`,
@@ -455,7 +418,7 @@ const UniFiCalculator = () => {
                         {/* Product Image */}
                         <div className="h-32 bg-muted/30 overflow-hidden relative">
                           <img 
-                            src={productImages[product.id] || unifiApImg}
+                            src={getProductImage(product)}
                             alt={product.name}
                             className="w-full h-full object-cover"
                           />
