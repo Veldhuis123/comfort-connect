@@ -10,8 +10,8 @@ const Contact = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const contactInfo = [
-    { icon: Phone, label: "Telefoon", value: "06 - 1234 5678", href: "tel:0612345678" },
-    { icon: Mail, label: "E-mail", value: "info@rveldhuisinstallatie.nl", href: "mailto:info@rveldhuisinstallatie.nl" },
+    { icon: Phone, label: "Telefoon", value: "06 - 1362 9947", href: "tel:0613629947" },
+    { icon: Mail, label: "E-mail", value: "inf0@rv-installatie.nl", href: "mailto:inf0@rv-installatie.nl" },
     { icon: MapPin, label: "Werkgebied", value: "Regio Nederland", href: null },
     { icon: Clock, label: "Bereikbaar", value: "Ma-Za 08:00-18:00", href: null },
   ];
@@ -84,9 +84,9 @@ const Contact = () => {
                 Bel mij direct voor een snelle reactie!
               </p>
               <Button variant="default" size="lg" asChild className="w-full sm:w-auto">
-                <a href="tel:0612345678" className="flex items-center justify-center gap-2">
+                <a href="tel:0613629947" className="flex items-center justify-center gap-2">
                   <Phone className="w-5 h-5" />
-                  06 - 1234 5678
+                  06 - 1362 9947
                 </a>
               </Button>
             </div>

@@ -40,7 +40,7 @@ const Hero = () => {
               <a href="#contact">Vraag een Offerte Aan</a>
             </Button>
             <Button size="lg" variant="outline" asChild className="text-lg px-8">
-              <a href="tel:0612345678" className="flex items-center gap-2">
+              <a href="tel:0613629947" className="flex items-center gap-2">
                 <Phone className="w-5 h-5" />
                 Bel Direct
               </a>
