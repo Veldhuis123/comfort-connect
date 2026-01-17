@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Wifi, Camera, Calculator, Check, Router, Shield, Plus, Minus, Euro, FileDown } from "lucide-react";
+import { Wifi, Camera, Calculator, Check, Router, Shield, Plus, Minus, Euro, FileDown, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
+import ProductCompare, { CompareProduct } from "@/components/ProductCompare";
 
 import unifiApImg from "@/assets/unifi-ap.jpg";
 import unifiRouterImg from "@/assets/unifi-udm-se.jpg";
@@ -145,6 +146,33 @@ const UniFiCalculator = () => {
   const [floors, setFloors] = useState<string>("1");
   const [outdoorCoverage, setOutdoorCoverage] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [compareProducts, setCompareProducts] = useState<string[]>([]);
+
+  const toggleCompare = (productId: string) => {
+    if (compareProducts.includes(productId)) {
+      setCompareProducts(compareProducts.filter(id => id !== productId));
+    } else if (compareProducts.length < 4) {
+      setCompareProducts([...compareProducts, productId]);
+    }
+  };
+
+  const getCompareProductsData = (): CompareProduct[] => {
+    return products
+      .filter(p => compareProducts.includes(p.id))
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        brand: "UniFi",
+        category: p.category,
+        price: p.price,
+        image: productImages[p.id],
+        specs: {
+          Categorie: p.category === "router" ? "Router" : p.category === "switch" ? "Switch" : p.category === "accesspoint" ? "Access Point" : "Camera",
+          Prijs: `€${p.price},-`,
+        },
+        features: p.features,
+      }));
+  };
 
   const addProduct = (product: NetworkProduct) => {
     const existing = selectedProducts.find(sp => sp.product.id === product.id);
@@ -420,12 +448,35 @@ const UniFiCalculator = () => {
                         }`}
                       >
                         {/* Product Image */}
-                        <div className="h-32 bg-muted/30 overflow-hidden">
+                        <div className="h-32 bg-muted/30 overflow-hidden relative">
                           <img 
                             src={productImages[product.id] || unifiApImg}
                             alt={product.name}
                             className="w-full h-full object-cover"
                           />
+                          {/* Compare Checkbox */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleCompare(product.id);
+                            }}
+                            disabled={compareProducts.length >= 4 && !compareProducts.includes(product.id)}
+                            className={`
+                              absolute top-2 left-2 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all
+                              ${compareProducts.includes(product.id)
+                                ? 'bg-accent border-accent text-white' 
+                                : 'bg-background/80 border-muted-foreground/30 hover:border-accent'
+                              }
+                              ${compareProducts.length >= 4 && !compareProducts.includes(product.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                            `}
+                            title={compareProducts.includes(product.id) ? "Verwijderen uit vergelijking" : "Toevoegen aan vergelijking"}
+                          >
+                            {compareProducts.includes(product.id) ? (
+                              <Scale className="w-3.5 h-3.5" />
+                            ) : (
+                              <Plus className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                         </div>
                         <div className="p-4">
                           <div className="flex justify-between items-start mb-2">
@@ -554,6 +605,12 @@ const UniFiCalculator = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Product Compare Component */}
+        <ProductCompare 
+          products={getCompareProductsData()} 
+          category="UniFi Netwerk" 
+        />
       </div>
     </div>
   );
