@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { createPDFBase, addPDFFooter, savePDF } from "@/lib/pdfExport";
 
+import chargerImg from "@/assets/charger-home.jpg";
+
 interface ChargingStation {
   id: string;
   name: string;
@@ -250,17 +252,27 @@ const ChargingStationCalculator = () => {
 
   return (
     <div className="space-y-8">
-      <div className="text-center mb-8">
-        <span className="text-accent font-semibold text-sm uppercase tracking-wider">
-          Laadpalen
-        </span>
-        <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mt-4 mb-6">
-          Configureer Uw Laadpaal
-        </h2>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Bereken uw laadkosten en besparing t.o.v. benzine. Kies de perfecte laadpaal voor uw situatie.
-        </p>
+      {/* Hero Image */}
+      <div className="relative rounded-2xl overflow-hidden h-48 md:h-64">
+        <img 
+          src={chargerImg} 
+          alt="Laadpaal voor elektrische auto"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
+        <div className="absolute bottom-6 left-6 right-6">
+          <span className="text-accent font-semibold text-sm uppercase tracking-wider">
+            Laadpalen
+          </span>
+          <h2 className="font-heading text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mt-2">
+            Configureer Uw Laadpaal
+          </h2>
+        </div>
       </div>
+      
+      <p className="text-muted-foreground text-lg max-w-2xl mx-auto text-center">
+        Bereken uw laadkosten en besparing t.o.v. benzine. Kies de perfecte laadpaal voor uw situatie.
+      </p>
 
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Location Type */}
