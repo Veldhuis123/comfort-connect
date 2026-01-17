@@ -11,8 +11,8 @@ const Contact = () => {
 
   const contactInfo = [
     { icon: Phone, label: "Telefoon", value: "06 - 1234 5678", href: "tel:0612345678" },
-    { icon: Mail, label: "E-mail", value: "info@installatiepro.nl", href: "mailto:info@installatiepro.nl" },
-    { icon: MapPin, label: "Werkgebied", value: "Regio Amsterdam", href: null },
+    { icon: Mail, label: "E-mail", value: "info@rveldhuisinstallatie.nl", href: "mailto:info@rveldhuisinstallatie.nl" },
+    { icon: MapPin, label: "Werkgebied", value: "Regio Nederland", href: null },
     { icon: Clock, label: "Bereikbaar", value: "Ma-Za 08:00-18:00", href: null },
   ];
 
@@ -76,7 +76,7 @@ const Contact = () => {
               ))}
             </div>
 
-            <div className="mt-10 p-6 bg-primary/5 rounded-2xl border border-primary/10">
+            <div className="mt-10 p-6 bg-accent/5 rounded-2xl border border-accent/10">
               <h4 className="font-heading font-bold text-lg text-foreground mb-2">
                 Direct een offerte nodig?
               </h4>

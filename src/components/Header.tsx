@@ -1,6 +1,7 @@
 import { Phone, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.png";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,13 +18,8 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <a href="#home" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">I</span>
-            </div>
-            <span className="font-heading font-bold text-xl text-foreground">
-              InstallatiePro
-            </span>
+          <a href="#home" className="flex items-center gap-3">
+            <img src={logo} alt="R. Veldhuis Installatie" className="h-12 md:h-14 w-auto" />
           </a>
 
           {/* Desktop Navigation */}
@@ -41,7 +37,7 @@ const Header = () => {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
-            <a href="tel:0612345678" className="flex items-center gap-2 text-accent-foreground font-semibold">
+            <a href="tel:0612345678" className="flex items-center gap-2 text-primary font-semibold">
               <Phone className="w-5 h-5 text-accent" />
               06 - 1234 5678
             </a>
