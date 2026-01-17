@@ -7,7 +7,7 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calculator, Sun, Wind } from "lucide-react";
+import { Calculator } from "lucide-react";
 
 const CalculatorCTA = () => (
   <section className="py-16 bg-accent/5">
@@ -22,14 +22,8 @@ const CalculatorCTA = () => (
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
         <Button size="lg" asChild>
           <Link to="/calculators" className="flex items-center gap-2">
-            <Wind className="w-5 h-5" />
-            Airco Calculator
-          </Link>
-        </Button>
-        <Button size="lg" variant="outline" asChild>
-          <Link to="/calculators?tab=solar" className="flex items-center gap-2">
-            <Sun className="w-5 h-5" />
-            Zonnepanelen Calculator
+            <Calculator className="w-5 h-5" />
+            Alle Calculatoren
           </Link>
         </Button>
       </div>

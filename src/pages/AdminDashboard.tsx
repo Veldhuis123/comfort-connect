@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { 
   LogOut, Star, MessageSquare, FileText, Settings, Plus, 
   Trash2, Eye, EyeOff, Check, X, Mail, Phone, Calendar,
-  BarChart3, RefreshCw
+  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi
 } from "lucide-react";
 import {
   Dialog,
@@ -21,6 +22,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { 
+  CalculatorSettings, 
+  defaultCalculatorSettings, 
+  getCalculatorSettings, 
+  saveCalculatorSettings 
+} from "./Calculators";
 
 const AdminDashboard = () => {
   const { user, logout, isLoading: authLoading } = useAuth();
@@ -32,6 +39,9 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<QuoteStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Calculator settings state
+  const [calculatorSettings, setCalculatorSettings] = useState<CalculatorSettings>(defaultCalculatorSettings);
 
   // Review form state
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -50,6 +60,10 @@ const AdminDashboard = () => {
       navigate("/admin/login");
     }
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    setCalculatorSettings(getCalculatorSettings());
+  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -132,6 +146,19 @@ const AdminDashboard = () => {
         alert("Fout bij verwijderen bericht");
       }
     }
+  };
+
+  const handleUpdateCalculatorSetting = (
+    key: keyof CalculatorSettings, 
+    field: "enabled" | "name", 
+    value: boolean | string
+  ) => {
+    const newSettings = {
+      ...calculatorSettings,
+      [key]: { ...calculatorSettings[key], [field]: value }
+    };
+    setCalculatorSettings(newSettings);
+    saveCalculatorSettings(newSettings);
   };
 
   const statusColors: Record<string, string> = {
@@ -242,7 +269,7 @@ const AdminDashboard = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="quotes" className="space-y-6">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="quotes">
               <FileText className="w-4 h-4 mr-2" />
               Offertes ({quotes.length})
@@ -254,6 +281,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="messages">
               <MessageSquare className="w-4 h-4 mr-2" />
               Berichten ({messages.length})
+            </TabsTrigger>
+            <TabsTrigger value="calculators">
+              <Calculator className="w-4 h-4 mr-2" />
+              Calculatoren
             </TabsTrigger>
           </TabsList>
 
@@ -523,6 +554,113 @@ const AdminDashboard = () => {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Calculators Tab */}
+          <TabsContent value="calculators">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="w-5 h-5" />
+                  Calculator Instellingen
+                </CardTitle>
+                <CardDescription>
+                  Beheer welke calculatoren zichtbaar zijn op de website
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Airco Calculator */}
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                      <Wind className="w-6 h-6 text-accent" />
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        value={calculatorSettings.airco.name}
+                        onChange={(e) => handleUpdateCalculatorSetting("airco", "name", e.target.value)}
+                        className="font-medium mb-1 max-w-[200px]"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Berekening voor airconditioning met productselectie
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {calculatorSettings.airco.enabled ? "Actief" : "Inactief"}
+                    </span>
+                    <Switch
+                      checked={calculatorSettings.airco.enabled}
+                      onCheckedChange={(checked) => handleUpdateCalculatorSetting("airco", "enabled", checked)}
+                    />
+                  </div>
+                </div>
+
+                {/* Solar Calculator */}
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                      <Sun className="w-6 h-6 text-accent" />
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        value={calculatorSettings.solar.name}
+                        onChange={(e) => handleUpdateCalculatorSetting("solar", "name", e.target.value)}
+                        className="font-medium mb-1 max-w-[200px]"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Zonnepanelen en thuisaccu's met terugverdientijd
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {calculatorSettings.solar.enabled ? "Actief" : "Inactief"}
+                    </span>
+                    <Switch
+                      checked={calculatorSettings.solar.enabled}
+                      onCheckedChange={(checked) => handleUpdateCalculatorSetting("solar", "enabled", checked)}
+                    />
+                  </div>
+                </div>
+
+                {/* UniFi Calculator */}
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
+                      <Wifi className="w-6 h-6 text-accent" />
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        value={calculatorSettings.unifi.name}
+                        onChange={(e) => handleUpdateCalculatorSetting("unifi", "name", e.target.value)}
+                        className="font-medium mb-1 max-w-[200px]"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        UniFi netwerkapparatuur en camerabewaking
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {calculatorSettings.unifi.enabled ? "Actief" : "Inactief"}
+                    </span>
+                    <Switch
+                      checked={calculatorSettings.unifi.enabled}
+                      onCheckedChange={(checked) => handleUpdateCalculatorSetting("unifi", "enabled", checked)}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    💡 <strong>Tip:</strong> Wijzigingen worden direct opgeslagen en zijn meteen zichtbaar op de website.
+                    Bezoekers zien alleen de actieve calculatoren.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
