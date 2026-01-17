@@ -111,6 +111,37 @@ export const api = {
     apiRequest(`/airco/${id}`, { method: 'DELETE' }),
   toggleAircoActive: (id: string) =>
     apiRequest(`/airco/${id}/toggle`, { method: 'PATCH' }),
+
+  // Products (universal)
+  getProducts: (category?: string) =>
+    apiRequest<Product[]>(`/products${category ? `?category=${category}` : ''}`),
+  getProduct: (id: string) => apiRequest<Product>(`/products/${id}`),
+  getAdminProducts: (category?: string) =>
+    apiRequest<Product[]>(`/products/admin/all${category ? `?category=${category}` : ''}`),
+  createProduct: (product: CreateProduct) =>
+    apiRequest<{ id: string }>('/products', { method: 'POST', body: JSON.stringify(product) }),
+  updateProduct: (id: string, product: Partial<CreateProduct>) =>
+    apiRequest(`/products/${id}`, { method: 'PUT', body: JSON.stringify(product) }),
+  deleteProduct: (id: string) =>
+    apiRequest(`/products/${id}`, { method: 'DELETE' }),
+  toggleProductActive: (id: string) =>
+    apiRequest<{ is_active: boolean }>(`/products/${id}/toggle`, { method: 'PATCH' }),
+  uploadProductImage: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const token = getAuthToken();
+    const response = await fetch(`${API_URL}/products/${id}/image`, {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!response.ok) throw new Error('Upload mislukt');
+    return response.json() as Promise<{ image_url: string }>;
+  },
+  deleteProductImage: (id: string) =>
+    apiRequest(`/products/${id}/image`, { method: 'DELETE' }),
+  updateProductSort: (products: { id: string; sort_order: number }[]) =>
+    apiRequest('/products/sort', { method: 'PATCH', body: JSON.stringify({ products }) }),
 };
 
 // Types
@@ -220,4 +251,43 @@ export interface QuoteStats {
   total: number;
   thisMonth: number;
   byStatus: Record<string, number>;
+}
+
+// Product types
+export type ProductCategory = 
+  | 'airco' 
+  | 'unifi_router' 
+  | 'unifi_switch' 
+  | 'unifi_accesspoint' 
+  | 'unifi_camera' 
+  | 'battery' 
+  | 'charger';
+
+export interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  category: ProductCategory;
+  base_price: number;
+  image_url: string | null;
+  specs: Record<string, unknown>;
+  features: string[];
+  description: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateProduct {
+  id: string;
+  name: string;
+  brand: string;
+  category: ProductCategory;
+  base_price: number;
+  description?: string;
+  specs?: Record<string, unknown>;
+  features?: string[];
+  is_active?: boolean;
+  sort_order?: number;
 }

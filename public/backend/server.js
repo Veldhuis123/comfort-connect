@@ -12,6 +12,7 @@ const contactRoutes = require('./routes/contact');
 const aircoRoutes = require('./routes/airco');
 const uploadRoutes = require('./routes/upload');
 const eboekhoudenRoutes = require('./routes/eboekhouden');
+const productsRoutes = require('./routes/products');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -41,6 +42,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/airco', aircoRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/eboekhouden', eboekhoudenRoutes);
+app.use('/api/products', productsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
