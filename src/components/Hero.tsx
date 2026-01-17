@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Phone, CheckCircle2 } from "lucide-react";
+import heroImage from "@/assets/hero-installation.jpg";
 
 const Hero = () => {
   const highlights = [
@@ -10,17 +11,23 @@ const Hero = () => {
 
   return (
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-background to-primary/5" />
+      {/* Background image with overlay */}
+      <div className="absolute inset-0">
+        <img 
+          src={heroImage} 
+          alt="Professionele airco installatie door R. Veldhuis Installatie" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/70" />
+      </div>
       
-      {/* Decorative elements - matching logo colors */}
+      {/* Decorative elements */}
       <div className="absolute top-1/4 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-      <div className="absolute top-1/2 right-1/4 w-48 h-48 bg-accent/15 rounded-full blur-2xl" />
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-full mb-6">
+          <div className="inline-flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-full mb-6 backdrop-blur-sm">
             <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
             <span className="text-sm font-medium">Beschikbaar in uw regio</span>
           </div>
@@ -39,7 +46,7 @@ const Hero = () => {
             <Button size="lg" variant="default" asChild className="text-lg px-8">
               <a href="#contact">Vraag een Offerte Aan</a>
             </Button>
-            <Button size="lg" variant="outline" asChild className="text-lg px-8">
+            <Button size="lg" variant="outline" asChild className="text-lg px-8 bg-background/50 backdrop-blur-sm">
               <a href="tel:0613629947" className="flex items-center gap-2">
                 <Phone className="w-5 h-5" />
                 Bel Direct
@@ -49,7 +56,7 @@ const Hero = () => {
 
           <div className="flex flex-wrap gap-6">
             {highlights.map((item) => (
-              <div key={item} className="flex items-center gap-2 text-muted-foreground">
+              <div key={item} className="flex items-center gap-2 text-muted-foreground bg-background/50 backdrop-blur-sm px-3 py-1 rounded-full">
                 <CheckCircle2 className="w-5 h-5 text-accent" />
                 <span>{item}</span>
               </div>
