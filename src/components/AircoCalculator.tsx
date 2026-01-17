@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
-import { Calculator, Wind, Thermometer, Home, Check, Plus, Trash2, Camera, Upload, X, Mail, MessageCircle } from "lucide-react";
+import { Calculator, Wind, Thermometer, Home, Check, Plus, Trash2, Camera, Upload, X, Mail, MessageCircle, Send, User, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 
 // Import product images
 import daikinBasicImg from "@/assets/airco-daikin-basic.jpg";
@@ -114,6 +116,7 @@ const pipeColors = [
 ];
 
 const AircoCalculator = () => {
+  const { toast } = useToast();
   const [rooms, setRooms] = useState<Room[]>([
     { id: "1", name: "Ruimte 1", size: "", ceilingHeight: "2.5", type: "living" }
   ]);
@@ -123,6 +126,11 @@ const AircoCalculator = () => {
   const [selectedColor, setSelectedColor] = useState<string>("wit");
   const [pipeLength, setPipeLength] = useState<string>("");
   const [additionalNotes, setAdditionalNotes] = useState<string>("");
+  const [customerName, setCustomerName] = useState<string>("");
+  const [customerEmail, setCustomerEmail] = useState<string>("");
+  const [customerPhone, setCustomerPhone] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quoteSubmitted, setQuoteSubmitted] = useState(false);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const addRoom = () => {
@@ -242,6 +250,50 @@ const AircoCalculator = () => {
     }
     
     return message;
+  };
+
+  const handleSubmitQuote = async () => {
+    const selectedAirco = aircoUnits.find(u => u.id === selectedUnit);
+    setIsSubmitting(true);
+
+    const quoteData = {
+      customer_name: customerName || undefined,
+      customer_email: customerEmail || undefined,
+      customer_phone: customerPhone || undefined,
+      rooms: rooms.map(r => ({
+        name: r.name,
+        size: r.size,
+        ceilingHeight: r.ceilingHeight,
+        type: r.type
+      })),
+      total_size: getTotalSize(),
+      total_capacity: calculateTotalRequiredCapacity(),
+      selected_airco_id: selectedUnit || undefined,
+      selected_airco_name: selectedAirco?.name,
+      selected_airco_brand: selectedAirco?.brand,
+      estimated_price: selectedAirco ? calculateTotalPrice(selectedAirco) : undefined,
+      pipe_color: selectedColor,
+      pipe_length: pipeLength ? parseFloat(pipeLength) : undefined,
+      additional_notes: additionalNotes || undefined
+    };
+
+    try {
+      await api.createQuote(quoteData);
+      setQuoteSubmitted(true);
+      toast({
+        title: "Offerte aanvraag verzonden!",
+        description: "Bedankt! Ik neem binnen 24 uur contact met u op.",
+      });
+    } catch (error) {
+      // Fallback to WhatsApp if API fails
+      handleWhatsAppQuote();
+      toast({
+        title: "WhatsApp geopend",
+        description: "De aanvraag wordt via WhatsApp verstuurd.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEmailQuote = () => {
@@ -596,26 +648,104 @@ const AircoCalculator = () => {
               ))}
             </div>
 
-            {/* CTA */}
-            {selectedUnit && (
-              <div className="mt-12 text-center bg-primary/5 rounded-2xl p-8">
-                <h3 className="font-heading text-2xl font-bold text-foreground mb-4">
+            {/* CTA with Customer Form */}
+            {selectedUnit && !quoteSubmitted && (
+              <div className="mt-12 bg-primary/5 rounded-2xl p-8">
+                <h3 className="font-heading text-2xl font-bold text-foreground mb-4 text-center">
                   Interesse in de {aircoUnits.find(u => u.id === selectedUnit)?.name}?
                 </h3>
-                <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-                  Verstuur uw gegevens en ik neem binnen 24 uur contact met u op. 
+                <p className="text-muted-foreground mb-6 max-w-xl mx-auto text-center">
+                  Vul uw gegevens in en ik neem binnen 24 uur contact met u op.
                   {photos.length > 0 && ` (${photos.length} foto's geselecteerd)`}
                 </p>
+
+                {/* Customer Details Form */}
+                <div className="max-w-md mx-auto space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      <User className="w-4 h-4 inline mr-2" />
+                      Uw naam
+                    </label>
+                    <Input
+                      placeholder="Uw volledige naam"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        <Mail className="w-4 h-4 inline mr-2" />
+                        E-mail
+                      </label>
+                      <Input
+                        type="email"
+                        placeholder="uw@email.nl"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        <Phone className="w-4 h-4 inline mr-2" />
+                        Telefoon
+                      </label>
+                      <Input
+                        type="tel"
+                        placeholder="06-12345678"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" onClick={handleWhatsAppQuote} className="bg-green-600 hover:bg-green-700">
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    WhatsApp Offerte
+                  <Button 
+                    size="lg" 
+                    onClick={handleSubmitQuote}
+                    disabled={isSubmitting}
+                    className="bg-accent hover:bg-accent/90"
+                  >
+                    <Send className="w-5 h-5 mr-2" />
+                    {isSubmitting ? "Verzenden..." : "Offerte Aanvragen"}
                   </Button>
-                  <Button size="lg" variant="outline" onClick={handleEmailQuote}>
-                    <Mail className="w-5 h-5 mr-2" />
-                    Email Offerte
+                  <Button size="lg" variant="outline" onClick={handleWhatsAppQuote}>
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Via WhatsApp
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {quoteSubmitted && (
+              <div className="mt-12 text-center bg-green-50 border border-green-200 rounded-2xl p-8">
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Check className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-heading text-2xl font-bold text-foreground mb-4">
+                  Aanvraag Ontvangen!
+                </h3>
+                <p className="text-muted-foreground max-w-xl mx-auto mb-6">
+                  Bedankt voor uw offerteaanvraag. Ik neem binnen 24 uur contact met u op om de mogelijkheden te bespreken.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setQuoteSubmitted(false);
+                    setSelectedUnit(null);
+                    setShowResults(false);
+                    setRooms([{ id: "1", name: "Ruimte 1", size: "", ceilingHeight: "2.5", type: "living" }]);
+                    setPhotos([]);
+                    setCustomerName("");
+                    setCustomerEmail("");
+                    setCustomerPhone("");
+                    setAdditionalNotes("");
+                  }}
+                >
+                  Nieuwe Berekening
+                </Button>
               </div>
             )}
 
