@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Sun, Wind, Wifi, Battery, Car } from "lucide-react";
+import { Sun, Wind, Wifi, Battery, Car, Cable, Scale } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -9,6 +9,8 @@ import PVCalculator from "@/components/PVCalculator";
 import BatteryCalculator from "@/components/BatteryCalculator";
 import UniFiCalculator from "@/components/UniFiCalculator";
 import ChargingStationCalculator from "@/components/ChargingStationCalculator";
+import InstallationSchema from "@/components/InstallationSchema";
+import ProductCompare, { CompareProduct } from "@/components/ProductCompare";
 
 export interface CalculatorSettings {
   airco: { enabled: boolean; name: string };
@@ -16,6 +18,7 @@ export interface CalculatorSettings {
   battery: { enabled: boolean; name: string };
   unifi: { enabled: boolean; name: string };
   charging: { enabled: boolean; name: string };
+  schema: { enabled: boolean; name: string };
 }
 
 export const defaultCalculatorSettings: CalculatorSettings = {
@@ -24,6 +27,7 @@ export const defaultCalculatorSettings: CalculatorSettings = {
   battery: { enabled: true, name: "Thuisaccu" },
   unifi: { enabled: true, name: "UniFi Netwerk" },
   charging: { enabled: true, name: "Laadpalen" },
+  schema: { enabled: true, name: "Installatie" },
 };
 
 export const getCalculatorSettings = (): CalculatorSettings => {
@@ -38,6 +42,7 @@ export const getCalculatorSettings = (): CalculatorSettings => {
         battery: { ...defaultCalculatorSettings.battery, ...parsed.battery },
         unifi: { ...defaultCalculatorSettings.unifi, ...parsed.unifi },
         charging: { ...defaultCalculatorSettings.charging, ...parsed.charging },
+        schema: { ...defaultCalculatorSettings.schema, ...parsed.schema },
       };
     } catch {
       return defaultCalculatorSettings;
@@ -103,7 +108,7 @@ const Calculators = () => {
             </div>
 
             <Tabs defaultValue={defaultTab} className="max-w-6xl mx-auto">
-              <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-5 mb-8">
+              <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-6 mb-8">
                 {settings.airco.enabled && (
                   <TabsTrigger value="airco" className="flex items-center gap-1 text-xs sm:text-sm">
                     <Wind className="w-4 h-4" />
@@ -132,6 +137,12 @@ const Calculators = () => {
                   <TabsTrigger value="unifi" className="flex items-center gap-1 text-xs sm:text-sm">
                     <Wifi className="w-4 h-4" />
                     <span className="hidden sm:inline">{settings.unifi.name}</span>
+                  </TabsTrigger>
+                )}
+                {settings.schema.enabled && (
+                  <TabsTrigger value="schema" className="flex items-center gap-1 text-xs sm:text-sm">
+                    <Cable className="w-4 h-4" />
+                    <span className="hidden sm:inline">{settings.schema.name}</span>
                   </TabsTrigger>
                 )}
               </TabsList>
@@ -163,6 +174,12 @@ const Calculators = () => {
               {settings.unifi.enabled && (
                 <TabsContent value="unifi">
                   <UniFiCalculator />
+                </TabsContent>
+              )}
+              
+              {settings.schema.enabled && (
+                <TabsContent value="schema">
+                  <InstallationSchema />
                 </TabsContent>
               )}
             </Tabs>
