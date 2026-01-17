@@ -91,6 +91,7 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
   const [hasOrderChanged, setHasOrderChanged] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const sensors = useSensors(
@@ -138,10 +139,16 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
     fetchProducts();
     setHasOrderChanged(false);
     setSearchQuery("");
+    setStatusFilter("all");
   }, [selectedCategory]);
 
-  // Filter products based on search query
+  // Filter products based on search query and status
   const filteredProducts = products.filter((product) => {
+    // Status filter
+    if (statusFilter === "active" && !product.is_active) return false;
+    if (statusFilter === "inactive" && product.is_active) return false;
+    
+    // Search filter
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -680,23 +687,35 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
           </div>
         </div>
         
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Zoek op naam, merk of beschrijving..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+        {/* Search Bar and Status Filter */}
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Zoek op naam, merk of beschrijving..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | "active" | "inactive")}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle statussen</SelectItem>
+              <SelectItem value="active">Alleen actief</SelectItem>
+              <SelectItem value="inactive">Alleen inactief</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>
