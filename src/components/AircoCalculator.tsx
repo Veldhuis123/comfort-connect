@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { Calculator, Wind, Thermometer, Home, Check, Plus, Trash2, Camera, Upload, X, Mail, MessageCircle, Send, User, Phone } from "lucide-react";
+import { Calculator, Wind, Thermometer, Home, Check, Plus, Trash2, Camera, Upload, X, Mail, MessageCircle, Send, User, Phone, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -332,6 +333,177 @@ const AircoCalculator = () => {
     const message = generateQuoteMessage();
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/31613629947?text=${encodedMessage}`);
+  };
+
+  const handleExportPDF = () => {
+    const selectedAirco = aircoUnits.find(u => u.id === selectedUnit);
+    const insulationLabel = insulationClasses.find(i => i.id === insulationClass)?.label || insulationClass;
+    const systemLabel = systemTypes.find(s => s.id === systemType)?.label || systemType;
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFillColor(0, 102, 204);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Airco Offerte', 20, 25);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Datum: ${new Date().toLocaleDateString('nl-NL')}`, pageWidth - 50, 25);
+    
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
+    
+    let yPos = 55;
+    
+    // Customer info
+    if (customerName || customerEmail || customerPhone) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Klantgegevens', 20, yPos);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      if (customerName) { doc.text(`Naam: ${customerName}`, 20, yPos); yPos += 6; }
+      if (customerEmail) { doc.text(`E-mail: ${customerEmail}`, 20, yPos); yPos += 6; }
+      if (customerPhone) { doc.text(`Telefoon: ${customerPhone}`, 20, yPos); yPos += 6; }
+      yPos += 10;
+    }
+    
+    // Rooms section
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Ruimtes', 20, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    
+    rooms.forEach((room, index) => {
+      const roomTypeLabel = roomTypes.find(t => t.id === room.type)?.label || room.type;
+      doc.text(`${index + 1}. ${room.name || roomTypeLabel}: ${room.size} m² (plafond: ${room.ceilingHeight}m)`, 25, yPos);
+      yPos += 6;
+    });
+    
+    yPos += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Totaal oppervlakte: ${totalSize} m²`, 20, yPos);
+    yPos += 6;
+    doc.text(`Benodigde capaciteit: ${totalCapacity.toFixed(1)} kW`, 20, yPos);
+    yPos += 15;
+    
+    // Specifications
+    doc.setFontSize(14);
+    doc.text('Specificaties', 20, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Isolatieklasse: ${insulationLabel}`, 25, yPos); yPos += 6;
+    if (rooms.length > 1) {
+      doc.text(`Systeemtype: ${systemLabel}`, 25, yPos); yPos += 6;
+    }
+    doc.text(`Aparte groep in meterkast: ${separateGroup ? 'Ja (+€250)' : 'Nee'}`, 25, yPos); yPos += 6;
+    doc.text(`Kleur leidingen: ${pipeColors.find(c => c.id === selectedColor)?.label || selectedColor}`, 25, yPos); yPos += 6;
+    if (pipeLength) {
+      doc.text(`Geschatte leidinglengte: ${pipeLength}m`, 25, yPos); yPos += 6;
+    }
+    yPos += 10;
+    
+    // Selected airco
+    if (selectedAirco) {
+      doc.setFillColor(240, 240, 240);
+      doc.rect(15, yPos - 5, pageWidth - 30, 40, 'F');
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Geselecteerde Airco', 20, yPos + 5);
+      yPos += 12;
+      doc.setFontSize(12);
+      doc.text(`${selectedAirco.brand} ${selectedAirco.name}`, 25, yPos + 3);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Capaciteit: ${selectedAirco.capacity} | Energielabel: ${selectedAirco.energyLabel}`, 25, yPos + 3);
+      yPos += 15;
+      
+      // Price breakdown
+      const baseInstallation = totalSize > 40 ? 450 : 350;
+      const roomMultiplier = rooms.length > 1 && systemType === "multisplit" ? rooms.length * 200 : 0;
+      const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * selectedAirco.basePrice * 0.8 : 0;
+      const pipeLengthCost = parseFloat(pipeLength) > 5 ? (parseFloat(pipeLength) - 5) * 25 : 0;
+      const separateGroupCost = separateGroup ? 250 : 0;
+      const totalPrice = calculateTotalPrice(selectedAirco);
+      
+      yPos += 10;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Prijsopbouw', 20, yPos);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      doc.text(`Airco unit (${selectedAirco.brand} ${selectedAirco.name})`, 25, yPos);
+      doc.text(`€${selectedAirco.basePrice.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+      yPos += 6;
+      
+      doc.text('Basisinstallatie', 25, yPos);
+      doc.text(`€${baseInstallation.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+      yPos += 6;
+      
+      if (roomMultiplier > 0) {
+        doc.text(`Multi-split toeslag (${rooms.length} ruimtes)`, 25, yPos);
+        doc.text(`€${roomMultiplier.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+        yPos += 6;
+      }
+      
+      if (singleUnitMultiplier > 0) {
+        doc.text(`Extra units (${rooms.length - 1}x)`, 25, yPos);
+        doc.text(`€${singleUnitMultiplier.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+        yPos += 6;
+      }
+      
+      if (pipeLengthCost > 0) {
+        doc.text(`Extra leidinglengte (${parseFloat(pipeLength) - 5}m)`, 25, yPos);
+        doc.text(`€${pipeLengthCost.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+        yPos += 6;
+      }
+      
+      if (separateGroupCost > 0) {
+        doc.text('Aparte groep meterkast', 25, yPos);
+        doc.text(`€${separateGroupCost.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+        yPos += 6;
+      }
+      
+      yPos += 4;
+      doc.setDrawColor(0, 102, 204);
+      doc.setLineWidth(0.5);
+      doc.line(20, yPos, pageWidth - 20, yPos);
+      yPos += 8;
+      
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 102, 204);
+      doc.text('Totaal indicatieprijs:', 25, yPos);
+      doc.text(`€${totalPrice.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+    }
+    
+    // Footer
+    doc.setTextColor(128, 128, 128);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.text('* Prijzen zijn indicatief en kunnen afwijken afhankelijk van de situatie ter plaatse.', 20, 280);
+    doc.text('RV Installatie | info@rv-installatie.nl | 06-13629947', 20, 286);
+    
+    // Save PDF
+    const fileName = `Airco-Offerte-${customerName ? customerName.replace(/\s+/g, '-') : 'RV-Installatie'}-${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+    
+    toast({
+      title: "PDF gedownload!",
+      description: "Uw offerte is opgeslagen als PDF.",
+    });
   };
 
   const recommendedUnits = getRecommendedUnits();
@@ -831,7 +1003,7 @@ const AircoCalculator = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center flex-wrap">
                   <Button 
                     size="lg" 
                     onClick={handleSubmitQuote}
@@ -844,6 +1016,10 @@ const AircoCalculator = () => {
                   <Button size="lg" variant="outline" onClick={handleWhatsAppQuote}>
                     <MessageCircle className="w-5 h-5 mr-2" />
                     Via WhatsApp
+                  </Button>
+                  <Button size="lg" variant="secondary" onClick={handleExportPDF}>
+                    <FileDown className="w-5 h-5 mr-2" />
+                    Download PDF
                   </Button>
                 </div>
               </div>
