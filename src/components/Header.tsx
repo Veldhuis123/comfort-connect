@@ -9,6 +9,7 @@ const Header = () => {
   const navItems = [
     { label: "Home", href: "#home" },
     { label: "Diensten", href: "#diensten" },
+    { label: "Airco Calculator", href: "#calculator" },
     { label: "Over Mij", href: "#over" },
     { label: "Contact", href: "#contact" },
   ];
