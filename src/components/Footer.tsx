@@ -41,7 +41,7 @@ const Footer = () => {
             <h4 className="font-heading font-bold text-lg mb-4">Contact</h4>
             <div className="space-y-2 text-primary-foreground/70">
               <p>Tel: 06 - 1362 9947</p>
-              <p>E-mail: inf0@rv-installatie.nl</p>
+              <p>E-mail: info@rv-installatie.nl</p>
               <p>Werkgebied: Regio Nederland</p>
             </div>
           </div>

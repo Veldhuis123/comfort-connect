@@ -248,7 +248,7 @@ const AircoCalculator = () => {
     const message = generateQuoteMessage();
     const subject = encodeURIComponent("Offerte aanvraag Airco");
     const body = encodeURIComponent(message + "\n\n(Let op: foto's kunnen niet via email link worden meegestuurd. Stuur deze apart door of gebruik WhatsApp)");
-    window.open(`mailto:inf0@rv-installatie.nl?subject=${subject}&body=${body}`);
+    window.open(`mailto:info@rv-installatie.nl?subject=${subject}&body=${body}`);
   };
 
   const handleWhatsAppQuote = () => {
