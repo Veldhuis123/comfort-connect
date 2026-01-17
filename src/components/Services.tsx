@@ -1,4 +1,4 @@
-import { Wind, Flame, Zap, Droplets, PipetteIcon } from "lucide-react";
+import { Wind, Flame, Zap, Droplets, PipetteIcon, Wifi, Camera, Sun, Battery } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Services = () => {
@@ -32,6 +32,30 @@ const Services = () => {
       title: "Riolering",
       description: "Professionele aanleg en onderhoud van rioleringssystemen.",
       features: ["Nieuwe aansluitingen", "Ontstoppingen", "Riool inspectie"],
+    },
+    {
+      icon: Wifi,
+      title: "UniFi Netwerken",
+      description: "Professionele netwerk- en WiFi oplossingen voor thuis en bedrijf.",
+      features: ["UniFi access points", "Netwerk switches", "Volledige dekking"],
+    },
+    {
+      icon: Camera,
+      title: "Camerabewaking",
+      description: "Beveiligingscamera's en videobewakingssystemen voor optimale veiligheid.",
+      features: ["UniFi Protect camera's", "Nachtzicht & 4K", "App bediening"],
+    },
+    {
+      icon: Sun,
+      title: "Zonnepanelen",
+      description: "Duurzame energie met PV-systemen voor uw woning of bedrijf.",
+      features: ["Zonnepanelen installatie", "Omvormers", "Monitoring systemen"],
+    },
+    {
+      icon: Battery,
+      title: "Thuisaccu's",
+      description: "Sla uw zonne-energie op en gebruik deze wanneer u wilt.",
+      features: ["Thuisbatterijen", "Noodstroom functie", "Smart energy management"],
     },
   ];
 
