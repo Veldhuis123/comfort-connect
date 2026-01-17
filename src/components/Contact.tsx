@@ -11,7 +11,7 @@ const Contact = () => {
 
   const contactInfo = [
     { icon: Phone, label: "Telefoon", value: "06 - 1362 9947", href: "tel:0613629947" },
-    { icon: Mail, label: "E-mail", value: "inf0@rv-installatie.nl", href: "mailto:inf0@rv-installatie.nl" },
+    { icon: Mail, label: "E-mail", value: "info@rv-installatie.nl", href: "mailto:info@rv-installatie.nl" },
     { icon: MapPin, label: "Werkgebied", value: "Regio Nederland", href: null },
     { icon: Clock, label: "Bereikbaar", value: "Ma-Za 08:00-18:00", href: null },
   ];
