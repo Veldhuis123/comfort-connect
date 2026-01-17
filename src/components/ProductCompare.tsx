@@ -17,6 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface CompareProduct {
   id: string;
@@ -303,28 +308,41 @@ export const CompareCheckbox = ({
   onToggle: (id: string) => void;
   disabled?: boolean;
 }) => (
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      onToggle(productId);
-    }}
-    disabled={disabled && !isSelected}
-    className={`
-      absolute top-2 left-2 z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
-      ${isSelected 
-        ? 'bg-accent border-accent text-accent-foreground' 
-        : 'bg-background/80 border-muted-foreground/30 hover:border-accent'
-      }
-      ${disabled && !isSelected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-    `}
-    title={isSelected ? "Verwijderen uit vergelijking" : "Toevoegen aan vergelijking"}
-  >
-    {isSelected ? (
-      <Check className="w-4 h-4" />
-    ) : (
-      <Plus className="w-4 h-4" />
-    )}
-  </button>
+  <Tooltip>
+    <TooltipTrigger asChild>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle(productId);
+        }}
+        disabled={disabled && !isSelected}
+        className={`
+          absolute top-2 left-2 z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
+          ${isSelected 
+            ? 'bg-accent border-accent text-accent-foreground' 
+            : 'bg-background/80 border-muted-foreground/30 hover:border-accent'
+          }
+          ${disabled && !isSelected ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        `}
+      >
+        {isSelected ? (
+          <Check className="w-4 h-4" />
+        ) : (
+          <Plus className="w-4 h-4" />
+        )}
+      </button>
+    </TooltipTrigger>
+    <TooltipContent side="right" className="max-w-[200px]">
+      <p className="text-sm">
+        {isSelected 
+          ? "Klik om te verwijderen uit vergelijking" 
+          : disabled 
+            ? "Maximum 4 producten bereikt"
+            : "Klik om toe te voegen aan vergelijking (max 4)"
+        }
+      </p>
+    </TooltipContent>
+  </Tooltip>
 );
 
 export default ProductCompare;
