@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Calculator, Wind, Thermometer, Home, Check, Plus, Trash2, Camera, Upload, X, Mail, MessageCircle, Send, User, Phone, FileDown, Scale } from "lucide-react";
+import { Calculator, Wind, Thermometer, Home, Check, Plus, Trash2, Camera, Upload, X, Mail, MessageCircle, Send, User, Phone, FileDown } from "lucide-react";
 import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { api, Product } from "@/lib/api";
-import ProductCompare, { CompareProduct } from "@/components/ProductCompare";
+import ProductCompare, { CompareProduct, CompareCheckbox } from "@/components/ProductCompare";
 
 // Fallback product images
 import daikinBasicImg from "@/assets/airco-daikin-basic.jpg";
@@ -153,24 +153,22 @@ const AircoCalculator = () => {
   };
 
   const getCompareProductsData = (): CompareProduct[] => {
-    return aircoUnits
-      .filter(u => compareProducts.includes(u.id))
-      .map(u => ({
-        id: u.id,
-        name: u.name,
-        brand: u.brand,
-        category: "Airco",
-        price: calculateTotalPrice(u),
-        image: u.image,
-        specs: {
-          Capaciteit: u.capacity,
-          "Min. oppervlakte": `${u.minM2} m²`,
-          "Max. oppervlakte": `${u.maxM2} m²`,
-          Energielabel: u.energyLabel,
-          Basisprijs: `€${u.basePrice.toLocaleString('nl-NL')},-`,
-        },
-        features: u.features,
-      }));
+    return aircoUnits.map(u => ({
+      id: u.id,
+      name: u.name,
+      brand: u.brand,
+      category: "Airco",
+      price: calculateTotalPrice(u),
+      image: u.image,
+      specs: {
+        Capaciteit: u.capacity,
+        "Min. oppervlakte": `${u.minM2} m²`,
+        "Max. oppervlakte": `${u.maxM2} m²`,
+        Energielabel: u.energyLabel,
+        Basisprijs: `€${u.basePrice.toLocaleString('nl-NL')},-`,
+      },
+      features: u.features,
+    }));
   };
 
   const addRoom = () => {
@@ -941,28 +939,12 @@ const AircoCalculator = () => {
                       {unit.energyLabel}
                     </Badge>
                     {/* Compare Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleCompare(unit.id);
-                      }}
-                      disabled={compareProducts.length >= 4 && !compareProducts.includes(unit.id)}
-                      className={`
-                        absolute top-3 left-3 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all z-10
-                        ${compareProducts.includes(unit.id)
-                          ? 'bg-accent border-accent text-white' 
-                          : 'bg-background/80 border-muted-foreground/30 hover:border-accent'
-                        }
-                        ${compareProducts.length >= 4 && !compareProducts.includes(unit.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                      `}
-                      title={compareProducts.includes(unit.id) ? "Verwijderen uit vergelijking" : "Toevoegen aan vergelijking"}
-                    >
-                      {compareProducts.includes(unit.id) ? (
-                        <Scale className="w-4 h-4" />
-                      ) : (
-                        <Plus className="w-4 h-4" />
-                      )}
-                    </button>
+                    <CompareCheckbox
+                      productId={unit.id}
+                      isSelected={compareProducts.includes(unit.id)}
+                      onToggle={toggleCompare}
+                      disabled={compareProducts.length >= 4}
+                    />
                     {selectedUnit === unit.id && (
                       <div className="absolute bottom-3 left-3 w-8 h-8 bg-accent rounded-full flex items-center justify-center">
                         <Check className="w-5 h-5 text-white" />
@@ -1118,7 +1100,9 @@ const AircoCalculator = () => {
         {/* Product Compare Component */}
         <ProductCompare 
           products={getCompareProductsData()} 
-          category="Airco" 
+          category="Airco"
+          selectedProducts={compareProducts}
+          onToggleProduct={toggleCompare}
         />
       </div>
     </section>
