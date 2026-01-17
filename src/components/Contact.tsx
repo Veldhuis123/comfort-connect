@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 
 const Contact = () => {
   const { toast } = useToast();
@@ -16,19 +17,38 @@ const Contact = () => {
     { icon: Clock, label: "Bereikbaar", value: "Ma-Za 08:00-18:00", href: null },
   ];
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      phone: formData.get("phone") as string,
+      subject: formData.get("service") as string,
+      message: formData.get("message") as string,
+    };
+
+    try {
+      await api.createMessage(data);
       toast({
         title: "Bericht verzonden!",
         description: "Bedankt voor uw bericht. Ik neem zo snel mogelijk contact met u op.",
       });
       (e.target as HTMLFormElement).reset();
-    }, 1000);
+    } catch (error) {
+      // Fallback: open email client if API not available
+      const subject = encodeURIComponent(`Contactformulier: ${data.subject || "Algemeen"}`);
+      const body = encodeURIComponent(`Naam: ${data.name}\nTelefoon: ${data.phone}\nEmail: ${data.email}\n\n${data.message}`);
+      window.location.href = `mailto:info@rv-installatie.nl?subject=${subject}&body=${body}`;
+      toast({
+        title: "E-mail client geopend",
+        description: "Verstuur het bericht via uw e-mail programma.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
