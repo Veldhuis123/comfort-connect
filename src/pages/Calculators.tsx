@@ -30,7 +30,15 @@ export const getCalculatorSettings = (): CalculatorSettings => {
   const stored = localStorage.getItem("calculatorSettings");
   if (stored) {
     try {
-      return { ...defaultCalculatorSettings, ...JSON.parse(stored) };
+      const parsed = JSON.parse(stored);
+      // Merge with defaults to ensure all keys exist
+      return {
+        airco: { ...defaultCalculatorSettings.airco, ...parsed.airco },
+        pv: { ...defaultCalculatorSettings.pv, ...parsed.pv },
+        battery: { ...defaultCalculatorSettings.battery, ...parsed.battery },
+        unifi: { ...defaultCalculatorSettings.unifi, ...parsed.unifi },
+        charging: { ...defaultCalculatorSettings.charging, ...parsed.charging },
+      };
     } catch {
       return defaultCalculatorSettings;
     }
