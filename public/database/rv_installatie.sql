@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS admin_users (
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(100) NOT NULL,
     role ENUM('admin', 'moderator') DEFAULT 'admin',
+    is_active BOOLEAN DEFAULT TRUE,
+    failed_login_attempts INT DEFAULT 0,
+    locked_until TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     last_login TIMESTAMP NULL
@@ -291,11 +294,13 @@ INSERT INTO products (id, name, brand, category, base_price, description, specs,
  '["430Wp vermogen", "21.8% rendement", "Vertex technologie", "Topkwaliteit"]', 4);
 
 -- =============================================
--- Voorbeeld admin gebruiker (wijzig wachtwoord!)
--- Wachtwoord: admin123 (bcrypt hash - $2a$ prefix voor Node.js bcryptjs)
+-- Voorbeeld admin gebruiker
+-- BELANGRIJK: Wijzig dit wachtwoord direct na installatie!
+-- Standaard wachtwoord: Admin@123! (voldoet aan sterke wachtwoord eisen)
+-- Hash gegenereerd met bcryptjs cost factor 12
 -- =============================================
-INSERT INTO admin_users (email, password_hash, name, role) VALUES
-('admin@rv-installatie.nl', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'admin');
+INSERT INTO admin_users (email, password_hash, name, role, is_active) VALUES
+('admin@rv-installatie.nl', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4.NGY1VYxEWIkLzW', 'Admin', 'admin', TRUE);
 
 -- =============================================
 -- Indexen voor betere performance
@@ -309,14 +314,19 @@ CREATE INDEX idx_products_category ON products(category);
 CREATE INDEX idx_products_active ON products(is_active);
 
 -- =============================================
--- NOTITIES:
+-- BEVEILIGINGSNOTITIES:
 -- 
--- 1. Wijzig het admin wachtwoord na import!
---    Gebruik bcrypt hash met Node.js of PHP
+-- 1. WIJZIG het admin wachtwoord direct na installatie!
+--    Standaard: Admin@123! (hash hieronder is voor dit wachtwoord)
 --
--- 2. Voor foto uploads: configureer UPLOAD_DIR in .env
+-- 2. Configureer een sterk JWT_SECRET in .env (minimaal 32 tekens)
+--    Voorbeeld: openssl rand -base64 32
 --
--- 3. JSON kolommen vereisen MySQL 5.7+ of MariaDB 10.2+
+-- 3. Zet HTTPS in productie (SSL/TLS)
+--
+-- 4. Voor foto uploads: configureer UPLOAD_DIR in .env
+--
+-- 5. JSON kolommen vereisen MySQL 5.7+ of MariaDB 10.2+
 --
 -- 4. Pas de database naam aan bovenaan indien gewenst
 --
