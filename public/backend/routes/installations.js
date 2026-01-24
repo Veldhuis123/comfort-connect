@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
 
 // =============================================
@@ -9,7 +9,7 @@ const { v4: uuidv4 } = require('uuid');
 // =============================================
 
 // Get all customers
-router.get('/customers', authenticateToken, async (req, res) => {
+router.get('/customers', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT * FROM customers ORDER BY contact_name ASC'
@@ -22,7 +22,7 @@ router.get('/customers', authenticateToken, async (req, res) => {
 });
 
 // Create customer
-router.post('/customers', authenticateToken, async (req, res) => {
+router.post('/customers', authMiddleware, async (req, res) => {
   const { company_name, contact_name, email, phone, address_street, address_number, address_postal, address_city, notes } = req.body;
   
   try {
@@ -39,7 +39,7 @@ router.post('/customers', authenticateToken, async (req, res) => {
 });
 
 // Update customer
-router.put('/customers/:id', authenticateToken, async (req, res) => {
+router.put('/customers/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { company_name, contact_name, email, phone, address_street, address_number, address_postal, address_city, notes } = req.body;
   
@@ -62,7 +62,7 @@ router.put('/customers/:id', authenticateToken, async (req, res) => {
 // =============================================
 
 // Get all technicians
-router.get('/technicians', authenticateToken, async (req, res) => {
+router.get('/technicians', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT * FROM technicians ORDER BY name ASC'
@@ -75,7 +75,7 @@ router.get('/technicians', authenticateToken, async (req, res) => {
 });
 
 // Create technician
-router.post('/technicians', authenticateToken, async (req, res) => {
+router.post('/technicians', authMiddleware, async (req, res) => {
   const { name, email, phone, fgas_certificate_number, fgas_certificate_expires, brl_certificate_number, brl_certificate_expires } = req.body;
   
   try {
@@ -92,7 +92,7 @@ router.post('/technicians', authenticateToken, async (req, res) => {
 });
 
 // Update technician
-router.put('/technicians/:id', authenticateToken, async (req, res) => {
+router.put('/technicians/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, fgas_certificate_number, fgas_certificate_expires, brl_certificate_number, brl_certificate_expires, is_active } = req.body;
   
@@ -115,7 +115,7 @@ router.put('/technicians/:id', authenticateToken, async (req, res) => {
 // =============================================
 
 // Get all installations with customer info
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT i.*, c.contact_name as customer_name, c.address_city as customer_city,
@@ -133,7 +133,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single installation by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT i.*, c.*, t.name as technician_name, t.fgas_certificate_number
@@ -186,7 +186,7 @@ router.get('/qr/:qrCode', async (req, res) => {
 });
 
 // Create installation
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   const { 
     customer_id, name, location_description, installation_type,
     brand, model, serial_number, refrigerant_type, refrigerant_gwp,
@@ -228,7 +228,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update installation
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { 
     name, location_description, brand, model, serial_number,
@@ -252,7 +252,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete installation
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     await pool.query('DELETE FROM installations WHERE id = ?', [req.params.id]);
     res.json({ success: true });
@@ -267,7 +267,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // =============================================
 
 // Get F-gas logs for installation
-router.get('/:id/fgas', authenticateToken, async (req, res) => {
+router.get('/:id/fgas', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT f.*, t.name as technician_name, t.fgas_certificate_number
@@ -284,7 +284,7 @@ router.get('/:id/fgas', authenticateToken, async (req, res) => {
 });
 
 // Create F-gas log entry
-router.post('/:id/fgas', authenticateToken, async (req, res) => {
+router.post('/:id/fgas', authMiddleware, async (req, res) => {
   const { installation_id } = { installation_id: req.params.id };
   const {
     technician_id, activity_type, refrigerant_type, refrigerant_gwp,
@@ -335,7 +335,7 @@ router.post('/:id/fgas', authenticateToken, async (req, res) => {
 // =============================================
 
 // Get maintenance records for installation
-router.get('/:id/maintenance', authenticateToken, async (req, res) => {
+router.get('/:id/maintenance', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT m.*, t.name as technician_name
@@ -352,7 +352,7 @@ router.get('/:id/maintenance', authenticateToken, async (req, res) => {
 });
 
 // Create maintenance record
-router.post('/:id/maintenance', authenticateToken, async (req, res) => {
+router.post('/:id/maintenance', authMiddleware, async (req, res) => {
   const { installation_id } = { installation_id: req.params.id };
   const {
     technician_id, maintenance_type, description, parts_replaced,
@@ -423,7 +423,7 @@ router.post('/qr/:qrCode/fault', async (req, res) => {
 });
 
 // Get all fault reports (admin)
-router.get('/faults/all', authenticateToken, async (req, res) => {
+router.get('/faults/all', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT f.*, i.name as installation_name, i.brand, i.model,
@@ -445,7 +445,7 @@ router.get('/faults/all', authenticateToken, async (req, res) => {
 });
 
 // Update fault report status
-router.patch('/faults/:id', authenticateToken, async (req, res) => {
+router.patch('/faults/:id', authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { status, assigned_technician_id, resolution_notes } = req.body;
   
@@ -468,7 +468,7 @@ router.patch('/faults/:id', authenticateToken, async (req, res) => {
 // STATISTICS
 // =============================================
 
-router.get('/stats/summary', authenticateToken, async (req, res) => {
+router.get('/stats/summary', authMiddleware, async (req, res) => {
   try {
     const [totalInstallations] = await pool.query('SELECT COUNT(*) as count FROM installations WHERE status != "verwijderd"');
     const [maintenanceDue] = await pool.query('SELECT COUNT(*) as count FROM installations WHERE next_maintenance_date <= CURDATE() AND status = "actief"');
