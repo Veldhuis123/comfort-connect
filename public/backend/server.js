@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -18,10 +20,25 @@ const installationsRoutes = require('./routes/installations');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minuten
-  max: 100 // max 100 requests per window
+  max: 100, // max 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // Middleware
@@ -29,7 +46,8 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Limit body size
+app.use(cookieParser());
 app.use(limiter);
 
 // Static files voor uploads
