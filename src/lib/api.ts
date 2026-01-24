@@ -1,6 +1,6 @@
 // API Configuration
-// Pas deze URL aan naar je eigen server
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// In development: proxy via Vite, in production: via environment variable
+export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Auth token management
 export const getAuthToken = (): string | null => {

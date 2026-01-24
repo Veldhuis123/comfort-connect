@@ -292,10 +292,10 @@ INSERT INTO products (id, name, brand, category, base_price, description, specs,
 
 -- =============================================
 -- Voorbeeld admin gebruiker (wijzig wachtwoord!)
--- Wachtwoord: admin123 (bcrypt hash)
+-- Wachtwoord: admin123 (bcrypt hash - $2a$ prefix voor Node.js bcryptjs)
 -- =============================================
 INSERT INTO admin_users (email, password_hash, name, role) VALUES
-('admin@rv-installatie.nl', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'admin');
+('admin@rv-installatie.nl', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'admin');
 
 -- =============================================
 -- Indexen voor betere performance
