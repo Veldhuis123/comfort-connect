@@ -143,10 +143,10 @@ CREATE TABLE IF NOT EXISTS products (
     image_url VARCHAR(500) NULL,
     
     -- Specificaties (JSON voor flexibiliteit per categorie)
-    specs JSON NOT NULL DEFAULT '{}',
+    specs JSON NOT NULL DEFAULT ('{}'),
     
     -- Features (array van strings)
-    features JSON NOT NULL DEFAULT '[]',
+    features JSON NOT NULL DEFAULT ('[]'),
     
     -- Beschrijving
     description TEXT NULL,
