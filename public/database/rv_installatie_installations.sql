@@ -75,8 +75,8 @@ CREATE TABLE IF NOT EXISTS installations (
     installed_by_technician_id INT NULL,
     
     -- Foto's en documenten (JSON array)
-    photos JSON DEFAULT '[]',
-    documents JSON DEFAULT '[]',
+    photos JSON DEFAULT ('[]'),
+    documents JSON DEFAULT ('[]'),
     
     -- Notities
     notes TEXT NULL,
@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS maintenance_records (
     
     maintenance_type ENUM('periodiek', 'storing', 'garantie', 'keuring') NOT NULL,
     description TEXT NOT NULL,
-    parts_replaced JSON DEFAULT '[]', -- Array van vervangen onderdelen
+    parts_replaced JSON DEFAULT ('[]'), -- Array van vervangen onderdelen
     
     -- Kosten
     labor_hours DECIMAL(4,2) NULL,
