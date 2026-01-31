@@ -77,7 +77,13 @@ const AdminInstallations = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [faultReports, setFaultReports] = useState<FaultReport[]>([]);
-  const [stats, setStats] = useState<InstallationStats | null>(null);
+  const [stats, setStats] = useState<InstallationStats>({
+    totalInstallations: 0,
+    maintenanceDue: 0,
+    leakCheckDue: 0,
+    openFaults: 0,
+    totalCO2Equivalent: 0
+  });
 
   // Dialogs
   const [showInstallationForm, setShowInstallationForm] = useState(false);
@@ -263,8 +269,7 @@ const AdminInstallations = () => {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
           <Card>
             <CardContent className="pt-4 sm:pt-6">
               <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
@@ -331,7 +336,6 @@ const AdminInstallations = () => {
             </CardContent>
           </Card>
         </div>
-      )}
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
