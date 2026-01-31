@@ -33,9 +33,10 @@ import {
 import { 
   Plus, Trash2, Edit, QrCode, Wrench, AlertTriangle, 
   Users, UserCog, Search, X, Thermometer, Calendar, MapPin,
-  FileText, ClipboardList, Eye
+  FileText, ClipboardList, Eye, Download
 } from "lucide-react";
 import { AircoInstallationWizard } from "./AircoInstallationWizard";
+import { CustomerSelector } from "./CustomerSelector";
 import {
   installationsApi,
   Installation,
@@ -576,12 +577,16 @@ const AdminInstallations = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Klanten</CardTitle>
-                <CardDescription>Beheer klantgegevens</CardDescription>
+                <CardDescription>Beheer klantgegevens - importeer uit e-Boekhouden of voeg handmatig toe</CardDescription>
               </div>
-              <Button onClick={() => setShowCustomerForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nieuwe Klant
-              </Button>
+              <div className="flex gap-2">
+                <CustomerSelector
+                  customers={customers}
+                  selectedCustomerId={0}
+                  onSelectCustomer={() => {}}
+                  onCustomerCreated={fetchData}
+                />
+              </div>
             </CardHeader>
             <CardContent>
               {customers.length === 0 ? (
@@ -688,20 +693,12 @@ const AdminInstallations = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Klant*</label>
-                <Select
-                  value={String(installationForm.customer_id)}
-                  onValueChange={(v) => setInstallationForm({ ...installationForm, customer_id: Number(v) })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecteer klant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>{c.contact_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CustomerSelector
+                  customers={customers}
+                  selectedCustomerId={installationForm.customer_id}
+                  onSelectCustomer={(id) => setInstallationForm({ ...installationForm, customer_id: id })}
+                  onCustomerCreated={fetchData}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium">Type*</label>
@@ -1191,6 +1188,7 @@ const AdminInstallations = () => {
             technicians={technicians}
             onComplete={handleAircoWizardComplete}
             onCancel={() => setShowAircoWizard(false)}
+            onCustomerCreated={fetchData}
           />
         </DialogContent>
       </Dialog>

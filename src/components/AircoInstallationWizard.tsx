@@ -35,6 +35,7 @@ import {
   defaultCommissioningData,
   defaultChecklist,
 } from "@/lib/installationTypes";
+import { CustomerSelector } from "./CustomerSelector";
 
 // Re-export types for backwards compatibility
 export type { ToolRegistration, CommissioningData, BRLChecklist };
@@ -44,6 +45,7 @@ interface AircoInstallationWizardProps {
   technicians: Technician[];
   onComplete: (data: CreateInstallation & { brl_checklist: BRLChecklist; commissioning_data: CommissioningData }) => void;
   onCancel: () => void;
+  onCustomerCreated?: () => void;
 }
 
 const steps = [
@@ -70,6 +72,7 @@ export const AircoInstallationWizard = ({
   technicians,
   onComplete,
   onCancel,
+  onCustomerCreated,
 }: AircoInstallationWizardProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [checklist, setChecklist] = useState<BRLChecklist>(defaultChecklist);
@@ -320,20 +323,12 @@ export const AircoInstallationWizard = ({
                   </div>
                 </div>
                 <div>
-                  <Label>Klant*</Label>
-                  <Select
-                    value={String(installationData.customer_id || "")}
-                    onValueChange={(v) => syncCustomerData(Number(v))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecteer klant" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>{c.contact_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CustomerSelector
+                    customers={customers}
+                    selectedCustomerId={installationData.customer_id}
+                    onSelectCustomer={(id) => syncCustomerData(id)}
+                    onCustomerCreated={onCustomerCreated}
+                  />
                 </div>
                 <div>
                   <Label>Uitvoerend monteur*</Label>
