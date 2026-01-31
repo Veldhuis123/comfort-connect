@@ -34,7 +34,7 @@ const getSessionToken = async () => {
     },
     body: JSON.stringify({
       accessToken: apiToken,
-      source: 'RV-Installatie-App'
+      source: 'RVInstall'
     })
   });
 
@@ -93,17 +93,86 @@ const apiRequest = async (method, endpoint, body = null) => {
 // =============================================
 router.get('/test', authMiddleware, async (req, res) => {
   try {
-    // Test by getting administrations
-    const administrations = await apiRequest('GET', '/administration');
+    // Check if API token is configured
+    const apiToken = process.env.EBOEKHOUDEN_API_TOKEN;
+    if (!apiToken) {
+      return res.status(500).json({ 
+        error: 'EBOEKHOUDEN_API_TOKEN niet geconfigureerd in .env',
+        details: 'Voeg EBOEKHOUDEN_API_TOKEN toe aan je .env bestand'
+      });
+    }
+
+    // Try to create session first
+    console.log('Testing e-Boekhouden connection...');
+    console.log('API Token present:', !!apiToken, 'Length:', apiToken.length);
+    
+    const sessionResponse = await fetch(`${EBOEKHOUDEN_API_URL}/session`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accessToken: apiToken,
+        source: 'RVInstall'
+      })
+    });
+
+    const sessionData = await sessionResponse.json().catch(() => ({}));
+    console.log('Session response status:', sessionResponse.status);
+    console.log('Session response:', JSON.stringify(sessionData));
+
+    if (!sessionResponse.ok) {
+      return res.status(500).json({ 
+        error: 'Sessie aanmaken mislukt',
+        details: sessionData.message || sessionData.title || `Status: ${sessionResponse.status}`,
+        code: sessionData.code
+      });
+    }
+
+    if (!sessionData.token) {
+      return res.status(500).json({ 
+        error: 'Geen token ontvangen',
+        details: 'Session response bevat geen token',
+        response: sessionData
+      });
+    }
+
+    // Update cache
+    sessionCache.token = sessionData.token;
+    const expiresInMs = (sessionData.expiresIn || 3300) * 1000;
+    sessionCache.expiresAt = new Date(Date.now() + expiresInMs - 60000);
+
+    // Try to get relations as a test (this works for normal users)
+    const testResponse = await fetch(`${EBOEKHOUDEN_API_URL}/relation?limit=1`, {
+      method: 'GET',
+      headers: {
+        'Authorization': sessionData.token,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    const testData = await testResponse.json().catch(() => ({}));
+    console.log('Test API call status:', testResponse.status);
+
+    if (!testResponse.ok) {
+      return res.status(500).json({ 
+        error: 'API test mislukt',
+        details: testData.message || testData.title || `Status: ${testResponse.status}`,
+        code: testData.code
+      });
+    }
     
     res.json({ 
       success: true, 
       message: 'Verbinding met e-Boekhouden succesvol',
-      administraties: administrations.length || 0
+      relaties: testData.count || 0
     });
   } catch (error) {
     console.error('e-Boekhouden test error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
