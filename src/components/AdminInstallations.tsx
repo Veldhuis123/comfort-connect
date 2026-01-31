@@ -14,6 +14,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,6 +35,7 @@ import {
   Users, UserCog, Search, X, Thermometer, Calendar, MapPin,
   FileText, ClipboardList, Eye
 } from "lucide-react";
+import { AircoInstallationWizard } from "./AircoInstallationWizard";
 import {
   installationsApi,
   Installation,
@@ -87,12 +98,17 @@ const AdminInstallations = () => {
 
   // Dialogs
   const [showInstallationForm, setShowInstallationForm] = useState(false);
+  const [showAircoWizard, setShowAircoWizard] = useState(false);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [showTechnicianForm, setShowTechnicianForm] = useState(false);
   const [showFGasForm, setShowFGasForm] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [selectedInstallation, setSelectedInstallation] = useState<Installation | null>(null);
   const [fgasLogs, setFgasLogs] = useState<FGasLog[]>([]);
+  
+  // Delete confirmations
+  const [deleteInstallationId, setDeleteInstallationId] = useState<number | null>(null);
+  const [deleteCustomerId, setDeleteCustomerId] = useState<number | null>(null);
 
   // Forms
   const [installationForm, setInstallationForm] = useState<CreateInstallation>({
@@ -266,6 +282,48 @@ const AdminInstallations = () => {
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`${baseUrl}/installatie/${qrCode}`)}`;
   };
 
+  const handleDeleteInstallation = async () => {
+    if (!deleteInstallationId) return;
+    try {
+      await installationsApi.deleteInstallation(deleteInstallationId);
+      toast({ title: "Installatie verwijderd" });
+      setDeleteInstallationId(null);
+      fetchData();
+    } catch (err) {
+      toast({ title: "Fout", description: "Kon installatie niet verwijderen", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!deleteCustomerId) return;
+    try {
+      await installationsApi.deleteCustomer(deleteCustomerId);
+      toast({ title: "Klant verwijderd" });
+      setDeleteCustomerId(null);
+      fetchData();
+    } catch (err: any) {
+      toast({ 
+        title: "Fout", 
+        description: err?.message || "Kon klant niet verwijderen", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleAircoWizardComplete = async (data: CreateInstallation & { brl_checklist: any }) => {
+    try {
+      const { brl_checklist, ...installationData } = data;
+      // Store BRL checklist in notes for now
+      const notes = `BRL 100 Checklist voltooid op ${new Date().toLocaleDateString('nl-NL')}`;
+      await installationsApi.createInstallation({ ...installationData, notes });
+      toast({ title: "Installatie succesvol aangemaakt", description: "BRL 100 checklist voltooid" });
+      setShowAircoWizard(false);
+      fetchData();
+    } catch (err) {
+      toast({ title: "Fout", description: "Kon installatie niet aanmaken", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats */}
@@ -367,10 +425,16 @@ const AdminInstallations = () => {
                   <CardTitle className="text-lg">Installaties</CardTitle>
                   <CardDescription className="text-xs sm:text-sm">Beheer alle geregistreerde installaties</CardDescription>
                 </div>
-                <Button size="sm" onClick={() => setShowInstallationForm(true)}>
-                  <Plus className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Nieuwe Installatie</span>
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setShowInstallationForm(true)}>
+                    <Plus className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Snel</span>
+                  </Button>
+                  <Button size="sm" onClick={() => setShowAircoWizard(true)}>
+                    <ClipboardList className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">BRL 100 Wizard</span>
+                  </Button>
+                </div>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -432,6 +496,14 @@ const AdminInstallations = () => {
                           </Button>
                           <Button variant="outline" size="sm" onClick={() => handleShowFGas(inst)}>
                             <ClipboardList className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setDeleteInstallationId(inst.id)}
+                            className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -516,24 +588,37 @@ const AdminInstallations = () => {
                 <p className="text-muted-foreground">Nog geen klanten</p>
               ) : (
                 <div className="space-y-4">
-                  {customers.map((customer) => (
-                    <div key={customer.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-semibold">{customer.contact_name}</h4>
-                          {customer.company_name && (
-                            <p className="text-sm text-muted-foreground">{customer.company_name}</p>
-                          )}
-                          <p className="text-sm">{customer.address_street} {customer.address_number}</p>
-                          <p className="text-sm">{customer.address_postal} {customer.address_city}</p>
-                          <p className="text-sm text-muted-foreground mt-1">{customer.email}</p>
-                        </div>
-                        <div className="text-right text-sm text-muted-foreground">
-                          {installations.filter(i => i.customer_id === customer.id).length} installaties
+                  {customers.map((customer) => {
+                    const customerInstallations = installations.filter(i => i.customer_id === customer.id).length;
+                    return (
+                      <div key={customer.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-semibold">{customer.contact_name}</h4>
+                            {customer.company_name && (
+                              <p className="text-sm text-muted-foreground">{customer.company_name}</p>
+                            )}
+                            <p className="text-sm">{customer.address_street} {customer.address_number}</p>
+                            <p className="text-sm">{customer.address_postal} {customer.address_city}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{customer.email}</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            <span className="text-sm text-muted-foreground">{customerInstallations} installaties</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDeleteCustomerId(customer.id)}
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              disabled={customerInstallations > 0}
+                              title={customerInstallations > 0 ? "Verwijder eerst alle installaties van deze klant" : "Klant verwijderen"}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -1097,6 +1182,54 @@ const AdminInstallations = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* BRL 100 Airco Installation Wizard */}
+      <Dialog open={showAircoWizard} onOpenChange={setShowAircoWizard}>
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+          <AircoInstallationWizard
+            customers={customers}
+            technicians={technicians}
+            onComplete={handleAircoWizardComplete}
+            onCancel={() => setShowAircoWizard(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Installation Confirmation */}
+      <AlertDialog open={deleteInstallationId !== null} onOpenChange={(open) => !open && setDeleteInstallationId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Installatie verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je deze installatie wilt verwijderen? Alle bijbehorende F-gas logs, onderhoudsrecords en storingen worden ook verwijderd. Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteInstallation} className="bg-destructive hover:bg-destructive/90">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Customer Confirmation */}
+      <AlertDialog open={deleteCustomerId !== null} onOpenChange={(open) => !open && setDeleteCustomerId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Klant verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je deze klant wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCustomer} className="bg-destructive hover:bg-destructive/90">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
