@@ -224,13 +224,14 @@ const EBoekhoudenSync = () => {
             <div className="mt-4 p-4 bg-muted rounded-lg text-sm">
               <p className="font-medium mb-2">Configuratie nodig:</p>
               <p className="text-muted-foreground">
-                Voeg de volgende environment variables toe aan je backend .env bestand:
+                Voeg de volgende environment variable toe aan je backend .env bestand:
               </p>
               <code className="block mt-2 p-2 bg-background rounded text-xs">
-                EBOEKHOUDEN_USERNAME=jouw_gebruikersnaam<br/>
-                EBOEKHOUDEN_CODE1=security_code_1<br/>
-                EBOEKHOUDEN_CODE2=security_code_2
+                EBOEKHOUDEN_API_TOKEN=jouw_api_token_hier
               </code>
+              <p className="text-muted-foreground mt-2 text-xs">
+                Maak een API-token aan via e-Boekhouden.nl → Instellingen → API-tokens
+              </p>
             </div>
           )}
         </CardContent>
