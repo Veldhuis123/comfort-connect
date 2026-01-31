@@ -263,68 +263,68 @@ const AdminInstallations = () => {
     <div className="space-y-6">
       {/* Stats */}
       {stats && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Thermometer className="w-6 h-6 text-blue-600" />
+            <CardContent className="pt-4 sm:pt-6">
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Thermometer className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.totalInstallations}</p>
-                  <p className="text-sm text-muted-foreground">Installaties</p>
+                <div className="text-center sm:text-left">
+                  <p className="text-xl sm:text-2xl font-bold">{stats.totalInstallations}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Installaties</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <Wrench className="w-6 h-6 text-yellow-600" />
+            <CardContent className="pt-4 sm:pt-6">
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.maintenanceDue}</p>
-                  <p className="text-sm text-muted-foreground">Onderhoud nodig</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <ClipboardList className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.leakCheckDue}</p>
-                  <p className="text-sm text-muted-foreground">Lekcontrole nodig</p>
+                <div className="text-center sm:text-left">
+                  <p className="text-xl sm:text-2xl font-bold">{stats.maintenanceDue}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Onderhoud</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
+            <CardContent className="pt-4 sm:pt-6">
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.openFaults}</p>
-                  <p className="text-sm text-muted-foreground">Open storingen</p>
+                <div className="text-center sm:text-left">
+                  <p className="text-xl sm:text-2xl font-bold">{stats.leakCheckDue}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Lekcontrole</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-green-600" />
+            <CardContent className="pt-4 sm:pt-6">
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stats.totalCO2Equivalent.toFixed(1)}</p>
-                  <p className="text-sm text-muted-foreground">Ton CO₂-eq</p>
+                <div className="text-center sm:text-left">
+                  <p className="text-xl sm:text-2xl font-bold">{stats.openFaults}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Storingen</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="col-span-2 sm:col-span-1">
+            <CardContent className="pt-4 sm:pt-6">
+              <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                </div>
+                <div className="text-center sm:text-left">
+                  <p className="text-xl sm:text-2xl font-bold">{stats.totalCO2Equivalent.toFixed(1)}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Ton CO₂-eq</p>
                 </div>
               </div>
             </CardContent>
@@ -334,22 +334,22 @@ const AdminInstallations = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="installations">
-            <Thermometer className="w-4 h-4 mr-2" />
-            Installaties ({installations.length})
+        <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="installations" className="text-xs sm:text-sm">
+            <Thermometer className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Installaties</span> ({installations.length})
           </TabsTrigger>
-          <TabsTrigger value="faults">
-            <AlertTriangle className="w-4 h-4 mr-2" />
-            Storingen ({faultReports.filter(f => f.status !== 'opgelost' && f.status !== 'gesloten').length})
+          <TabsTrigger value="faults" className="text-xs sm:text-sm">
+            <AlertTriangle className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Storingen</span> ({faultReports.filter(f => f.status !== 'opgelost' && f.status !== 'gesloten').length})
           </TabsTrigger>
-          <TabsTrigger value="customers">
-            <Users className="w-4 h-4 mr-2" />
-            Klanten ({customers.length})
+          <TabsTrigger value="customers" className="text-xs sm:text-sm">
+            <Users className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Klanten</span> ({customers.length})
           </TabsTrigger>
-          <TabsTrigger value="technicians">
-            <UserCog className="w-4 h-4 mr-2" />
-            Monteurs ({technicians.length})
+          <TabsTrigger value="technicians" className="text-xs sm:text-sm">
+            <UserCog className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Monteurs</span> ({technicians.length})
           </TabsTrigger>
         </TabsList>
 
@@ -357,23 +357,23 @@ const AdminInstallations = () => {
         <TabsContent value="installations">
           <Card>
             <CardHeader className="space-y-4">
-              <div className="flex flex-row items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                 <div>
-                  <CardTitle>Installaties</CardTitle>
-                  <CardDescription>Beheer alle geregistreerde installaties</CardDescription>
+                  <CardTitle className="text-lg">Installaties</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Beheer alle geregistreerde installaties</CardDescription>
                 </div>
-                <Button onClick={() => setShowInstallationForm(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nieuwe Installatie
+                <Button size="sm" onClick={() => setShowInstallationForm(true)}>
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Nieuwe Installatie</span>
                 </Button>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Zoek op naam, merk, model of klant..."
+                  placeholder="Zoeken..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 text-sm"
                 />
                 {searchQuery && (
                   <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -388,20 +388,20 @@ const AdminInstallations = () => {
               ) : filteredInstallations.length === 0 ? (
                 <p className="text-muted-foreground">Geen installaties gevonden</p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {filteredInstallations.map((inst) => (
-                    <div key={inst.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold">{inst.name}</h4>
-                            <Badge className={statusColors[inst.status]}>{inst.status}</Badge>
-                            <Badge variant="outline">{installationTypeLabels[inst.installation_type]}</Badge>
+                    <div key={inst.id} className="border rounded-lg p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
+                            <h4 className="font-semibold text-sm sm:text-base truncate">{inst.name}</h4>
+                            <Badge className={`${statusColors[inst.status]} text-xs`}>{inst.status}</Badge>
+                            <Badge variant="outline" className="text-xs">{installationTypeLabels[inst.installation_type]}</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-2">
                             {inst.brand} {inst.model} • {inst.refrigerant_type} ({inst.refrigerant_charge_kg} kg)
                           </p>
-                          <div className="flex gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Users className="w-3 h-3" />
                               {inst.customer_name}
@@ -421,7 +421,7 @@ const AdminInstallations = () => {
                             </p>
                           )}
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 mt-2 sm:mt-0">
                           <Button variant="outline" size="sm" onClick={() => handleShowQR(inst)}>
                             <QrCode className="w-4 h-4" />
                           </Button>

@@ -189,19 +189,19 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
       <header className="bg-background border-b border-border sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="font-heading text-xl font-bold">Admin Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Welkom, {user.name}</p>
+        <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
+          <div className="min-w-0">
+            <h1 className="font-heading text-lg sm:text-xl font-bold truncate">Admin Dashboard</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">Welkom, {user.name}</p>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={fetchData}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Vernieuwen
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="outline" size="sm" onClick={fetchData} className="h-8 px-2 sm:px-3">
+              <RefreshCw className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Vernieuwen</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Uitloggen
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="h-8 px-2 sm:px-3">
+              <LogOut className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Uitloggen</span>
             </Button>
           </div>
         </div>
@@ -216,55 +216,55 @@ const AdminDashboard = () => {
 
         {/* Stats */}
         {stats && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-6 sm:mb-8">
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-blue-600" />
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">{stats.total}</p>
-                    <p className="text-sm text-muted-foreground">Totaal offertes</p>
+                  <div className="text-center sm:text-left">
+                    <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Totaal offertes</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <BarChart3 className="w-6 h-6 text-green-600" />
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">{stats.thisMonth}</p>
-                    <p className="text-sm text-muted-foreground">Deze maand</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <Star className="w-6 h-6 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{reviews.length}</p>
-                    <p className="text-sm text-muted-foreground">Reviews</p>
+                  <div className="text-center sm:text-left">
+                    <p className="text-xl sm:text-2xl font-bold">{stats.thisMonth}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Deze maand</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <MessageSquare className="w-6 h-6 text-purple-600" />
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <Star className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">{messages.filter(m => !m.is_read).length}</p>
-                    <p className="text-sm text-muted-foreground">Ongelezen berichten</p>
+                  <div className="text-center sm:text-left">
+                    <p className="text-xl sm:text-2xl font-bold">{reviews.length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Reviews</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                  </div>
+                  <div className="text-center sm:text-left">
+                    <p className="text-xl sm:text-2xl font-bold">{messages.filter(m => !m.is_read).length}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Ongelezen</p>
                   </div>
                 </div>
               </CardContent>
@@ -274,34 +274,34 @@ const AdminDashboard = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="quotes" className="space-y-6">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="quotes">
-              <FileText className="w-4 h-4 mr-2" />
-              Offertes ({quotes.length})
+          <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+            <TabsTrigger value="quotes" className="text-xs sm:text-sm">
+              <FileText className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Offertes</span> ({quotes.length})
             </TabsTrigger>
-            <TabsTrigger value="reviews">
-              <Star className="w-4 h-4 mr-2" />
-              Reviews ({reviews.length})
+            <TabsTrigger value="reviews" className="text-xs sm:text-sm">
+              <Star className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Reviews</span> ({reviews.length})
             </TabsTrigger>
-            <TabsTrigger value="messages">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Berichten ({messages.length})
+            <TabsTrigger value="messages" className="text-xs sm:text-sm">
+              <MessageSquare className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Berichten</span> ({messages.length})
             </TabsTrigger>
-            <TabsTrigger value="calculators">
-              <Calculator className="w-4 h-4 mr-2" />
-              Calculatoren
+            <TabsTrigger value="calculators" className="text-xs sm:text-sm">
+              <Calculator className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Calculatoren</span>
             </TabsTrigger>
-            <TabsTrigger value="products">
-              <Package className="w-4 h-4 mr-2" />
-              Producten
+            <TabsTrigger value="products" className="text-xs sm:text-sm">
+              <Package className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Producten</span>
             </TabsTrigger>
-            <TabsTrigger value="installations">
-              <Thermometer className="w-4 h-4 mr-2" />
-              Installaties
+            <TabsTrigger value="installations" className="text-xs sm:text-sm">
+              <Thermometer className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Installaties</span>
             </TabsTrigger>
-            <TabsTrigger value="boekhouden">
-              <BookOpen className="w-4 h-4 mr-2" />
-              e-Boekhouden
+            <TabsTrigger value="boekhouden" className="text-xs sm:text-sm">
+              <BookOpen className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">e-Boekhouden</span>
             </TabsTrigger>
           </TabsList>
 
