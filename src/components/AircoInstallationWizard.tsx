@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ import {
 import { 
   CheckCircle2, Circle, ChevronRight, ChevronLeft, 
   ClipboardCheck, Thermometer, Wrench, FileCheck, 
-  AlertTriangle, Camera
+  AlertTriangle, QrCode, FileText, Settings
 } from "lucide-react";
 import {
   Customer,
@@ -25,15 +26,113 @@ import {
   REFRIGERANT_OPTIONS,
   InstallationType,
 } from "@/lib/installationsApi";
+import { generateCommissioningPDF } from "@/lib/commissioningPdfExport";
 
 interface AircoInstallationWizardProps {
   customers: Customer[];
   technicians: Technician[];
-  onComplete: (data: CreateInstallation & { brl_checklist: BRLChecklist }) => void;
+  onComplete: (data: CreateInstallation & { brl_checklist: BRLChecklist; commissioning_data: CommissioningData }) => void;
   onCancel: () => void;
 }
 
-interface BRLChecklist {
+// Gereedschap registratie
+export interface ToolRegistration {
+  manometer_brand: string;
+  manometer_serial: string;
+  manometer_calibration_date: string;
+  vacuum_pump_brand: string;
+  vacuum_pump_serial: string;
+  leak_detector_brand: string;
+  leak_detector_serial: string;
+  leak_detector_calibration_date: string;
+  refrigerant_scale_brand: string;
+  refrigerant_scale_serial: string;
+  refrigerant_scale_calibration_date: string;
+  recovery_unit_brand: string;
+  recovery_unit_serial: string;
+}
+
+// Inbedrijfstellingsrapport data
+export interface CommissioningData {
+  // Header
+  werkbon_number: string;
+  date: string;
+  
+  // Bedrijfsgegevens
+  company_name: string;
+  company_address: string;
+  company_postal: string;
+  company_city: string;
+  technician_name: string;
+  technician_certificate: string;
+  
+  // Klantgegevens
+  customer_name: string;
+  customer_contact: string;
+  customer_address: string;
+  customer_postal: string;
+  customer_city: string;
+  customer_phone: string;
+  
+  // Installatiegegevens
+  brand: string;
+  model_outdoor: string;
+  serial_outdoor: string;
+  model_indoor: string;
+  serial_indoor: string;
+  
+  // Multi-split units (optioneel)
+  model_indoor_2: string;
+  serial_indoor_2: string;
+  model_indoor_3: string;
+  serial_indoor_3: string;
+  
+  // Koudemiddel
+  installation_number: string;
+  refrigerant_type: string;
+  standard_charge: string;
+  additional_charge: string;
+  commissioning_date: string;
+  
+  // Werkzaamheden checkboxes
+  pressure_test_done: boolean;
+  leak_test_done: boolean;
+  vacuum_done: boolean;
+  leak_detection_done: boolean;
+  
+  // Vacumeerprocedure
+  vacuum_pressure: string;
+  vacuum_pressure_unit: string;
+  vacuum_hold_time: string;
+  vacuum_hold_unit: string;
+  
+  // Drukbeproeving
+  low_pressure_value: string;
+  low_pressure_unit: string;
+  high_pressure_value: string;
+  high_pressure_unit: string;
+  pressure_hold_time: string;
+  pressure_hold_unit: string;
+  
+  // Installatiecontrole
+  high_pressure_reading: string;
+  condensation_temp: string;
+  discharge_temp: string;
+  low_pressure_reading: string;
+  evaporation_temp: string;
+  suction_temp: string;
+  outdoor_temp: string;
+  indoor_temp: string;
+  outlet_temp: string;
+  
+  // Gereedschap
+  tools: ToolRegistration;
+  
+  // Opmerkingen
+  remarks: string;
+}
+
+export interface BRLChecklist {
   // Stap 1: Voorbereiding
   customer_informed: boolean;
   location_inspected: boolean;
@@ -86,6 +185,78 @@ interface BRLChecklist {
   notes_step7: string;
 }
 
+const defaultTools: ToolRegistration = {
+  manometer_brand: "",
+  manometer_serial: "",
+  manometer_calibration_date: "",
+  vacuum_pump_brand: "",
+  vacuum_pump_serial: "",
+  leak_detector_brand: "",
+  leak_detector_serial: "",
+  leak_detector_calibration_date: "",
+  refrigerant_scale_brand: "",
+  refrigerant_scale_serial: "",
+  refrigerant_scale_calibration_date: "",
+  recovery_unit_brand: "",
+  recovery_unit_serial: "",
+};
+
+const defaultCommissioningData: CommissioningData = {
+  werkbon_number: "",
+  date: new Date().toISOString().split("T")[0],
+  company_name: "R. Veldhuis Installatie",
+  company_address: "",
+  company_postal: "",
+  company_city: "",
+  technician_name: "",
+  technician_certificate: "",
+  customer_name: "",
+  customer_contact: "",
+  customer_address: "",
+  customer_postal: "",
+  customer_city: "",
+  customer_phone: "",
+  brand: "",
+  model_outdoor: "",
+  serial_outdoor: "",
+  model_indoor: "",
+  serial_indoor: "",
+  model_indoor_2: "",
+  serial_indoor_2: "",
+  model_indoor_3: "",
+  serial_indoor_3: "",
+  installation_number: "",
+  refrigerant_type: "R32",
+  standard_charge: "",
+  additional_charge: "",
+  commissioning_date: new Date().toISOString().split("T")[0],
+  pressure_test_done: false,
+  leak_test_done: false,
+  vacuum_done: false,
+  leak_detection_done: false,
+  vacuum_pressure: "",
+  vacuum_pressure_unit: "Pa/Micron",
+  vacuum_hold_time: "",
+  vacuum_hold_unit: "Min",
+  low_pressure_value: "",
+  low_pressure_unit: "kPa",
+  high_pressure_value: "",
+  high_pressure_unit: "kPa",
+  pressure_hold_time: "",
+  pressure_hold_unit: "Min",
+  high_pressure_reading: "",
+  condensation_temp: "",
+  discharge_temp: "",
+  low_pressure_reading: "",
+  evaporation_temp: "",
+  suction_temp: "",
+  outdoor_temp: "",
+  indoor_temp: "",
+  outlet_temp: "",
+  tools: defaultTools,
+  remarks: "",
+};
+
 const defaultChecklist: BRLChecklist = {
   customer_informed: false,
   location_inspected: false,
@@ -126,12 +297,13 @@ const defaultChecklist: BRLChecklist = {
 
 const steps = [
   { id: 1, title: "Voorbereiding", icon: ClipboardCheck },
-  { id: 2, title: "Materiaal", icon: Wrench },
-  { id: 3, title: "Buitenunit", icon: Thermometer },
-  { id: 4, title: "Binnenunit", icon: Thermometer },
-  { id: 5, title: "Leidingwerk", icon: Wrench },
-  { id: 6, title: "Vacuüm & Vullen", icon: Thermometer },
-  { id: 7, title: "Oplevering", icon: FileCheck },
+  { id: 2, title: "Gereedschap", icon: Settings },
+  { id: 3, title: "Materiaal", icon: Wrench },
+  { id: 4, title: "Buitenunit", icon: Thermometer },
+  { id: 5, title: "Binnenunit", icon: Thermometer },
+  { id: 6, title: "Leidingwerk", icon: Wrench },
+  { id: 7, title: "Vacuüm & Vullen", icon: Thermometer },
+  { id: 8, title: "Oplevering", icon: FileCheck },
 ];
 
 const installationTypeLabels: Record<InstallationType, string> = {
@@ -150,6 +322,9 @@ export const AircoInstallationWizard = ({
 }: AircoInstallationWizardProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [checklist, setChecklist] = useState<BRLChecklist>(defaultChecklist);
+  const [commissioningData, setCommissioningData] = useState<CommissioningData>(defaultCommissioningData);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [generatedQrCode, setGeneratedQrCode] = useState<string | null>(null);
   
   const [installationData, setInstallationData] = useState<CreateInstallation>({
     customer_id: 0,
@@ -167,16 +342,64 @@ export const AircoInstallationWizard = ({
     setChecklist((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updateCommissioning = (key: keyof CommissioningData, value: string | boolean | ToolRegistration) => {
+    setCommissioningData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const updateTools = (key: keyof ToolRegistration, value: string) => {
+    setCommissioningData((prev) => ({
+      ...prev,
+      tools: { ...prev.tools, [key]: value },
+    }));
+  };
+
+  // Synchroniseer klant/monteur data
+  const syncCustomerData = (customerId: number) => {
+    const customer = customers.find((c) => c.id === customerId);
+    if (customer) {
+      setCommissioningData((prev) => ({
+        ...prev,
+        customer_name: customer.company_name || "",
+        customer_contact: customer.contact_name,
+        customer_address: `${customer.address_street || ""} ${customer.address_number || ""}`.trim(),
+        customer_postal: customer.address_postal || "",
+        customer_city: customer.address_city || "",
+        customer_phone: customer.phone || "",
+      }));
+    }
+    setInstallationData((prev) => ({ ...prev, customer_id: customerId }));
+  };
+
+  const syncTechnicianData = (technicianId: number) => {
+    const technician = technicians.find((t) => t.id === technicianId);
+    if (technician) {
+      setCommissioningData((prev) => ({
+        ...prev,
+        technician_name: technician.name,
+        technician_certificate: technician.fgas_certificate_number || "",
+      }));
+    }
+    setInstallationData((prev) => ({ ...prev, installed_by_technician_id: technicianId }));
+  };
+
   const getStepCompletion = (step: number): number => {
     const stepChecks: Record<number, (keyof BRLChecklist)[]> = {
       1: ["customer_informed", "location_inspected", "electrical_capacity_checked", "condensate_drain_planned"],
-      2: ["equipment_checked", "refrigerant_verified", "tools_calibrated", "safety_equipment_present"],
-      3: ["outdoor_location_suitable", "outdoor_mounted_level", "outdoor_clearance_ok", "outdoor_vibration_dampened"],
-      4: ["indoor_location_suitable", "indoor_mounted_level", "indoor_airflow_ok", "condensate_connected"],
-      5: ["pipes_insulated", "pipes_protected", "pipes_leak_tested", "electrical_connected"],
-      6: ["vacuum_achieved", "vacuum_held", "refrigerant_charged", "charge_recorded"],
-      7: ["cooling_tested", "heating_tested", "controls_explained", "documentation_handed"],
+      2: [], // Gereedschap - geen checklist items, alleen data entry
+      3: ["equipment_checked", "refrigerant_verified", "tools_calibrated", "safety_equipment_present"],
+      4: ["outdoor_location_suitable", "outdoor_mounted_level", "outdoor_clearance_ok", "outdoor_vibration_dampened"],
+      5: ["indoor_location_suitable", "indoor_mounted_level", "indoor_airflow_ok", "condensate_connected"],
+      6: ["pipes_insulated", "pipes_protected", "pipes_leak_tested", "electrical_connected"],
+      7: ["vacuum_achieved", "vacuum_held", "refrigerant_charged", "charge_recorded"],
+      8: ["cooling_tested", "heating_tested", "controls_explained", "documentation_handed"],
     };
+    
+    // Voor stap 2 (gereedschap), check of minstens 1 gereedschap is ingevuld
+    if (step === 2) {
+      const tools = commissioningData.tools;
+      const hasTools = tools.manometer_serial || tools.vacuum_pump_serial || tools.leak_detector_serial;
+      return hasTools ? 100 : 0;
+    }
     
     const checks = stepChecks[step] || [];
     const completed = checks.filter((key) => checklist[key] === true).length;
@@ -186,18 +409,37 @@ export const AircoInstallationWizard = ({
   const isStepComplete = (step: number): boolean => getStepCompletion(step) === 100;
 
   const canComplete = (): boolean => {
-    // Check all mandatory fields
     if (!installationData.customer_id || !installationData.name || 
         !installationData.brand || !installationData.model ||
         !installationData.refrigerant_charge_kg || !installationData.installed_by_technician_id) {
       return false;
     }
-    // All steps must be complete
     return steps.every((_, i) => isStepComplete(i + 1));
   };
 
+  const handleGeneratePDF = async () => {
+    // Combineer alle data
+    const fullCommissioningData: CommissioningData = {
+      ...commissioningData,
+      brand: installationData.brand,
+      model_outdoor: installationData.model,
+      serial_outdoor: installationData.serial_number || "",
+      refrigerant_type: installationData.refrigerant_type || "R32",
+      standard_charge: String(installationData.refrigerant_charge_kg || 0),
+      commissioning_date: installationData.installation_date || new Date().toISOString().split("T")[0],
+    };
+
+    const { qrCodeDataUrl } = await generateCommissioningPDF(fullCommissioningData, installationData.name);
+    setGeneratedQrCode(qrCodeDataUrl);
+    setShowPdfPreview(true);
+  };
+
   const handleComplete = () => {
-    onComplete({ ...installationData, brl_checklist: checklist });
+    onComplete({ 
+      ...installationData, 
+      brl_checklist: checklist,
+      commissioning_data: commissioningData
+    });
   };
 
   const CheckItem = ({ 
@@ -239,8 +481,8 @@ export const AircoInstallationWizard = ({
       {/* Progress Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold">BRL 100 Installatie Stappenplan</h2>
-          <p className="text-sm text-muted-foreground">Airco installatie volgens certificeringsrichtlijn</p>
+          <h2 className="text-xl font-bold">BRL 100 Inbedrijfstelling Airconditioning</h2>
+          <p className="text-sm text-muted-foreground">Conform certificeringsrichtlijn BRL 100/200</p>
         </div>
         <Badge variant="outline" className="text-lg px-4 py-1">
           Stap {currentStep} / {steps.length}
@@ -259,7 +501,7 @@ export const AircoInstallationWizard = ({
             <button
               key={step.id}
               onClick={() => setCurrentStep(step.id)}
-              className={`flex-1 min-w-[100px] p-2 rounded-lg border-2 transition-all ${
+              className={`flex-1 min-w-[90px] p-2 rounded-lg border-2 transition-all ${
                 isActive 
                   ? "border-primary bg-primary/10" 
                   : isComplete 
@@ -293,13 +535,14 @@ export const AircoInstallationWizard = ({
             {steps[currentStep - 1].title}
           </CardTitle>
           <CardDescription>
-            {currentStep === 1 && "Controleer voorbereidende werkzaamheden"}
-            {currentStep === 2 && "Controleer materiaal en gereedschap"}
-            {currentStep === 3 && "Installeer en controleer buitenunit"}
-            {currentStep === 4 && "Installeer en controleer binnenunit"}
-            {currentStep === 5 && "Leg leidingwerk aan en test"}
-            {currentStep === 6 && "Vacuümtrekken en koudemiddel vullen"}
-            {currentStep === 7 && "Test systeem en lever op aan klant"}
+            {currentStep === 1 && "Controleer voorbereidende werkzaamheden en vul basisgegevens in"}
+            {currentStep === 2 && "Registreer gebruikte gereedschap met serienummers en kalibratiedata"}
+            {currentStep === 3 && "Controleer materiaal en apparatuur"}
+            {currentStep === 4 && "Installeer en controleer buitenunit"}
+            {currentStep === 5 && "Installeer en controleer binnenunit(s)"}
+            {currentStep === 6 && "Leg leidingwerk aan en test"}
+            {currentStep === 7 && "Vacuümtrekken, druktest en koudemiddel vullen"}
+            {currentStep === 8 && "Test systeem, meet waarden en lever op aan klant"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -307,11 +550,29 @@ export const AircoInstallationWizard = ({
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Werkbonnummer</Label>
+                    <Input
+                      value={commissioningData.werkbon_number}
+                      onChange={(e) => updateCommissioning("werkbon_number", e.target.value)}
+                      placeholder="WB-2026-001"
+                    />
+                  </div>
+                  <div>
+                    <Label>Datum</Label>
+                    <Input
+                      type="date"
+                      value={commissioningData.date}
+                      onChange={(e) => updateCommissioning("date", e.target.value)}
+                    />
+                  </div>
+                </div>
                 <div>
-                  <label className="text-sm font-medium">Klant*</label>
+                  <Label>Klant*</Label>
                   <Select
                     value={String(installationData.customer_id || "")}
-                    onValueChange={(v) => setInstallationData({ ...installationData, customer_id: Number(v) })}
+                    onValueChange={(v) => syncCustomerData(Number(v))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecteer klant" />
@@ -324,10 +585,10 @@ export const AircoInstallationWizard = ({
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Uitvoerend monteur*</label>
+                  <Label>Uitvoerend monteur*</Label>
                   <Select
                     value={String(installationData.installed_by_technician_id || "")}
-                    onValueChange={(v) => setInstallationData({ ...installationData, installed_by_technician_id: Number(v) })}
+                    onValueChange={(v) => syncTechnicianData(Number(v))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecteer monteur" />
@@ -342,7 +603,7 @@ export const AircoInstallationWizard = ({
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Naam installatie*</label>
+                  <Label>Naam installatie*</Label>
                   <Input
                     value={installationData.name}
                     onChange={(e) => setInstallationData({ ...installationData, name: e.target.value })}
@@ -350,11 +611,14 @@ export const AircoInstallationWizard = ({
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Installatiedatum*</label>
+                  <Label>Inbedrijfstellingsdatum*</Label>
                   <Input
                     type="date"
                     value={installationData.installation_date}
-                    onChange={(e) => setInstallationData({ ...installationData, installation_date: e.target.value })}
+                    onChange={(e) => {
+                      setInstallationData({ ...installationData, installation_date: e.target.value });
+                      updateCommissioning("commissioning_date", e.target.value);
+                    }}
                   />
                 </div>
               </div>
@@ -388,7 +652,7 @@ export const AircoInstallationWizard = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Opmerkingen voorbereiding</label>
+                <Label>Opmerkingen voorbereiding</Label>
                 <Textarea
                   value={checklist.notes_step1}
                   onChange={(e) => updateChecklist("notes_step1", e.target.value)}
@@ -399,35 +663,168 @@ export const AircoInstallationWizard = ({
             </div>
           )}
 
-          {/* Step 2: Materiaal */}
+          {/* Step 2: Gereedschap registratie */}
           {currentStep === 2 && (
+            <div className="space-y-6">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>BRL 100 Vereiste:</strong> Registreer het gebruikte meetgereedschap met serienummers en kalibratiedata voor traceerbaarheid.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium">Manometerset</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div>
+                    <Label>Merk/Type</Label>
+                    <Input
+                      value={commissioningData.tools.manometer_brand}
+                      onChange={(e) => updateTools("manometer_brand", e.target.value)}
+                      placeholder="bijv. Testo 557"
+                    />
+                  </div>
+                  <div>
+                    <Label>Serienummer*</Label>
+                    <Input
+                      value={commissioningData.tools.manometer_serial}
+                      onChange={(e) => updateTools("manometer_serial", e.target.value)}
+                      placeholder="SN-12345678"
+                    />
+                  </div>
+                  <div>
+                    <Label>Kalibratiedatum</Label>
+                    <Input
+                      type="date"
+                      value={commissioningData.tools.manometer_calibration_date}
+                      onChange={(e) => updateTools("manometer_calibration_date", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium">Vacuümpomp</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div>
+                    <Label>Merk/Type</Label>
+                    <Input
+                      value={commissioningData.tools.vacuum_pump_brand}
+                      onChange={(e) => updateTools("vacuum_pump_brand", e.target.value)}
+                      placeholder="bijv. Rothenberger Roairvac"
+                    />
+                  </div>
+                  <div>
+                    <Label>Serienummer</Label>
+                    <Input
+                      value={commissioningData.tools.vacuum_pump_serial}
+                      onChange={(e) => updateTools("vacuum_pump_serial", e.target.value)}
+                      placeholder="SN-12345678"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium">Elektronische Lekdetector</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div>
+                    <Label>Merk/Type</Label>
+                    <Input
+                      value={commissioningData.tools.leak_detector_brand}
+                      onChange={(e) => updateTools("leak_detector_brand", e.target.value)}
+                      placeholder="bijv. Inficon TEK-Mate"
+                    />
+                  </div>
+                  <div>
+                    <Label>Serienummer</Label>
+                    <Input
+                      value={commissioningData.tools.leak_detector_serial}
+                      onChange={(e) => updateTools("leak_detector_serial", e.target.value)}
+                      placeholder="SN-12345678"
+                    />
+                  </div>
+                  <div>
+                    <Label>Kalibratiedatum</Label>
+                    <Input
+                      type="date"
+                      value={commissioningData.tools.leak_detector_calibration_date}
+                      onChange={(e) => updateTools("leak_detector_calibration_date", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium">Koudemiddelweegschaal</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div>
+                    <Label>Merk/Type</Label>
+                    <Input
+                      value={commissioningData.tools.refrigerant_scale_brand}
+                      onChange={(e) => updateTools("refrigerant_scale_brand", e.target.value)}
+                      placeholder="bijv. CPS CC220"
+                    />
+                  </div>
+                  <div>
+                    <Label>Serienummer</Label>
+                    <Input
+                      value={commissioningData.tools.refrigerant_scale_serial}
+                      onChange={(e) => updateTools("refrigerant_scale_serial", e.target.value)}
+                      placeholder="SN-12345678"
+                    />
+                  </div>
+                  <div>
+                    <Label>Kalibratiedatum</Label>
+                    <Input
+                      type="date"
+                      value={commissioningData.tools.refrigerant_scale_calibration_date}
+                      onChange={(e) => updateTools("refrigerant_scale_calibration_date", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium">Koudemiddel Terugwinunit (optioneel)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
+                  <div>
+                    <Label>Merk/Type</Label>
+                    <Input
+                      value={commissioningData.tools.recovery_unit_brand}
+                      onChange={(e) => updateTools("recovery_unit_brand", e.target.value)}
+                      placeholder="bijv. Mastercool 69100"
+                    />
+                  </div>
+                  <div>
+                    <Label>Serienummer</Label>
+                    <Input
+                      value={commissioningData.tools.recovery_unit_serial}
+                      onChange={(e) => updateTools("recovery_unit_serial", e.target.value)}
+                      placeholder="SN-12345678"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Materiaal */}
+          {currentStep === 3 && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <label className="text-sm font-medium">Merk*</label>
+                  <Label>Merk*</Label>
                   <Input
                     value={installationData.brand}
-                    onChange={(e) => setInstallationData({ ...installationData, brand: e.target.value })}
+                    onChange={(e) => {
+                      setInstallationData({ ...installationData, brand: e.target.value });
+                      updateCommissioning("brand", e.target.value);
+                    }}
                     placeholder="bijv. Daikin"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Model*</label>
-                  <Input
-                    value={installationData.model}
-                    onChange={(e) => setInstallationData({ ...installationData, model: e.target.value })}
-                    placeholder="bijv. Perfera FTXM25"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Serienummer</label>
-                  <Input
-                    value={installationData.serial_number || ""}
-                    onChange={(e) => setInstallationData({ ...installationData, serial_number: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Type</label>
+                  <Label>Type</Label>
                   <Select
                     value={installationData.installation_type}
                     onValueChange={(v) => setInstallationData({ ...installationData, installation_type: v as InstallationType })}
@@ -441,6 +838,94 @@ export const AircoInstallationWizard = ({
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-medium">Buitenunit</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Modelnummer buitenunit*</Label>
+                    <Input
+                      value={commissioningData.model_outdoor || installationData.model}
+                      onChange={(e) => {
+                        setInstallationData({ ...installationData, model: e.target.value });
+                        updateCommissioning("model_outdoor", e.target.value);
+                      }}
+                      placeholder="bijv. RXM25N"
+                    />
+                  </div>
+                  <div>
+                    <Label>Serienummer buitenunit</Label>
+                    <Input
+                      value={commissioningData.serial_outdoor || installationData.serial_number || ""}
+                      onChange={(e) => {
+                        setInstallationData({ ...installationData, serial_number: e.target.value });
+                        updateCommissioning("serial_outdoor", e.target.value);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-medium">Binnenunit 1</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Modelnummer binnenunit*</Label>
+                    <Input
+                      value={commissioningData.model_indoor}
+                      onChange={(e) => updateCommissioning("model_indoor", e.target.value)}
+                      placeholder="bijv. FTXM25R"
+                    />
+                  </div>
+                  <div>
+                    <Label>Serienummer binnenunit</Label>
+                    <Input
+                      value={commissioningData.serial_indoor}
+                      onChange={(e) => updateCommissioning("serial_indoor", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-medium text-muted-foreground">Indien multisplit: Binnenunit 2</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Modelnummer binnenunit 2</Label>
+                    <Input
+                      value={commissioningData.model_indoor_2}
+                      onChange={(e) => updateCommissioning("model_indoor_2", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Serienummer binnenunit 2</Label>
+                    <Input
+                      value={commissioningData.serial_indoor_2}
+                      onChange={(e) => updateCommissioning("serial_indoor_2", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-medium text-muted-foreground">Indien multisplit: Binnenunit 3</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Modelnummer binnenunit 3</Label>
+                    <Input
+                      value={commissioningData.model_indoor_3}
+                      onChange={(e) => updateCommissioning("model_indoor_3", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Serienummer binnenunit 3</Label>
+                    <Input
+                      value={commissioningData.serial_indoor_3}
+                      onChange={(e) => updateCommissioning("serial_indoor_3", e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -473,7 +958,7 @@ export const AircoInstallationWizard = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Opmerkingen materiaal</label>
+                <Label>Opmerkingen materiaal</Label>
                 <Textarea
                   value={checklist.notes_step2}
                   onChange={(e) => updateChecklist("notes_step2", e.target.value)}
@@ -484,11 +969,11 @@ export const AircoInstallationWizard = ({
             </div>
           )}
 
-          {/* Step 3: Buitenunit */}
-          {currentStep === 3 && (
+          {/* Step 4: Buitenunit */}
+          {currentStep === 4 && (
             <div className="space-y-6">
               <div className="p-4 bg-muted/30 rounded-lg">
-                <label className="text-sm font-medium">Locatie omschrijving buitenunit</label>
+                <Label>Locatie omschrijving buitenunit</Label>
                 <Input
                   value={installationData.location_description || ""}
                   onChange={(e) => setInstallationData({ ...installationData, location_description: e.target.value })}
@@ -525,7 +1010,7 @@ export const AircoInstallationWizard = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Opmerkingen buitenunit</label>
+                <Label>Opmerkingen buitenunit</Label>
                 <Textarea
                   value={checklist.notes_step3}
                   onChange={(e) => updateChecklist("notes_step3", e.target.value)}
@@ -536,8 +1021,8 @@ export const AircoInstallationWizard = ({
             </div>
           )}
 
-          {/* Step 4: Binnenunit */}
-          {currentStep === 4 && (
+          {/* Step 5: Binnenunit */}
+          {currentStep === 5 && (
             <div className="space-y-6">
               <div className="space-y-2">
                 <h4 className="font-medium text-sm">Checklist Binnenunit</h4>
@@ -568,7 +1053,7 @@ export const AircoInstallationWizard = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Opmerkingen binnenunit</label>
+                <Label>Opmerkingen binnenunit</Label>
                 <Textarea
                   value={checklist.notes_step4}
                   onChange={(e) => updateChecklist("notes_step4", e.target.value)}
@@ -579,8 +1064,8 @@ export const AircoInstallationWizard = ({
             </div>
           )}
 
-          {/* Step 5: Leidingwerk */}
-          {currentStep === 5 && (
+          {/* Step 6: Leidingwerk */}
+          {currentStep === 6 && (
             <div className="space-y-6">
               <div className="space-y-2">
                 <h4 className="font-medium text-sm">Checklist Leidingwerk</h4>
@@ -611,7 +1096,7 @@ export const AircoInstallationWizard = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Opmerkingen leidingwerk</label>
+                <Label>Opmerkingen leidingwerk</Label>
                 <Textarea
                   value={checklist.notes_step5}
                   onChange={(e) => updateChecklist("notes_step5", e.target.value)}
@@ -622,48 +1107,80 @@ export const AircoInstallationWizard = ({
             </div>
           )}
 
-          {/* Step 6: Vacuüm & Vullen */}
-          {currentStep === 6 && (
+          {/* Step 7: Vacuüm & Vullen */}
+          {currentStep === 7 && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                <div>
-                  <label className="text-sm font-medium">Koudemiddel*</label>
-                  <Select
-                    value={installationData.refrigerant_type}
-                    onValueChange={(v) => setInstallationData({ 
-                      ...installationData, 
-                      refrigerant_type: v,
-                      refrigerant_gwp: REFRIGERANT_GWP[v] || 0
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {REFRIGERANT_OPTIONS.map((r) => (
-                        <SelectItem key={r} value={r}>{r} (GWP: {REFRIGERANT_GWP[r]})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Koudemiddel gegevens */}
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-medium">Koudemiddel gegevens</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <Label>Installatienummer</Label>
+                    <Input
+                      value={commissioningData.installation_number}
+                      onChange={(e) => updateCommissioning("installation_number", e.target.value)}
+                      placeholder="INS-2026-001"
+                    />
+                  </div>
+                  <div>
+                    <Label>Type koudemiddel*</Label>
+                    <Select
+                      value={installationData.refrigerant_type}
+                      onValueChange={(v) => {
+                        setInstallationData({ 
+                          ...installationData, 
+                          refrigerant_type: v,
+                          refrigerant_gwp: REFRIGERANT_GWP[v] || 0
+                        });
+                        updateCommissioning("refrigerant_type", v);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {REFRIGERANT_OPTIONS.map((r) => (
+                          <SelectItem key={r} value={r}>{r} (GWP: {REFRIGERANT_GWP[r]})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Standaard inhoud (kg)*</Label>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={commissioningData.standard_charge || installationData.refrigerant_charge_kg || ""}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        setInstallationData({ ...installationData, refrigerant_charge_kg: val });
+                        updateCommissioning("standard_charge", e.target.value);
+                      }}
+                      placeholder="0.85"
+                    />
+                  </div>
+                  <div>
+                    <Label>Bijvulling (kg)</Label>
+                    <Input
+                      type="number"
+                      step="0.001"
+                      value={commissioningData.additional_charge}
+                      onChange={(e) => updateCommissioning("additional_charge", e.target.value)}
+                      placeholder="0.00"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Vulling (kg)*</label>
-                  <Input
-                    type="number"
-                    step="0.001"
-                    value={installationData.refrigerant_charge_kg || ""}
-                    onChange={(e) => setInstallationData({ 
-                      ...installationData, 
-                      refrigerant_charge_kg: parseFloat(e.target.value) || 0 
-                    })}
-                    placeholder="bijv. 0.85"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <div className="p-3 bg-background rounded-lg border w-full text-center">
+                <div className="flex items-center gap-4 pt-2">
+                  <div className="p-3 bg-background rounded-lg border text-center">
+                    <p className="text-xs text-muted-foreground">Totale vulling</p>
+                    <p className="text-lg font-bold">
+                      {(parseFloat(commissioningData.standard_charge || "0") + parseFloat(commissioningData.additional_charge || "0")).toFixed(3)} kg
+                    </p>
+                  </div>
+                  <div className="p-3 bg-background rounded-lg border text-center">
                     <p className="text-xs text-muted-foreground">CO₂-equivalent</p>
                     <p className="text-lg font-bold">
-                      {((installationData.refrigerant_charge_kg || 0) * (installationData.refrigerant_gwp || 0) / 1000).toFixed(2)} ton
+                      {(((parseFloat(commissioningData.standard_charge || "0") + parseFloat(commissioningData.additional_charge || "0")) * (installationData.refrigerant_gwp || 0)) / 1000).toFixed(2)} ton
                     </p>
                   </div>
                 </div>
@@ -677,6 +1194,186 @@ export const AircoInstallationWizard = ({
                   </span>
                 </div>
               )}
+
+              {/* Werkzaamheden checkboxes */}
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-medium">Uitgevoerde werkzaamheden</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="pressure_test"
+                      checked={commissioningData.pressure_test_done}
+                      onCheckedChange={(v) => updateCommissioning("pressure_test_done", v as boolean)}
+                    />
+                    <Label htmlFor="pressure_test">Drukbeproeving</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="leak_test"
+                      checked={commissioningData.leak_test_done}
+                      onCheckedChange={(v) => updateCommissioning("leak_test_done", v as boolean)}
+                    />
+                    <Label htmlFor="leak_test">Lekdichtheidscontrole</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="vacuum"
+                      checked={commissioningData.vacuum_done}
+                      onCheckedChange={(v) => updateCommissioning("vacuum_done", v as boolean)}
+                    />
+                    <Label htmlFor="vacuum">Vacumeren</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="leak_detection"
+                      checked={commissioningData.leak_detection_done}
+                      onCheckedChange={(v) => updateCommissioning("leak_detection_done", v as boolean)}
+                    />
+                    <Label htmlFor="leak_detection">Lekdetectie</Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vacumeerprocedure */}
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-medium">Resultaten vacumeerprocedure</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label>Bereikte vacuümdruk</Label>
+                      <Input
+                        type="number"
+                        value={commissioningData.vacuum_pressure}
+                        onChange={(e) => updateCommissioning("vacuum_pressure", e.target.value)}
+                        placeholder="500"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <Label>Eenheid</Label>
+                      <Select
+                        value={commissioningData.vacuum_pressure_unit}
+                        onValueChange={(v) => updateCommissioning("vacuum_pressure_unit", v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pa/Micron">Pa/Micron</SelectItem>
+                          <SelectItem value="mbar">mbar</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label>Standtijd</Label>
+                      <Input
+                        type="number"
+                        value={commissioningData.vacuum_hold_time}
+                        onChange={(e) => updateCommissioning("vacuum_hold_time", e.target.value)}
+                        placeholder="15"
+                      />
+                    </div>
+                    <div className="w-32">
+                      <Label>Eenheid</Label>
+                      <Select
+                        value={commissioningData.vacuum_hold_unit}
+                        onValueChange={(v) => updateCommissioning("vacuum_hold_unit", v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Min">Min</SelectItem>
+                          <SelectItem value="Uur">Uur</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Drukbeproeving */}
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-medium">Resultaten drukbeproeving</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label>Lage druk gedeelte</Label>
+                      <Input
+                        type="number"
+                        value={commissioningData.low_pressure_value}
+                        onChange={(e) => updateCommissioning("low_pressure_value", e.target.value)}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <Label>Eenheid</Label>
+                      <Select
+                        value={commissioningData.low_pressure_unit}
+                        onValueChange={(v) => updateCommissioning("low_pressure_unit", v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="kPa">kPa</SelectItem>
+                          <SelectItem value="bar">bar</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label>Hoge druk gedeelte</Label>
+                      <Input
+                        type="number"
+                        value={commissioningData.high_pressure_value}
+                        onChange={(e) => updateCommissioning("high_pressure_value", e.target.value)}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <Label>Eenheid</Label>
+                      <Select
+                        value={commissioningData.high_pressure_unit}
+                        onValueChange={(v) => updateCommissioning("high_pressure_unit", v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="kPa">kPa</SelectItem>
+                          <SelectItem value="bar">bar</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Label>Standtijd</Label>
+                      <Input
+                        type="number"
+                        value={commissioningData.pressure_hold_time}
+                        onChange={(e) => updateCommissioning("pressure_hold_time", e.target.value)}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <Label>Eenheid</Label>
+                      <Select
+                        value={commissioningData.pressure_hold_unit}
+                        onValueChange={(v) => updateCommissioning("pressure_hold_unit", v)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Min">Min</SelectItem>
+                          <SelectItem value="Uur">Uur</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <div className="space-y-2">
                 <h4 className="font-medium text-sm">Checklist Vacuüm & Vullen</h4>
@@ -707,7 +1404,7 @@ export const AircoInstallationWizard = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Opmerkingen vacuüm & vullen</label>
+                <Label>Opmerkingen vacuüm & vullen</Label>
                 <Textarea
                   value={checklist.notes_step6}
                   onChange={(e) => updateChecklist("notes_step6", e.target.value)}
@@ -718,12 +1415,122 @@ export const AircoInstallationWizard = ({
             </div>
           )}
 
-          {/* Step 7: Oplevering */}
-          {currentStep === 7 && (
+          {/* Step 8: Oplevering */}
+          {currentStep === 8 && (
             <div className="space-y-6">
+              {/* Installatiecontrole meetwaarden */}
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-medium">Installatiecontrole - Meetwaarden</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Label className="w-48">Hoge druk</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={commissioningData.high_pressure_reading}
+                        onChange={(e) => updateCommissioning("high_pressure_reading", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">bar</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-48">Condensatietemperatuur</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={commissioningData.condensation_temp}
+                        onChange={(e) => updateCommissioning("condensation_temp", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">°C</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-48">Persgastemperatuur</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={commissioningData.discharge_temp}
+                        onChange={(e) => updateCommissioning("discharge_temp", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">°C</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-48">Buitentemperatuur</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={commissioningData.outdoor_temp}
+                        onChange={(e) => updateCommissioning("outdoor_temp", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">°C</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Label className="w-48">Lage druk</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={commissioningData.low_pressure_reading}
+                        onChange={(e) => updateCommissioning("low_pressure_reading", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">bar</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-48">Verdampingstemperatuur</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={commissioningData.evaporation_temp}
+                        onChange={(e) => updateCommissioning("evaporation_temp", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">°C</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-48">Zuiggastemperatuur</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={commissioningData.suction_temp}
+                        onChange={(e) => updateCommissioning("suction_temp", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">°C</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-48">Ruimtetemperatuur</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={commissioningData.indoor_temp}
+                        onChange={(e) => updateCommissioning("indoor_temp", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">°C</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-48">Uitblaastemp. binnenunit</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={commissioningData.outlet_temp}
+                        onChange={(e) => updateCommissioning("outlet_temp", e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">°C</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
                 <div>
-                  <label className="text-sm font-medium">Garantie tot</label>
+                  <Label>Garantie tot</Label>
                   <Input
                     type="date"
                     value={installationData.warranty_expires || ""}
@@ -731,7 +1538,7 @@ export const AircoInstallationWizard = ({
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Volgende onderhoudsbeurt</label>
+                  <Label>Volgende onderhoudsbeurt</Label>
                   <Input
                     type="date"
                     value={installationData.next_maintenance_date || ""}
@@ -769,12 +1576,12 @@ export const AircoInstallationWizard = ({
               </div>
 
               <div>
-                <label className="text-sm font-medium">Opmerkingen oplevering</label>
+                <Label>Opmerkingen</Label>
                 <Textarea
-                  value={checklist.notes_step7}
-                  onChange={(e) => updateChecklist("notes_step7", e.target.value)}
+                  value={commissioningData.remarks}
+                  onChange={(e) => updateCommissioning("remarks", e.target.value)}
                   placeholder="Opmerkingen klant, bijzonderheden, etc."
-                  rows={3}
+                  rows={4}
                 />
               </div>
 
@@ -782,17 +1589,55 @@ export const AircoInstallationWizard = ({
               <div className="p-4 bg-muted/30 rounded-lg space-y-2">
                 <h4 className="font-medium">Samenvatting</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="text-muted-foreground">Werkbonnummer:</span>
+                  <span>{commissioningData.werkbon_number || "-"}</span>
                   <span className="text-muted-foreground">Klant:</span>
                   <span>{customers.find(c => c.id === installationData.customer_id)?.contact_name || "-"}</span>
                   <span className="text-muted-foreground">Installatie:</span>
                   <span>{installationData.name || "-"}</span>
                   <span className="text-muted-foreground">Apparaat:</span>
-                  <span>{installationData.brand} {installationData.model}</span>
+                  <span>{installationData.brand} {commissioningData.model_outdoor}</span>
                   <span className="text-muted-foreground">Koudemiddel:</span>
-                  <span>{installationData.refrigerant_type} - {installationData.refrigerant_charge_kg} kg</span>
+                  <span>{installationData.refrigerant_type} - {(parseFloat(commissioningData.standard_charge || "0") + parseFloat(commissioningData.additional_charge || "0")).toFixed(3)} kg</span>
                   <span className="text-muted-foreground">CO₂-equivalent:</span>
-                  <span>{((installationData.refrigerant_charge_kg || 0) * (installationData.refrigerant_gwp || 0) / 1000).toFixed(2)} ton</span>
+                  <span>{(((parseFloat(commissioningData.standard_charge || "0") + parseFloat(commissioningData.additional_charge || "0")) * (installationData.refrigerant_gwp || 0)) / 1000).toFixed(2)} ton</span>
                 </div>
+              </div>
+
+              {/* PDF Preview & QR Code */}
+              {showPdfPreview && generatedQrCode && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-4">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="font-medium">Inbedrijfstellingsrapport gegenereerd!</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <img src={generatedQrCode} alt="QR Code" className="w-32 h-32 border rounded" />
+                    <div className="text-sm text-green-800">
+                      <p>Scan deze QR-code om het inbedrijfstellingsrapport te bekijken.</p>
+                      <p className="mt-2">De PDF is gedownload naar uw computer.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleGeneratePDF}
+                  className="flex-1"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Genereer PDF Rapport
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handleGeneratePDF}
+                  className="flex-1"
+                >
+                  <QrCode className="w-4 h-4 mr-2" />
+                  Genereer QR Code
+                </Button>
               </div>
             </div>
           )}
