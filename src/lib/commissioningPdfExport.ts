@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import logoImg from "@/assets/logo.png";
-import type { CommissioningData } from "@/components/AircoInstallationWizard";
+import type { CommissioningData } from "@/lib/installationTypes";
 
 export const generateCommissioningPDF = async (
   data: CommissioningData,
