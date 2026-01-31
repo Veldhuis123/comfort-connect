@@ -45,11 +45,12 @@ const getSessionToken = async () => {
 
   const data = await response.json();
   
-  // Cache session token (sessions are short-lived, assume 1 hour)
-  sessionCache.token = data.sessionToken;
-  sessionCache.expiresAt = new Date(Date.now() + 55 * 60 * 1000); // 55 minuten
+  // Cache session token (use expiresIn from response, or default to 55 minutes)
+  sessionCache.token = data.token;
+  const expiresInMs = (data.expiresIn || 3300) * 1000; // Convert seconds to ms
+  sessionCache.expiresAt = new Date(Date.now() + expiresInMs - 60000); // Buffer of 1 minute
   
-  return data.sessionToken;
+  return data.token;
 };
 
 // =============================================
