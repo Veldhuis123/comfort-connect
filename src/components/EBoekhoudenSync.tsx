@@ -40,22 +40,26 @@ interface Artikel {
   id: string;
   code: string;
   omschrijving: string;
-  groep: string;
-  eenheid: string;
-  inkoopprijs: number;
-  verkoopprijs: number;
-  btwCode: string;
+  groepId?: number;
+  eenheid?: string;
+  prijsExcl?: number;
+  prijsIncl?: number;
+  inkoopprijs?: number;
+  btwCode?: string;
+  actief?: boolean;
 }
 
 interface Factuur {
+  id?: string;
   factuurnummer: string;
-  relatiecode: string;
+  relatieId?: string;
   datum: string;
-  betalingstermijn: string;
-  totaalExclBTW: number;
-  totaalBTW: number;
-  totaalInclBTW: number;
-  totaalOpenstaand: number;
+  betalingstermijn?: number;
+  totaalExcl?: number;
+  totaalBtw?: number;
+  totaalIncl?: number;
+  openstaand?: number;
+  status?: string;
 }
 
 const EBoekhoudenSync = () => {
@@ -90,8 +94,9 @@ const EBoekhoudenSync = () => {
     setIsLoading(true);
     try {
       const data = await apiRequest<Relatie[]>('/eboekhouden/relaties');
-      setRelaties(data);
+      setRelaties(Array.isArray(data) ? data : []);
     } catch (error) {
+      console.error('Fetch relaties error:', error);
       toast({ title: "Fout bij ophalen klanten", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -101,9 +106,10 @@ const EBoekhoudenSync = () => {
   const fetchArtikelen = async () => {
     setIsLoading(true);
     try {
-      const data = await apiRequest<Artikel[]>('/eboekhouden/artikelen');
-      setArtikelen(data);
+      const data = await apiRequest<Artikel[]>('/eboekhouden/producten');
+      setArtikelen(Array.isArray(data) ? data : []);
     } catch (error) {
+      console.error('Fetch producten error:', error);
       toast({ title: "Fout bij ophalen producten", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -114,8 +120,9 @@ const EBoekhoudenSync = () => {
     setIsLoading(true);
     try {
       const data = await apiRequest<Factuur[]>('/eboekhouden/facturen');
-      setFacturen(data);
+      setFacturen(Array.isArray(data) ? data : []);
     } catch (error) {
+      console.error('Fetch facturen error:', error);
       toast({ title: "Fout bij ophalen facturen", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -453,8 +460,8 @@ const EBoekhoudenSync = () => {
                         <TableRow key={artikel.id}>
                           <TableCell className="font-mono text-sm">{artikel.code}</TableCell>
                           <TableCell>{artikel.omschrijving}</TableCell>
-                          <TableCell>{artikel.groep}</TableCell>
-                          <TableCell className="text-right">€{artikel.verkoopprijs.toFixed(2)}</TableCell>
+                          <TableCell>{artikel.groepId || '-'}</TableCell>
+                          <TableCell className="text-right">€{(artikel.prijsExcl || 0).toFixed(2)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -494,12 +501,12 @@ const EBoekhoudenSync = () => {
                       {facturen.map(factuur => (
                         <TableRow key={factuur.factuurnummer}>
                           <TableCell className="font-mono">{factuur.factuurnummer}</TableCell>
-                          <TableCell>{factuur.relatiecode}</TableCell>
+                          <TableCell>{factuur.relatieId || '-'}</TableCell>
                           <TableCell>{factuur.datum}</TableCell>
-                          <TableCell className="text-right">€{factuur.totaalInclBTW.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">€{(factuur.totaalIncl || 0).toFixed(2)}</TableCell>
                           <TableCell className="text-right">
-                            {factuur.totaalOpenstaand > 0 ? (
-                              <Badge variant="destructive">€{factuur.totaalOpenstaand.toFixed(2)}</Badge>
+                            {(factuur.openstaand || 0) > 0 ? (
+                              <Badge variant="destructive">€{(factuur.openstaand || 0).toFixed(2)}</Badge>
                             ) : (
                               <Badge variant="secondary">Betaald</Badge>
                             )}
