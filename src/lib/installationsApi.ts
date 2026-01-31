@@ -255,6 +255,8 @@ export const installationsApi = {
     apiRequest<{ id: number }>('/installations/customers', { method: 'POST', body: JSON.stringify(data) }),
   updateCustomer: (id: number, data: Partial<CreateCustomer>) =>
     apiRequest('/installations/customers/' + id, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCustomer: (id: number) =>
+    apiRequest('/installations/customers/' + id, { method: 'DELETE' }),
 
   // Technicians
   getTechnicians: () => apiRequest<Technician[]>('/installations/technicians'),

@@ -57,6 +57,29 @@ router.put('/customers/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// Delete customer
+router.delete('/customers/:id', authMiddleware, async (req, res) => {
+  try {
+    // Check if customer has installations
+    const [installations] = await pool.query(
+      'SELECT COUNT(*) as count FROM installations WHERE customer_id = ?',
+      [req.params.id]
+    );
+    
+    if (installations[0].count > 0) {
+      return res.status(400).json({ 
+        error: 'Kan klant niet verwijderen: er zijn nog installaties gekoppeld. Verwijder eerst de installaties.' 
+      });
+    }
+    
+    await pool.query('DELETE FROM customers WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting customer:', err);
+    res.status(500).json({ error: 'Kon klant niet verwijderen' });
+  }
+});
+
 // =============================================
 // TECHNICIANS
 // =============================================
