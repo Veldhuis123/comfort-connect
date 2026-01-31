@@ -324,7 +324,7 @@ const AdminInstallations = () => {
                   <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-xl sm:text-2xl font-bold">{(stats.totalCO2Equivalent ?? 0).toFixed(1)}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{Number(stats.totalCO2Equivalent || 0).toFixed(1)}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground">Ton CO₂-eq</p>
                 </div>
               </div>
@@ -416,9 +416,9 @@ const AdminInstallations = () => {
                               {new Date(inst.installation_date).toLocaleDateString('nl-NL')}
                             </span>
                           </div>
-                          {inst.co2_equivalent >= 5 && (
+                          {Number(inst.co2_equivalent || 0) >= 5 && (
                             <p className="text-xs text-orange-600 mt-2">
-                              ⚠️ {inst.co2_equivalent.toFixed(2)} ton CO₂-eq - Lekcontrole verplicht
+                              ⚠️ {Number(inst.co2_equivalent || 0).toFixed(2)} ton CO₂-eq - Lekcontrole verplicht
                             </p>
                           )}
                         </div>
