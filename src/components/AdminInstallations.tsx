@@ -126,18 +126,19 @@ const AdminInstallations = () => {
     setLoading(true);
     try {
       const [installationsData, customersData, techniciansData, faultsData, statsData] = await Promise.all([
-        installationsApi.getInstallations().catch(() => []),
-        installationsApi.getCustomers().catch(() => []),
-        installationsApi.getTechnicians().catch(() => []),
-        installationsApi.getAllFaultReports().catch(() => []),
-        installationsApi.getStats().catch(() => null),
+        installationsApi.getInstallations().catch((e) => { console.error('Installations error:', e); return []; }),
+        installationsApi.getCustomers().catch((e) => { console.error('Customers error:', e); return []; }),
+        installationsApi.getTechnicians().catch((e) => { console.error('Technicians error:', e); return []; }),
+        installationsApi.getAllFaultReports().catch((e) => { console.error('Faults error:', e); return []; }),
+        installationsApi.getStats().catch((e) => { console.error('Stats error:', e); return null; }),
       ]);
-      setInstallations(installationsData);
-      setCustomers(customersData);
-      setTechnicians(techniciansData);
-      setFaultReports(faultsData);
+      setInstallations(Array.isArray(installationsData) ? installationsData : []);
+      setCustomers(Array.isArray(customersData) ? customersData : []);
+      setTechnicians(Array.isArray(techniciansData) ? techniciansData : []);
+      setFaultReports(Array.isArray(faultsData) ? faultsData : []);
       setStats(statsData);
     } catch (err) {
+      console.error('FetchData error:', err);
       toast({ title: "Fout", description: "Kon gegevens niet laden", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -149,13 +150,13 @@ const AdminInstallations = () => {
   }, []);
 
   // Filter logic
-  const filteredInstallations = installations.filter((inst) => {
+  const filteredInstallations = (installations ?? []).filter((inst) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
-      inst.name.toLowerCase().includes(query) ||
-      inst.brand.toLowerCase().includes(query) ||
-      inst.model.toLowerCase().includes(query) ||
+      inst.name?.toLowerCase().includes(query) ||
+      inst.brand?.toLowerCase().includes(query) ||
+      inst.model?.toLowerCase().includes(query) ||
       inst.customer_name?.toLowerCase().includes(query) ||
       inst.customer_city?.toLowerCase().includes(query)
     );
@@ -271,7 +272,7 @@ const AdminInstallations = () => {
                   <Thermometer className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-xl sm:text-2xl font-bold">{stats.totalInstallations}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.totalInstallations ?? 0}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground">Installaties</p>
                 </div>
               </div>
@@ -284,7 +285,7 @@ const AdminInstallations = () => {
                   <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-xl sm:text-2xl font-bold">{stats.maintenanceDue}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.maintenanceDue ?? 0}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground">Onderhoud</p>
                 </div>
               </div>
@@ -297,7 +298,7 @@ const AdminInstallations = () => {
                   <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" />
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-xl sm:text-2xl font-bold">{stats.leakCheckDue}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.leakCheckDue ?? 0}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground">Lekcontrole</p>
                 </div>
               </div>
@@ -310,7 +311,7 @@ const AdminInstallations = () => {
                   <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-xl sm:text-2xl font-bold">{stats.openFaults}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.openFaults ?? 0}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground">Storingen</p>
                 </div>
               </div>
@@ -323,7 +324,7 @@ const AdminInstallations = () => {
                   <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 </div>
                 <div className="text-center sm:text-left">
-                  <p className="text-xl sm:text-2xl font-bold">{stats.totalCO2Equivalent.toFixed(1)}</p>
+                  <p className="text-xl sm:text-2xl font-bold">{(stats.totalCO2Equivalent ?? 0).toFixed(1)}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground">Ton CO₂-eq</p>
                 </div>
               </div>
@@ -337,19 +338,19 @@ const AdminInstallations = () => {
         <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
           <TabsTrigger value="installations" className="text-xs sm:text-sm">
             <Thermometer className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Installaties</span> ({installations.length})
+            <span className="hidden sm:inline">Installaties</span> ({installations?.length ?? 0})
           </TabsTrigger>
           <TabsTrigger value="faults" className="text-xs sm:text-sm">
             <AlertTriangle className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Storingen</span> ({faultReports.filter(f => f.status !== 'opgelost' && f.status !== 'gesloten').length})
+            <span className="hidden sm:inline">Storingen</span> ({(faultReports ?? []).filter(f => f.status !== 'opgelost' && f.status !== 'gesloten').length})
           </TabsTrigger>
           <TabsTrigger value="customers" className="text-xs sm:text-sm">
             <Users className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Klanten</span> ({customers.length})
+            <span className="hidden sm:inline">Klanten</span> ({customers?.length ?? 0})
           </TabsTrigger>
           <TabsTrigger value="technicians" className="text-xs sm:text-sm">
             <UserCog className="w-4 h-4 sm:mr-2" />
-            <span className="hidden sm:inline">Monteurs</span> ({technicians.length})
+            <span className="hidden sm:inline">Monteurs</span> ({technicians?.length ?? 0})
           </TabsTrigger>
         </TabsList>
 
