@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
+const logger = require('../services/logger');
 
 // =============================================
 // CUSTOMERS
@@ -243,9 +244,25 @@ router.post('/', authMiddleware, async (req, res) => {
        refrigerant_gwp, refrigerant_charge_kg, refrigerant_charge_kg, installation_date]
     );
     
+    // BRL 100 Audit log
+    logger.installation('CREATED', {
+      installation_id: result.insertId,
+      qr_code,
+      customer_id,
+      name,
+      brand,
+      model,
+      refrigerant_type,
+      refrigerant_charge_kg,
+      co2_equivalent: (refrigerant_charge_kg * refrigerant_gwp / 1000).toFixed(2),
+      technician_id: installed_by_technician_id,
+      installation_date,
+      user_id: req.user?.id
+    });
+    
     res.status(201).json({ id: result.insertId, qr_code });
   } catch (err) {
-    console.error('Error creating installation:', err);
+    logger.error('INSTALLATIONS', 'Error creating installation', { error: err.message });
     res.status(500).json({ error: 'Kon installatie niet aanmaken' });
   }
 });
@@ -346,9 +363,28 @@ router.post('/:id/fgas', authMiddleware, async (req, res) => {
       );
     }
     
+    // F-Gas Audit log (EU 517/2014 compliance)
+    logger.fgas(activity_type, {
+      log_id: insertResult.insertId,
+      installation_id,
+      technician_id,
+      refrigerant_type,
+      refrigerant_gwp,
+      quantity_kg,
+      is_addition,
+      new_total_charge_kg,
+      co2_equivalent: (quantity_kg * refrigerant_gwp / 1000).toFixed(2),
+      leak_detected,
+      leak_location,
+      leak_repaired,
+      result,
+      performed_at,
+      user_id: req.user?.id
+    });
+    
     res.status(201).json({ id: insertResult.insertId });
   } catch (err) {
-    console.error('Error creating F-gas log:', err);
+    logger.error('FGAS', 'Error creating F-gas log', { error: err.message, installation_id });
     res.status(500).json({ error: 'Kon F-gas log niet aanmaken' });
   }
 });
