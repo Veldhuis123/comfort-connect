@@ -227,11 +227,10 @@ router.get('/relaties', authMiddleware, async (req, res) => {
             console.log('First relation detail:', JSON.stringify(detail, null, 2));
           }
           
-          // Telefoon: gebruik mobiel als phone leeg is, of andersom
-          const telefoon = detail.phone || detail.mobile || '';
-          const mobiel = detail.mobile || detail.phone || '';
+          // API velden: phoneNumber, mobilePhoneNumber, emailAddress
+          const telefoon = detail.phoneNumber || detail.mobilePhoneNumber || '';
+          const mobiel = detail.mobilePhoneNumber || detail.phoneNumber || '';
           
-          // Voor weergave: bedrijf OF naam (voor particulieren)
           // type B = bedrijf, type P = particulier
           const isBedrijf = detail.type === 'B';
           
@@ -243,7 +242,7 @@ router.get('/relaties', authMiddleware, async (req, res) => {
             bedrijf: isBedrijf ? (detail.name || '') : '',
             // Contactpersoon: bij type P is name de persoonsnaam, bij type B is contact de contactpersoon
             contactpersoon: isBedrijf ? (detail.contact || '') : (detail.name || ''),
-            email: detail.email || '',
+            email: detail.emailAddress || '',
             telefoon: telefoon,
             mobiel: mobiel,
             adres: detail.address || '',
@@ -255,7 +254,7 @@ router.get('/relaties', authMiddleware, async (req, res) => {
             kvkNummer: detail.companyRegistrationNumber || '',
             betalingstermijn: detail.termOfPayment || 14,
             notities: detail.note || '',
-            actief: detail.isActive !== false
+            actief: detail.inactive !== true
           };
         } catch (err) {
           console.error(`Failed to fetch details for relation ${item.id}:`, err.message);
