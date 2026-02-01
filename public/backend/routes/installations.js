@@ -227,6 +227,77 @@ router.delete('/equipment/:id', authMiddleware, async (req, res) => {
 });
 
 // =============================================
+// REFRIGERANT CYLINDERS
+// =============================================
+
+// Get all cylinders
+router.get('/cylinders', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM refrigerant_cylinders WHERE is_active = 1 ORDER BY refrigerant_type, status ASC'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching cylinders:', err);
+    res.status(500).json({ error: 'Kon cilinders niet ophalen' });
+  }
+});
+
+// Create cylinder
+router.post('/cylinders', authMiddleware, async (req, res) => {
+  const { refrigerant_type, refrigerant_gwp, cylinder_size_kg, current_weight_kg, tare_weight_kg, batch_number, supplier, purchase_date, expiry_date, location, status, notes } = req.body;
+  
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO refrigerant_cylinders (refrigerant_type, refrigerant_gwp, cylinder_size_kg, current_weight_kg, tare_weight_kg, batch_number, supplier, purchase_date, expiry_date, location, status, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [refrigerant_type, refrigerant_gwp, cylinder_size_kg, current_weight_kg, tare_weight_kg, batch_number, supplier, purchase_date, expiry_date, location, status || 'vol', notes]
+    );
+    logger.audit('CYLINDER_CREATED', { 
+      cylinderId: result.insertId, 
+      refrigerantType: refrigerant_type,
+      cylinderSize: cylinder_size_kg,
+      batchNumber: batch_number
+    }, req);
+    res.status(201).json({ id: result.insertId });
+  } catch (err) {
+    console.error('Error creating cylinder:', err);
+    res.status(500).json({ error: 'Kon cilinder niet aanmaken' });
+  }
+});
+
+// Update cylinder
+router.put('/cylinders/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { refrigerant_type, refrigerant_gwp, cylinder_size_kg, current_weight_kg, tare_weight_kg, batch_number, supplier, purchase_date, expiry_date, location, status, notes, is_active } = req.body;
+  
+  try {
+    await pool.query(
+      `UPDATE refrigerant_cylinders SET refrigerant_type = ?, refrigerant_gwp = ?, cylinder_size_kg = ?, current_weight_kg = ?, tare_weight_kg = ?, batch_number = ?, supplier = ?, purchase_date = ?, expiry_date = ?, location = ?, status = ?, notes = ?, is_active = ?
+       WHERE id = ?`,
+      [refrigerant_type, refrigerant_gwp, cylinder_size_kg, current_weight_kg, tare_weight_kg, batch_number, supplier, purchase_date, expiry_date, location, status, notes, is_active, id]
+    );
+    logger.audit('CYLINDER_UPDATED', { cylinderId: id, status }, req);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating cylinder:', err);
+    res.status(500).json({ error: 'Kon cilinder niet bijwerken' });
+  }
+});
+
+// Delete cylinder
+router.delete('/cylinders/:id', authMiddleware, async (req, res) => {
+  try {
+    await pool.query('UPDATE refrigerant_cylinders SET is_active = 0 WHERE id = ?', [req.params.id]);
+    logger.audit('CYLINDER_DELETED', { cylinderId: req.params.id }, req);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting cylinder:', err);
+    res.status(500).json({ error: 'Kon cilinder niet verwijderen' });
+  }
+});
+
+// =============================================
 // INSTALLATIONS
 // =============================================
 

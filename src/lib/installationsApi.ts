@@ -250,6 +250,43 @@ export interface CreateEquipment {
   notes?: string;
 }
 
+// Refrigerant Cylinders
+export type CylinderStatus = 'vol' | 'in_gebruik' | 'bijna_leeg' | 'leeg' | 'retour';
+
+export interface RefrigerantCylinder {
+  id: number;
+  refrigerant_type: string;
+  refrigerant_gwp: number;
+  cylinder_size_kg: number;
+  current_weight_kg: number;
+  tare_weight_kg: number;
+  batch_number: string | null;
+  supplier: string | null;
+  purchase_date: string | null;
+  expiry_date: string | null;
+  location: string | null;
+  status: CylinderStatus;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateRefrigerantCylinder {
+  refrigerant_type: string;
+  refrigerant_gwp: number;
+  cylinder_size_kg: number;
+  current_weight_kg: number;
+  tare_weight_kg: number;
+  batch_number?: string;
+  supplier?: string;
+  purchase_date?: string;
+  expiry_date?: string;
+  location?: string;
+  status?: CylinderStatus;
+  notes?: string;
+}
+
 export interface PublicInstallation {
   id: number;
   name: string;
@@ -301,6 +338,15 @@ export const installationsApi = {
     apiRequest('/installations/equipment/' + id, { method: 'PUT', body: JSON.stringify(data) }),
   deleteEquipment: (id: number) =>
     apiRequest('/installations/equipment/' + id, { method: 'DELETE' }),
+
+  // Refrigerant Cylinders
+  getCylinders: () => apiRequest<RefrigerantCylinder[]>('/installations/cylinders'),
+  createCylinder: (data: CreateRefrigerantCylinder) =>
+    apiRequest<{ id: number }>('/installations/cylinders', { method: 'POST', body: JSON.stringify(data) }),
+  updateCylinder: (id: number, data: Partial<CreateRefrigerantCylinder & { is_active: boolean }>) =>
+    apiRequest('/installations/cylinders/' + id, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCylinder: (id: number) =>
+    apiRequest('/installations/cylinders/' + id, { method: 'DELETE' }),
 
   // Installations
   getInstallations: () => apiRequest<Installation[]>('/installations'),
