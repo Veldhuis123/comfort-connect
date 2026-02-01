@@ -61,6 +61,16 @@ const Calculators = () => {
   
   useEffect(() => {
     setSettings(getCalculatorSettings());
+    
+    // Listen for storage changes from other tabs/windows
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "calculatorSettings") {
+        setSettings(getCalculatorSettings());
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   const enabledCalculators = Object.entries(settings).filter(([_, value]) => value.enabled);

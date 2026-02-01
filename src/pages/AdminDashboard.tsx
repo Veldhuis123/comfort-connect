@@ -164,6 +164,12 @@ const AdminDashboard = () => {
     };
     setCalculatorSettings(newSettings);
     saveCalculatorSettings(newSettings);
+    
+    // Dispatch storage event for other components
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'calculatorSettings',
+      newValue: JSON.stringify(newSettings)
+    }));
   };
 
   const statusColors: Record<string, string> = {
