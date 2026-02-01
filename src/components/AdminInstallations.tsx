@@ -1334,6 +1334,10 @@ const AdminInstallations = () => {
       {/* BRL 100 Airco Installation Wizard */}
       <Dialog open={showAircoWizard} onOpenChange={setShowAircoWizard}>
         <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
+          <DialogHeader className="sr-only">
+            <DialogTitle>BRL 100 Inbedrijfstelling</DialogTitle>
+            <DialogDescription>Wizard voor het inbedrijfstellen van een airco installatie</DialogDescription>
+          </DialogHeader>
           <AircoInstallationWizard
             customers={customers}
             technicians={technicians}
