@@ -22,7 +22,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
 import { 
-  Plus, Search, Download, Users, RefreshCw, CheckCircle2, Building2, User
+  Plus, Search, Download, Users, RefreshCw, CheckCircle2, Building2, User, Pencil
 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Customer, CreateCustomer, installationsApi } from "@/lib/installationsApi";
@@ -76,6 +76,11 @@ export const CustomerSelector = ({
     address_postal: "",
     address_city: "",
   });
+  
+  // Edit customer state
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editForm, setEditForm] = useState<Partial<CreateCustomer>>({});
+  const [editType, setEditType] = useState<"B" | "P">("P");
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
@@ -204,6 +209,39 @@ export const CustomerSelector = ({
     }
   };
 
+  const startEditCustomer = (customer: Customer, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingCustomer(customer);
+    setEditType(customer.company_name ? "B" : "P");
+    setEditForm({
+      company_name: customer.company_name || "",
+      contact_name: customer.contact_name,
+      email: customer.email,
+      phone: customer.phone || "",
+      address_street: customer.address_street,
+      address_number: customer.address_number,
+      address_postal: customer.address_postal,
+      address_city: customer.address_city,
+    });
+  };
+
+  const handleEditCustomer = async () => {
+    if (!editingCustomer) return;
+    
+    try {
+      const updateData = editType === "P" 
+        ? { ...editForm, company_name: undefined }
+        : editForm;
+      
+      await installationsApi.updateCustomer(editingCustomer.id, updateData);
+      toast({ title: "Klant bijgewerkt" });
+      setEditingCustomer(null);
+      onCustomerCreated?.();
+    } catch {
+      toast({ title: "Fout bij bijwerken klant", variant: "destructive" });
+    }
+  };
+
   // Filter e-Boekhouden relaties
   const filteredRelaties = eboekhoudenRelaties.filter(r => {
     if (!searchQuery.trim()) return true;
@@ -319,8 +357,8 @@ export const CustomerSelector = ({
                           }}
                         >
                           <div className="flex items-start justify-between">
-                            <div>
-                              <div className="font-medium flex items-center gap-2">
+                            <div className="flex-1">
+                              <div className="font-medium flex items-center gap-2 flex-wrap">
                                 {isBedrijf ? (
                                   <Building2 className="w-4 h-4 text-blue-600" />
                                 ) : (
@@ -341,6 +379,14 @@ export const CustomerSelector = ({
                                 {customer.address_city} • {customer.email}
                               </p>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => startEditCustomer(customer, e)}
+                              title="Klant bewerken"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       );
@@ -570,6 +616,114 @@ export const CustomerSelector = ({
               </div>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={!!editingCustomer} onOpenChange={(open) => !open && setEditingCustomer(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Klant Bewerken</DialogTitle>
+            <DialogDescription>
+              Pas de klantgegevens aan of wijzig het type
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Type selectie */}
+            <div className="p-3 bg-muted/30 rounded-lg">
+              <Label className="mb-2 block">Type klant</Label>
+              <RadioGroup
+                value={editType}
+                onValueChange={(v) => setEditType(v as "B" | "P")}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="P" id="edit-type-p" />
+                  <Label htmlFor="edit-type-p" className="flex items-center gap-2 cursor-pointer font-normal">
+                    <User className="w-4 h-4 text-green-600" />
+                    Particulier
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="B" id="edit-type-b" />
+                  <Label htmlFor="edit-type-b" className="flex items-center gap-2 cursor-pointer font-normal">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                    Bedrijf
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            
+            {/* Bedrijfsnaam - alleen voor bedrijven */}
+            {editType === "B" && (
+              <div>
+                <Label>Bedrijfsnaam*</Label>
+                <Input
+                  value={editForm.company_name || ""}
+                  onChange={(e) => setEditForm({ ...editForm, company_name: e.target.value })}
+                  placeholder="Verplicht voor bedrijven"
+                />
+              </div>
+            )}
+            
+            <div>
+              <Label>{editType === "B" ? "Contactpersoon*" : "Naam*"}</Label>
+              <Input
+                value={editForm.contact_name || ""}
+                onChange={(e) => setEditForm({ ...editForm, contact_name: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>E-mail*</Label>
+                <Input
+                  type="email"
+                  value={editForm.email || ""}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Telefoon</Label>
+                <Input
+                  value={editForm.phone || ""}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="col-span-2">
+                <Label>Straat</Label>
+                <Input
+                  value={editForm.address_street || ""}
+                  onChange={(e) => setEditForm({ ...editForm, address_street: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Nr</Label>
+                <Input
+                  value={editForm.address_number || ""}
+                  onChange={(e) => setEditForm({ ...editForm, address_number: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Postcode</Label>
+                <Input
+                  value={editForm.address_postal || ""}
+                  onChange={(e) => setEditForm({ ...editForm, address_postal: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Plaats</Label>
+              <Input
+                value={editForm.address_city || ""}
+                onChange={(e) => setEditForm({ ...editForm, address_city: e.target.value })}
+              />
+            </div>
+            <Button onClick={handleEditCustomer} className="w-full">
+              Opslaan
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
