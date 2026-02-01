@@ -33,7 +33,8 @@ import {
 import { 
   Plus, Trash2, Edit, QrCode, Wrench, AlertTriangle, 
   Users, UserCog, Search, X, Thermometer, Calendar, MapPin,
-  FileText, ClipboardList, Eye, Download, Building2, User, Printer
+  FileText, ClipboardList, Eye, Download, Building2, User, Printer,
+  Ruler
 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,9 @@ import {
   FGasLog,
   CreateFGasLog,
   FGasActivityType,
+  Equipment,
+  CreateEquipment,
+  EquipmentType,
 } from "@/lib/installationsApi";
 import { generateKenplaatPDF } from "@/lib/kenplaatPdfExport";
 import { generateCommissioningPDF } from "@/lib/commissioningPdfExport";
@@ -66,6 +70,16 @@ const installationTypeLabels: Record<InstallationType, string> = {
   koeling: "Koeling",
   ventilatie: "Ventilatie",
   overig: "Overig",
+};
+
+const equipmentTypeLabels: Record<EquipmentType, string> = {
+  manometer: "Manometer",
+  vacuum_pump: "Vacuümpomp",
+  leak_detector: "Lekdetector",
+  refrigerant_scale: "Koudemiddelweegschaal",
+  recovery_unit: "Recovery-unit",
+  thermometer: "Thermometer",
+  other: "Overig",
 };
 
 const statusColors: Record<string, string> = {
@@ -94,6 +108,7 @@ const AdminInstallations = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [faultReports, setFaultReports] = useState<FaultReport[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [stats, setStats] = useState<InstallationStats>({
     totalInstallations: 0,
     maintenanceDue: 0,
@@ -115,9 +130,14 @@ const AdminInstallations = () => {
   // Delete confirmations
   const [deleteInstallationId, setDeleteInstallationId] = useState<number | null>(null);
   const [deleteCustomerId, setDeleteCustomerId] = useState<number | null>(null);
+  const [deleteTechnicianId, setDeleteTechnicianId] = useState<number | null>(null);
+  const [deleteEquipmentId, setDeleteEquipmentId] = useState<number | null>(null);
   
   // Edit state
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editingTechnician, setEditingTechnician] = useState<Technician | null>(null);
+  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+  const [showEquipmentForm, setShowEquipmentForm] = useState(false);
   const [customerType, setCustomerType] = useState<"B" | "P">("P");
 
   // Forms
@@ -146,6 +166,13 @@ const AdminInstallations = () => {
     name: "",
   });
 
+  const [equipmentForm, setEquipmentForm] = useState<CreateEquipment>({
+    equipment_type: "manometer",
+    name: "",
+    brand: "",
+    serial_number: "",
+  });
+
   const [fgasForm, setFgasForm] = useState<CreateFGasLog>({
     technician_id: 0,
     activity_type: "lekcontrole",
@@ -157,18 +184,20 @@ const AdminInstallations = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [installationsData, customersData, techniciansData, faultsData, statsData] = await Promise.all([
+      const [installationsData, customersData, techniciansData, faultsData, statsData, equipmentData] = await Promise.all([
         installationsApi.getInstallations().catch((e) => { console.error('Installations error:', e); return []; }),
         installationsApi.getCustomers().catch((e) => { console.error('Customers error:', e); return []; }),
         installationsApi.getTechnicians().catch((e) => { console.error('Technicians error:', e); return []; }),
         installationsApi.getAllFaultReports().catch((e) => { console.error('Faults error:', e); return []; }),
         installationsApi.getStats().catch((e) => { console.error('Stats error:', e); return null; }),
+        installationsApi.getEquipment().catch((e) => { console.error('Equipment error:', e); return []; }),
       ]);
       setInstallations(Array.isArray(installationsData) ? installationsData : []);
       setCustomers(Array.isArray(customersData) ? customersData : []);
       setTechnicians(Array.isArray(techniciansData) ? techniciansData : []);
       setFaultReports(Array.isArray(faultsData) ? faultsData : []);
       setStats(statsData);
+      setEquipment(Array.isArray(equipmentData) ? equipmentData : []);
     } catch (err) {
       console.error('FetchData error:', err);
       toast({ title: "Fout", description: "Kon gegevens niet laden", variant: "destructive" });
@@ -241,15 +270,67 @@ const AdminInstallations = () => {
     }
   };
 
-  const handleCreateTechnician = async () => {
+  const handleSaveTechnician = async () => {
     try {
-      await installationsApi.createTechnician(technicianForm);
-      toast({ title: "Monteur aangemaakt" });
+      if (editingTechnician) {
+        await installationsApi.updateTechnician(editingTechnician.id, technicianForm);
+        toast({ title: "Monteur bijgewerkt" });
+      } else {
+        await installationsApi.createTechnician(technicianForm);
+        toast({ title: "Monteur aangemaakt" });
+      }
       setShowTechnicianForm(false);
+      setEditingTechnician(null);
       setTechnicianForm({ name: "" });
       fetchData();
     } catch (err) {
-      toast({ title: "Fout", description: "Kon monteur niet aanmaken", variant: "destructive" });
+      toast({ title: "Fout", description: editingTechnician ? "Kon monteur niet bijwerken" : "Kon monteur niet aanmaken", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteTechnician = async () => {
+    if (!deleteTechnicianId) return;
+    try {
+      await installationsApi.deleteTechnician(deleteTechnicianId);
+      toast({ title: "Monteur verwijderd" });
+      setDeleteTechnicianId(null);
+      fetchData();
+    } catch (err: any) {
+      toast({ 
+        title: "Fout", 
+        description: err?.message || "Kon monteur niet verwijderen", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleSaveEquipment = async () => {
+    try {
+      if (editingEquipment) {
+        await installationsApi.updateEquipment(editingEquipment.id, equipmentForm);
+        toast({ title: "Gereedschap bijgewerkt" });
+      } else {
+        await installationsApi.createEquipment(equipmentForm);
+        toast({ title: "Gereedschap aangemaakt" });
+      }
+      setShowEquipmentForm(false);
+      setEditingEquipment(null);
+      setEquipmentForm({ equipment_type: "manometer", name: "", brand: "", serial_number: "" });
+      fetchData();
+    } catch (err) {
+      toast({ title: "Fout", description: editingEquipment ? "Kon gereedschap niet bijwerken" : "Kon gereedschap niet aanmaken", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteEquipment = async () => {
+    if (!deleteEquipmentId) return;
+    try {
+      await installationsApi.deleteEquipment(deleteEquipmentId);
+      toast({ title: "Gereedschap verwijderd" });
+      setDeleteEquipmentId(null);
+      fetchData();
+    } catch (err) {
+      toast({ title: "Fout", description: "Kon gereedschap niet verwijderen", variant: "destructive" });
     }
   };
 
@@ -453,6 +534,10 @@ const AdminInstallations = () => {
           <TabsTrigger value="technicians" className="text-xs sm:text-sm">
             <UserCog className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Monteurs</span> ({technicians?.length ?? 0})
+          </TabsTrigger>
+          <TabsTrigger value="equipment" className="text-xs sm:text-sm">
+            <Ruler className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Gereedschap</span> ({equipment?.length ?? 0})
           </TabsTrigger>
         </TabsList>
 
@@ -742,7 +827,11 @@ const AdminInstallations = () => {
                 <CardTitle>Monteurs</CardTitle>
                 <CardDescription>Beheer monteurs en certificeringen</CardDescription>
               </div>
-              <Button onClick={() => setShowTechnicianForm(true)}>
+              <Button onClick={() => {
+                setEditingTechnician(null);
+                setTechnicianForm({ name: "" });
+                setShowTechnicianForm(true);
+              }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Nieuwe Monteur
               </Button>
@@ -752,34 +841,165 @@ const AdminInstallations = () => {
                 <p className="text-muted-foreground">Nog geen monteurs</p>
               ) : (
                 <div className="space-y-4">
-                  {technicians.map((tech) => (
-                    <div key={tech.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-semibold">{tech.name}</h4>
-                          {tech.email && <p className="text-sm text-muted-foreground">{tech.email}</p>}
-                          <div className="flex gap-4 mt-2">
-                            {tech.fgas_certificate_number && (
-                              <div className="text-sm">
-                                <span className="font-medium">F-gas:</span> {tech.fgas_certificate_number}
-                                {tech.fgas_certificate_expires && (
-                                  <span className="text-muted-foreground"> (geldig t/m {new Date(tech.fgas_certificate_expires).toLocaleDateString('nl-NL')})</span>
-                                )}
-                              </div>
-                            )}
-                            {tech.brl_certificate_number && (
-                              <div className="text-sm">
-                                <span className="font-medium">BRL:</span> {tech.brl_certificate_number}
-                              </div>
-                            )}
+                  {technicians.map((tech) => {
+                    const techInstallations = installations.filter(i => i.installed_by_technician_id === tech.id);
+                    return (
+                      <div key={tech.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{tech.name}</h4>
+                            {tech.email && <p className="text-sm text-muted-foreground">{tech.email}</p>}
+                            {tech.phone && <p className="text-sm text-muted-foreground">{tech.phone}</p>}
+                            <div className="flex flex-wrap gap-4 mt-2">
+                              {tech.fgas_certificate_number && (
+                                <div className="text-sm">
+                                  <span className="font-medium">F-gas:</span> {tech.fgas_certificate_number}
+                                  {tech.fgas_certificate_expires && (
+                                    <span className="text-muted-foreground"> (geldig t/m {new Date(tech.fgas_certificate_expires).toLocaleDateString('nl-NL')})</span>
+                                  )}
+                                </div>
+                              )}
+                              {tech.brl_certificate_number && (
+                                <div className="text-sm">
+                                  <span className="font-medium">BRL:</span> {tech.brl_certificate_number}
+                                  {tech.brl_certificate_expires && (
+                                    <span className="text-muted-foreground"> (geldig t/m {new Date(tech.brl_certificate_expires).toLocaleDateString('nl-NL')})</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={tech.is_active ? "default" : "secondary"}>
+                              {tech.is_active ? "Actief" : "Inactief"}
+                            </Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingTechnician(tech);
+                                setTechnicianForm({
+                                  name: tech.name,
+                                  email: tech.email || "",
+                                  phone: tech.phone || "",
+                                  fgas_certificate_number: tech.fgas_certificate_number || "",
+                                  fgas_certificate_expires: tech.fgas_certificate_expires || "",
+                                  brl_certificate_number: tech.brl_certificate_number || "",
+                                  brl_certificate_expires: tech.brl_certificate_expires || "",
+                                });
+                                setShowTechnicianForm(true);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDeleteTechnicianId(tech.id)}
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                              disabled={techInstallations.length > 0}
+                              title={techInstallations.length > 0 ? "Verwijder eerst alle installaties van deze monteur" : "Monteur verwijderen"}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
-                        <Badge variant={tech.is_active ? "default" : "secondary"}>
-                          {tech.is_active ? "Actief" : "Inactief"}
-                        </Badge>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Equipment Tab */}
+        <TabsContent value="equipment">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Gereedschap</CardTitle>
+                <CardDescription>BRL 100 verplicht gereedschap met kalibratie gegevens</CardDescription>
+              </div>
+              <Button onClick={() => {
+                setEditingEquipment(null);
+                setEquipmentForm({ equipment_type: "manometer", name: "", brand: "", serial_number: "" });
+                setShowEquipmentForm(true);
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nieuw Gereedschap
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {equipment.length === 0 ? (
+                <p className="text-muted-foreground">Nog geen gereedschap geregistreerd</p>
+              ) : (
+                <div className="space-y-4">
+                  {equipment.map((item) => {
+                    const isCalibrationExpired = item.calibration_valid_until && new Date(item.calibration_valid_until) < new Date();
+                    const isCalibrationSoon = item.calibration_valid_until && !isCalibrationExpired && 
+                      new Date(item.calibration_valid_until) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                    return (
+                      <div key={item.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline">{equipmentTypeLabels[item.equipment_type]}</Badge>
+                              <h4 className="font-semibold">{item.name}</h4>
+                              {isCalibrationExpired && (
+                                <Badge variant="destructive">Kalibratie verlopen</Badge>
+                              )}
+                              {isCalibrationSoon && (
+                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Kalibratie binnenkort</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{item.brand} • Serienr: {item.serial_number}</p>
+                            {item.calibration_date && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Gekalibreerd: {new Date(item.calibration_date).toLocaleDateString('nl-NL')}
+                                {item.calibration_valid_until && (
+                                  <> • Geldig t/m: {new Date(item.calibration_valid_until).toLocaleDateString('nl-NL')}</>
+                                )}
+                              </p>
+                            )}
+                            {item.notes && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={item.is_active ? "default" : "secondary"}>
+                              {item.is_active ? "Actief" : "Inactief"}
+                            </Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingEquipment(item);
+                                setEquipmentForm({
+                                  equipment_type: item.equipment_type,
+                                  name: item.name,
+                                  brand: item.brand,
+                                  serial_number: item.serial_number,
+                                  calibration_date: item.calibration_date || "",
+                                  calibration_valid_until: item.calibration_valid_until || "",
+                                  notes: item.notes || "",
+                                });
+                                setShowEquipmentForm(true);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDeleteEquipmentId(item.id)}
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -1050,11 +1270,17 @@ const AdminInstallations = () => {
       </Dialog>
 
       {/* Technician Form Dialog */}
-      <Dialog open={showTechnicianForm} onOpenChange={setShowTechnicianForm}>
+      <Dialog open={showTechnicianForm} onOpenChange={(open) => {
+        setShowTechnicianForm(open);
+        if (!open) {
+          setEditingTechnician(null);
+          setTechnicianForm({ name: "" });
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nieuwe Monteur</DialogTitle>
-            <DialogDescription>Voeg een nieuwe monteur toe</DialogDescription>
+            <DialogTitle>{editingTechnician ? "Monteur Bewerken" : "Nieuwe Monteur"}</DialogTitle>
+            <DialogDescription>{editingTechnician ? "Wijzig de monteur gegevens" : "Voeg een nieuwe monteur toe"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -1115,7 +1341,98 @@ const AdminInstallations = () => {
                 />
               </div>
             </div>
-            <Button onClick={handleCreateTechnician} className="w-full">Monteur Opslaan</Button>
+            <Button onClick={handleSaveTechnician} className="w-full">
+              {editingTechnician ? "Wijzigingen Opslaan" : "Monteur Aanmaken"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Equipment Form Dialog */}
+      <Dialog open={showEquipmentForm} onOpenChange={(open) => {
+        setShowEquipmentForm(open);
+        if (!open) {
+          setEditingEquipment(null);
+          setEquipmentForm({ equipment_type: "manometer", name: "", brand: "", serial_number: "" });
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingEquipment ? "Gereedschap Bewerken" : "Nieuw Gereedschap"}</DialogTitle>
+            <DialogDescription>BRL 100 verplicht gereedschap met kalibratie gegevens</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Type*</label>
+              <Select
+                value={equipmentForm.equipment_type}
+                onValueChange={(v) => setEquipmentForm({ ...equipmentForm, equipment_type: v as EquipmentType })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(equipmentTypeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Naam*</label>
+              <Input
+                value={equipmentForm.name}
+                onChange={(e) => setEquipmentForm({ ...equipmentForm, name: e.target.value })}
+                placeholder="bijv. Testo 550s"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Merk*</label>
+                <Input
+                  value={equipmentForm.brand}
+                  onChange={(e) => setEquipmentForm({ ...equipmentForm, brand: e.target.value })}
+                  placeholder="bijv. Testo"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Serienummer*</label>
+                <Input
+                  value={equipmentForm.serial_number}
+                  onChange={(e) => setEquipmentForm({ ...equipmentForm, serial_number: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Kalibratiedatum</label>
+                <Input
+                  type="date"
+                  value={equipmentForm.calibration_date || ""}
+                  onChange={(e) => setEquipmentForm({ ...equipmentForm, calibration_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Geldig t/m</label>
+                <Input
+                  type="date"
+                  value={equipmentForm.calibration_valid_until || ""}
+                  onChange={(e) => setEquipmentForm({ ...equipmentForm, calibration_valid_until: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Opmerkingen</label>
+              <Textarea
+                value={equipmentForm.notes || ""}
+                onChange={(e) => setEquipmentForm({ ...equipmentForm, notes: e.target.value })}
+                placeholder="Eventuele opmerkingen"
+                rows={2}
+              />
+            </div>
+            <Button onClick={handleSaveEquipment} className="w-full">
+              {editingEquipment ? "Wijzigingen Opslaan" : "Gereedschap Aanmaken"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1378,6 +1695,42 @@ const AdminInstallations = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Annuleren</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteCustomer} className="bg-destructive hover:bg-destructive/90">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Technician Confirmation */}
+      <AlertDialog open={deleteTechnicianId !== null} onOpenChange={(open) => !open && setDeleteTechnicianId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Monteur verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je deze monteur wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTechnician} className="bg-destructive hover:bg-destructive/90">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Equipment Confirmation */}
+      <AlertDialog open={deleteEquipmentId !== null} onOpenChange={(open) => !open && setDeleteEquipmentId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Gereedschap verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je dit gereedschap wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEquipment} className="bg-destructive hover:bg-destructive/90">
               Verwijderen
             </AlertDialogAction>
           </AlertDialogFooter>

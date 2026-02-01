@@ -224,6 +224,32 @@ export interface InstallationStats {
   totalCO2Equivalent: number;
 }
 
+export type EquipmentType = 'manometer' | 'vacuum_pump' | 'leak_detector' | 'refrigerant_scale' | 'recovery_unit' | 'thermometer' | 'other';
+
+export interface Equipment {
+  id: number;
+  equipment_type: EquipmentType;
+  name: string;
+  brand: string;
+  serial_number: string;
+  calibration_date: string | null;
+  calibration_valid_until: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateEquipment {
+  equipment_type: EquipmentType;
+  name: string;
+  brand: string;
+  serial_number: string;
+  calibration_date?: string;
+  calibration_valid_until?: string;
+  notes?: string;
+}
+
 export interface PublicInstallation {
   id: number;
   name: string;
@@ -264,6 +290,17 @@ export const installationsApi = {
     apiRequest<{ id: number }>('/installations/technicians', { method: 'POST', body: JSON.stringify(data) }),
   updateTechnician: (id: number, data: Partial<CreateTechnician & { is_active: boolean }>) =>
     apiRequest('/installations/technicians/' + id, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTechnician: (id: number) =>
+    apiRequest('/installations/technicians/' + id, { method: 'DELETE' }),
+
+  // Equipment (BRL 100 tools)
+  getEquipment: () => apiRequest<Equipment[]>('/installations/equipment'),
+  createEquipment: (data: CreateEquipment) =>
+    apiRequest<{ id: number }>('/installations/equipment', { method: 'POST', body: JSON.stringify(data) }),
+  updateEquipment: (id: number, data: Partial<CreateEquipment & { is_active: boolean }>) =>
+    apiRequest('/installations/equipment/' + id, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteEquipment: (id: number) =>
+    apiRequest('/installations/equipment/' + id, { method: 'DELETE' }),
 
   // Installations
   getInstallations: () => apiRequest<Installation[]>('/installations'),
