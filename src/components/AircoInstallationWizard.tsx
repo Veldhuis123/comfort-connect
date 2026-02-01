@@ -1355,13 +1355,13 @@ export const AircoInstallationWizard = ({
                 <div className="p-4 bg-green-50 border border-green-200 rounded-lg space-y-4">
                   <div className="flex items-center gap-2 text-green-800">
                     <CheckCircle2 className="w-5 h-5" />
-                    <span className="font-medium">Inbedrijfstellingsrapport gegenereerd!</span>
+                    <span className="font-medium">Preview rapport gegenereerd!</span>
                   </div>
                   <div className="flex items-center gap-4">
                     <img src={generatedQrCode} alt="QR Code" className="w-32 h-32 border rounded" />
                     <div className="text-sm text-green-800">
-                      <p>Scan deze QR-code om het inbedrijfstellingsrapport te bekijken.</p>
-                      <p className="mt-2">De PDF is gedownload naar uw computer.</p>
+                      <p>Dit is een preview van het rapport.</p>
+                      <p className="mt-2 font-medium">Let op: De definitieve PDF met werkende QR-code wordt automatisch gedownload wanneer u de installatie opslaat.</p>
                     </div>
                   </div>
                 </div>
@@ -1374,15 +1374,7 @@ export const AircoInstallationWizard = ({
                   className="flex-1"
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  Genereer PDF Rapport
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={handleGeneratePDF}
-                  className="flex-1"
-                >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  Genereer QR Code
+                  Preview PDF Rapport
                 </Button>
               </div>
             </div>

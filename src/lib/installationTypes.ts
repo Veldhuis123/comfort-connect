@@ -21,6 +21,9 @@ export interface CommissioningData {
   werkbon_number: string;
   date: string;
   
+  // QR code for linking to installation page (set after installation is created)
+  qr_code?: string;
+  
   // Bedrijfsgegevens
   company_name: string;
   company_address: string;
