@@ -112,20 +112,26 @@ export const CustomerSelector = ({
       // Parse adres naar straat en nummer - probeer straatnaam en huisnummer te scheiden
       const adresParts = (relatie.adres || "").match(/^(.+?)\s+(\d+.*)$/) || ["", relatie.adres || "", ""];
       
-      // Combineer telefoon en mobiel, geef voorkeur aan mobiel
-      const phoneNumber = relatie.mobiel || relatie.telefoon || "";
+      // Telefoon fallback: gebruik mobiel als telefoon leeg is, of andersom
+      const phoneNumber = relatie.telefoon || relatie.mobiel || "";
       
-      // Voor contactpersoon: als er geen contactpersoon is maar wel een bedrijfsnaam, gebruik dan leeg
-      // Als er geen bedrijf is, dan is de "naam" waarschijnlijk de contactpersoon
-      let companyName = relatie.bedrijf || "";
-      let contactName = relatie.contactpersoon || "";
+      // Type B = bedrijf, Type P = particulier
+      // De backend stuurt nu al correct:
+      // - bedrijf: gevuld bij type B, leeg bij type P
+      // - contactpersoon: bij type P is dit de naam, bij type B de contactpersoon
+      const isBedrijf = relatie.type === 'B';
       
-      // Als contactpersoon leeg is maar bedrijf ook, gebruik dan de naam als contact
-      if (!contactName && !companyName) {
-        contactName = "Onbekend";
-      } else if (!contactName && companyName) {
-        // Bedrijf zonder contactpersoon - houd bedrijfsnaam en zet contact op bedrijfsnaam
-        contactName = companyName;
+      let companyName = "";
+      let contactName = "";
+      
+      if (isBedrijf) {
+        // Bedrijf: bedrijfsnaam is verplicht, contactpersoon is optioneel
+        companyName = relatie.bedrijf || "";
+        contactName = relatie.contactpersoon || relatie.bedrijf || "Onbekend";
+      } else {
+        // Particulier: geen bedrijf, alleen contactnaam
+        companyName = ""; // Expliciet leeg voor particulieren
+        contactName = relatie.contactpersoon || relatie.bedrijf || "Onbekend";
       }
       
       const newCustomer: CreateCustomer = {
@@ -137,7 +143,7 @@ export const CustomerSelector = ({
         address_number: adresParts[2]?.trim() || "",
         address_postal: relatie.postcode || "",
         address_city: relatie.plaats || "",
-        notes: `Geïmporteerd uit e-Boekhouden (code: ${relatie.code})`,
+        notes: `Geïmporteerd uit e-Boekhouden (code: ${relatie.code}, type: ${isBedrijf ? 'Bedrijf' : 'Particulier'})`,
       };
 
       const result = await installationsApi.createCustomer(newCustomer);

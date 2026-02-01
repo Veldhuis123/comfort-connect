@@ -218,15 +218,31 @@ router.get('/relaties', authMiddleware, async (req, res) => {
       const detailPromises = batch.map(async (item) => {
         try {
           const detail = await apiRequest('GET', `/relation/${item.id}`);
+          
+          // Log first detail for debugging
+          if (i === 0 && batch.indexOf(item) === 0) {
+            console.log('First relation detail:', JSON.stringify(detail, null, 2));
+          }
+          
+          // Telefoon: gebruik mobiel als phone leeg is, of andersom
+          const telefoon = detail.phone || detail.mobile || '';
+          const mobiel = detail.mobile || detail.phone || '';
+          
+          // Voor weergave: bedrijf OF naam (voor particulieren)
+          // type B = bedrijf, type P = particulier
+          const isBedrijf = detail.type === 'B';
+          
           return {
             id: detail.id,
             code: detail.code,
             type: detail.type, // B or P
-            bedrijf: detail.name || '',
-            contactpersoon: detail.contact || '',
+            // Bedrijf: bij type B is dit de naam, bij type P leeg
+            bedrijf: isBedrijf ? (detail.name || '') : '',
+            // Contactpersoon: bij type P is name de persoonsnaam, bij type B is contact de contactpersoon
+            contactpersoon: isBedrijf ? (detail.contact || '') : (detail.name || ''),
             email: detail.email || '',
-            telefoon: detail.phone || '',
-            mobiel: detail.mobile || '',
+            telefoon: telefoon,
+            mobiel: mobiel,
             adres: detail.address || '',
             postcode: detail.postalCode || '',
             plaats: detail.city || '',
@@ -245,8 +261,8 @@ router.get('/relaties', authMiddleware, async (req, res) => {
             id: item.id,
             code: item.code,
             type: item.type,
-            bedrijf: '',
-            contactpersoon: '',
+            bedrijf: item.type === 'B' ? item.code : '',
+            contactpersoon: item.type === 'P' ? item.code : '',
             email: '',
             telefoon: '',
             mobiel: '',
