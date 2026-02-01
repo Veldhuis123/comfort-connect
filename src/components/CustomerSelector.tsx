@@ -22,8 +22,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
 import { 
-  Plus, Search, Download, Users, RefreshCw, CheckCircle2, Building2
+  Plus, Search, Download, Users, RefreshCw, CheckCircle2, Building2, User
 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Customer, CreateCustomer, installationsApi } from "@/lib/installationsApi";
 
 // e-Boekhouden relatie type
@@ -66,6 +67,7 @@ export const CustomerSelector = ({
   const [importingId, setImportingId] = useState<string | null>(null);
   
   // New customer form
+  const [customerType, setCustomerType] = useState<"B" | "P">("P"); // B = Bedrijf, P = Particulier
   const [customerForm, setCustomerForm] = useState<CreateCustomer>({
     contact_name: "",
     email: "",
@@ -171,12 +173,24 @@ export const CustomerSelector = ({
       return;
     }
     
+    // Voor bedrijven is bedrijfsnaam verplicht
+    if (customerType === "B" && !customerForm.company_name) {
+      toast({ title: "Vul bedrijfsnaam in", variant: "destructive" });
+      return;
+    }
+    
     try {
-      const result = await installationsApi.createCustomer(customerForm);
+      // Bij particulier, zorg dat company_name leeg is
+      const formData = customerType === "P" 
+        ? { ...customerForm, company_name: undefined }
+        : customerForm;
+      
+      const result = await installationsApi.createCustomer(formData);
       toast({ title: "Klant aangemaakt" });
       onSelectCustomer(result.id);
       onCustomerCreated?.();
       setShowDialog(false);
+      setCustomerType("P");
       setCustomerForm({
         contact_name: "",
         email: "",
@@ -438,19 +452,49 @@ export const CustomerSelector = ({
             {/* Nieuwe klant */}
             <TabsContent value="new" className="mt-4">
               <div className="space-y-4">
-                <div>
-                  <Label>Bedrijfsnaam</Label>
-                  <Input
-                    value={customerForm.company_name || ""}
-                    onChange={(e) => setCustomerForm({ ...customerForm, company_name: e.target.value })}
-                    placeholder="Optioneel"
-                  />
+                {/* Type selectie */}
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <Label className="mb-2 block">Type klant</Label>
+                  <RadioGroup
+                    value={customerType}
+                    onValueChange={(v) => setCustomerType(v as "B" | "P")}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="P" id="type-p" />
+                      <Label htmlFor="type-p" className="flex items-center gap-2 cursor-pointer font-normal">
+                        <User className="w-4 h-4" />
+                        Particulier
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="B" id="type-b" />
+                      <Label htmlFor="type-b" className="flex items-center gap-2 cursor-pointer font-normal">
+                        <Building2 className="w-4 h-4" />
+                        Bedrijf
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
+                
+                {/* Bedrijfsnaam - alleen voor bedrijven */}
+                {customerType === "B" && (
+                  <div>
+                    <Label>Bedrijfsnaam*</Label>
+                    <Input
+                      value={customerForm.company_name || ""}
+                      onChange={(e) => setCustomerForm({ ...customerForm, company_name: e.target.value })}
+                      placeholder="Verplicht voor bedrijven"
+                    />
+                  </div>
+                )}
+                
                 <div>
-                  <Label>Contactpersoon*</Label>
+                  <Label>{customerType === "B" ? "Contactpersoon*" : "Naam*"}</Label>
                   <Input
                     value={customerForm.contact_name}
                     onChange={(e) => setCustomerForm({ ...customerForm, contact_name: e.target.value })}
+                    placeholder={customerType === "B" ? "Contactpersoon bij bedrijf" : "Volledige naam"}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
