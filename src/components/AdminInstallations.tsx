@@ -1658,6 +1658,7 @@ const AdminInstallations = () => {
           <AircoInstallationWizard
             customers={customers}
             technicians={technicians}
+            equipment={equipment}
             onComplete={handleAircoWizardComplete}
             onCancel={() => setShowAircoWizard(false)}
             onCustomerCreated={fetchData}

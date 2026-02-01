@@ -21,6 +21,7 @@ import {
 import {
   Customer,
   Technician,
+  Equipment,
   CreateInstallation,
   REFRIGERANT_GWP,
   REFRIGERANT_OPTIONS,
@@ -43,6 +44,7 @@ export type { ToolRegistration, CommissioningData, BRLChecklist };
 interface AircoInstallationWizardProps {
   customers: Customer[];
   technicians: Technician[];
+  equipment: Equipment[];
   onComplete: (data: CreateInstallation & { brl_checklist: BRLChecklist; commissioning_data: CommissioningData }) => void;
   onCancel: () => void;
   onCustomerCreated?: () => void;
@@ -70,6 +72,7 @@ const installationTypeLabels: Record<InstallationType, string> = {
 export const AircoInstallationWizard = ({
   customers,
   technicians,
+  equipment,
   onComplete,
   onCancel,
   onCustomerCreated,
@@ -229,6 +232,110 @@ export const AircoInstallationWizard = ({
       )}
     </div>
   );
+
+  // Equipment Selector component for dropdown selection
+  const EquipmentSelector = ({
+    label,
+    equipmentType,
+    equipment: allEquipment,
+    selectedBrand,
+    selectedSerial,
+    selectedCalibrationDate,
+    onSelect,
+  }: {
+    label: string;
+    equipmentType: Equipment["equipment_type"];
+    equipment: Equipment[];
+    selectedBrand: string;
+    selectedSerial: string;
+    selectedCalibrationDate?: string;
+    onSelect: (eq: Equipment | null) => void;
+  }) => {
+    const filteredEquipment = allEquipment.filter(
+      (eq) => eq.equipment_type === equipmentType && eq.is_active
+    );
+    
+    const isExpired = (date: string | null) => {
+      if (!date) return false;
+      return new Date(date) < new Date();
+    };
+    
+    const isExpiringSoon = (date: string | null) => {
+      if (!date) return false;
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+      return new Date(date) < thirtyDaysFromNow && !isExpired(date);
+    };
+
+    return (
+      <div className="space-y-2">
+        <h4 className="font-medium">{label}</h4>
+        <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+          <div>
+            <Label>Selecteer apparaat</Label>
+            <Select
+              value={selectedSerial || ""}
+              onValueChange={(val) => {
+                if (val === "") {
+                  onSelect(null);
+                } else {
+                  const selected = filteredEquipment.find((eq) => eq.serial_number === val);
+                  onSelect(selected || null);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer uit geregistreerd gereedschap..." />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredEquipment.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    Geen gereedschap van dit type geregistreerd
+                  </div>
+                ) : (
+                  filteredEquipment.map((eq) => (
+                    <SelectItem key={eq.id} value={eq.serial_number}>
+                      <div className="flex items-center gap-2">
+                        <span>{eq.brand} {eq.name}</span>
+                        <span className="text-muted-foreground">({eq.serial_number})</span>
+                        {isExpired(eq.calibration_valid_until) && (
+                          <Badge variant="destructive" className="text-xs">Verlopen</Badge>
+                        )}
+                        {isExpiringSoon(eq.calibration_valid_until) && (
+                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">Verloopt binnenkort</Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {selectedSerial && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t">
+              <div>
+                <Label className="text-xs text-muted-foreground">Merk/Type</Label>
+                <p className="text-sm font-medium">{selectedBrand || "-"}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Serienummer</Label>
+                <p className="text-sm font-medium">{selectedSerial}</p>
+              </div>
+              {selectedCalibrationDate !== undefined && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Kalibratiedatum</Label>
+                  <p className="text-sm font-medium">
+                    {selectedCalibrationDate || "-"}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -414,143 +521,110 @@ export const AircoInstallationWizard = ({
             <div className="space-y-6">
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>BRL 100 Vereiste:</strong> Registreer het gebruikte meetgereedschap met serienummers en kalibratiedata voor traceerbaarheid.
+                  <strong>BRL 100 Vereiste:</strong> Selecteer het gebruikte meetgereedschap uit uw geregistreerde apparatuur. Serienummers en kalibratiedata worden automatisch ingevuld.
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <h4 className="font-medium">Manometerset</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                  <div>
-                    <Label>Merk/Type</Label>
-                    <Input
-                      value={commissioningData.tools.manometer_brand}
-                      onChange={(e) => updateTools("manometer_brand", e.target.value)}
-                      placeholder="bijv. Testo 557"
-                    />
-                  </div>
-                  <div>
-                    <Label>Serienummer*</Label>
-                    <Input
-                      value={commissioningData.tools.manometer_serial}
-                      onChange={(e) => updateTools("manometer_serial", e.target.value)}
-                      placeholder="SN-12345678"
-                    />
-                  </div>
-                  <div>
-                    <Label>Kalibratiedatum</Label>
-                    <Input
-                      type="date"
-                      value={commissioningData.tools.manometer_calibration_date}
-                      onChange={(e) => updateTools("manometer_calibration_date", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
+              {/* Manometerset */}
+              <EquipmentSelector
+                label="Manometerset"
+                equipmentType="manometer"
+                equipment={equipment}
+                selectedBrand={commissioningData.tools.manometer_brand}
+                selectedSerial={commissioningData.tools.manometer_serial}
+                selectedCalibrationDate={commissioningData.tools.manometer_calibration_date}
+                onSelect={(eq) => {
+                  setCommissioningData((prev) => ({
+                    ...prev,
+                    tools: {
+                      ...prev.tools,
+                      manometer_brand: eq ? `${eq.brand} ${eq.name}` : "",
+                      manometer_serial: eq?.serial_number || "",
+                      manometer_calibration_date: eq?.calibration_date || "",
+                    },
+                  }));
+                }}
+              />
 
-              <div className="space-y-4">
-                <h4 className="font-medium">Vacuümpomp</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
-                  <div>
-                    <Label>Merk/Type</Label>
-                    <Input
-                      value={commissioningData.tools.vacuum_pump_brand}
-                      onChange={(e) => updateTools("vacuum_pump_brand", e.target.value)}
-                      placeholder="bijv. Rothenberger Roairvac"
-                    />
-                  </div>
-                  <div>
-                    <Label>Serienummer</Label>
-                    <Input
-                      value={commissioningData.tools.vacuum_pump_serial}
-                      onChange={(e) => updateTools("vacuum_pump_serial", e.target.value)}
-                      placeholder="SN-12345678"
-                    />
-                  </div>
-                </div>
-              </div>
+              {/* Vacuümpomp */}
+              <EquipmentSelector
+                label="Vacuümpomp"
+                equipmentType="vacuum_pump"
+                equipment={equipment}
+                selectedBrand={commissioningData.tools.vacuum_pump_brand}
+                selectedSerial={commissioningData.tools.vacuum_pump_serial}
+                onSelect={(eq) => {
+                  setCommissioningData((prev) => ({
+                    ...prev,
+                    tools: {
+                      ...prev.tools,
+                      vacuum_pump_brand: eq ? `${eq.brand} ${eq.name}` : "",
+                      vacuum_pump_serial: eq?.serial_number || "",
+                    },
+                  }));
+                }}
+              />
 
-              <div className="space-y-4">
-                <h4 className="font-medium">Elektronische Lekdetector</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                  <div>
-                    <Label>Merk/Type</Label>
-                    <Input
-                      value={commissioningData.tools.leak_detector_brand}
-                      onChange={(e) => updateTools("leak_detector_brand", e.target.value)}
-                      placeholder="bijv. Inficon TEK-Mate"
-                    />
-                  </div>
-                  <div>
-                    <Label>Serienummer</Label>
-                    <Input
-                      value={commissioningData.tools.leak_detector_serial}
-                      onChange={(e) => updateTools("leak_detector_serial", e.target.value)}
-                      placeholder="SN-12345678"
-                    />
-                  </div>
-                  <div>
-                    <Label>Kalibratiedatum</Label>
-                    <Input
-                      type="date"
-                      value={commissioningData.tools.leak_detector_calibration_date}
-                      onChange={(e) => updateTools("leak_detector_calibration_date", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
+              {/* Elektronische Lekdetector */}
+              <EquipmentSelector
+                label="Elektronische Lekdetector"
+                equipmentType="leak_detector"
+                equipment={equipment}
+                selectedBrand={commissioningData.tools.leak_detector_brand}
+                selectedSerial={commissioningData.tools.leak_detector_serial}
+                selectedCalibrationDate={commissioningData.tools.leak_detector_calibration_date}
+                onSelect={(eq) => {
+                  setCommissioningData((prev) => ({
+                    ...prev,
+                    tools: {
+                      ...prev.tools,
+                      leak_detector_brand: eq ? `${eq.brand} ${eq.name}` : "",
+                      leak_detector_serial: eq?.serial_number || "",
+                      leak_detector_calibration_date: eq?.calibration_date || "",
+                    },
+                  }));
+                }}
+              />
 
-              <div className="space-y-4">
-                <h4 className="font-medium">Koudemiddelweegschaal</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
-                  <div>
-                    <Label>Merk/Type</Label>
-                    <Input
-                      value={commissioningData.tools.refrigerant_scale_brand}
-                      onChange={(e) => updateTools("refrigerant_scale_brand", e.target.value)}
-                      placeholder="bijv. CPS CC220"
-                    />
-                  </div>
-                  <div>
-                    <Label>Serienummer</Label>
-                    <Input
-                      value={commissioningData.tools.refrigerant_scale_serial}
-                      onChange={(e) => updateTools("refrigerant_scale_serial", e.target.value)}
-                      placeholder="SN-12345678"
-                    />
-                  </div>
-                  <div>
-                    <Label>Kalibratiedatum</Label>
-                    <Input
-                      type="date"
-                      value={commissioningData.tools.refrigerant_scale_calibration_date}
-                      onChange={(e) => updateTools("refrigerant_scale_calibration_date", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
+              {/* Koudemiddelweegschaal */}
+              <EquipmentSelector
+                label="Koudemiddelweegschaal"
+                equipmentType="refrigerant_scale"
+                equipment={equipment}
+                selectedBrand={commissioningData.tools.refrigerant_scale_brand}
+                selectedSerial={commissioningData.tools.refrigerant_scale_serial}
+                selectedCalibrationDate={commissioningData.tools.refrigerant_scale_calibration_date}
+                onSelect={(eq) => {
+                  setCommissioningData((prev) => ({
+                    ...prev,
+                    tools: {
+                      ...prev.tools,
+                      refrigerant_scale_brand: eq ? `${eq.brand} ${eq.name}` : "",
+                      refrigerant_scale_serial: eq?.serial_number || "",
+                      refrigerant_scale_calibration_date: eq?.calibration_date || "",
+                    },
+                  }));
+                }}
+              />
 
-              <div className="space-y-4">
-                <h4 className="font-medium">Koudemiddel Terugwinunit (optioneel)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg">
-                  <div>
-                    <Label>Merk/Type</Label>
-                    <Input
-                      value={commissioningData.tools.recovery_unit_brand}
-                      onChange={(e) => updateTools("recovery_unit_brand", e.target.value)}
-                      placeholder="bijv. Mastercool 69100"
-                    />
-                  </div>
-                  <div>
-                    <Label>Serienummer</Label>
-                    <Input
-                      value={commissioningData.tools.recovery_unit_serial}
-                      onChange={(e) => updateTools("recovery_unit_serial", e.target.value)}
-                      placeholder="SN-12345678"
-                    />
-                  </div>
-                </div>
-              </div>
+              {/* Koudemiddel Terugwinunit (optioneel) */}
+              <EquipmentSelector
+                label="Koudemiddel Terugwinunit (optioneel)"
+                equipmentType="recovery_unit"
+                equipment={equipment}
+                selectedBrand={commissioningData.tools.recovery_unit_brand}
+                selectedSerial={commissioningData.tools.recovery_unit_serial}
+                onSelect={(eq) => {
+                  setCommissioningData((prev) => ({
+                    ...prev,
+                    tools: {
+                      ...prev.tools,
+                      recovery_unit_brand: eq ? `${eq.brand} ${eq.name}` : "",
+                      recovery_unit_serial: eq?.serial_number || "",
+                    },
+                  }));
+                }}
+              />
             </div>
           )}
 
