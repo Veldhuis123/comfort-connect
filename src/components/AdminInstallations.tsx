@@ -110,6 +110,9 @@ const AdminInstallations = () => {
   // Delete confirmations
   const [deleteInstallationId, setDeleteInstallationId] = useState<number | null>(null);
   const [deleteCustomerId, setDeleteCustomerId] = useState<number | null>(null);
+  
+  // Edit state
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
   // Forms
   const [installationForm, setInstallationForm] = useState<CreateInstallation>({
@@ -208,15 +211,21 @@ const AdminInstallations = () => {
     }
   };
 
-  const handleCreateCustomer = async () => {
+  const handleSaveCustomer = async () => {
     try {
-      await installationsApi.createCustomer(customerForm);
-      toast({ title: "Klant aangemaakt" });
+      if (editingCustomer) {
+        await installationsApi.updateCustomer(editingCustomer.id, customerForm);
+        toast({ title: "Klant bijgewerkt" });
+      } else {
+        await installationsApi.createCustomer(customerForm);
+        toast({ title: "Klant aangemaakt" });
+      }
       setShowCustomerForm(false);
+      setEditingCustomer(null);
       setCustomerForm({ contact_name: "", email: "", address_street: "", address_number: "", address_postal: "", address_city: "" });
       fetchData();
     } catch (err) {
-      toast({ title: "Fout", description: "Kon klant niet aanmaken", variant: "destructive" });
+      toast({ title: "Fout", description: editingCustomer ? "Kon klant niet bijwerken" : "Kon klant niet aanmaken", variant: "destructive" });
     }
   };
 
@@ -594,28 +603,92 @@ const AdminInstallations = () => {
               ) : (
                 <div className="space-y-4">
                   {customers.map((customer) => {
-                    const customerInstallations = installations.filter(i => i.customer_id === customer.id).length;
+                    const customerInstallationsList = installations.filter(i => i.customer_id === customer.id);
                     return (
                       <div key={customer.id} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-semibold">{customer.contact_name}</h4>
-                            {customer.company_name && (
-                              <p className="text-sm text-muted-foreground">{customer.company_name}</p>
-                            )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold">
+                                {customer.company_name || customer.contact_name}
+                              </h4>
+                              {customer.company_name && (
+                                <span className="text-sm text-muted-foreground">({customer.contact_name})</span>
+                              )}
+                            </div>
                             <p className="text-sm">{customer.address_street} {customer.address_number}</p>
                             <p className="text-sm">{customer.address_postal} {customer.address_city}</p>
-                            <p className="text-sm text-muted-foreground mt-1">{customer.email}</p>
+                            <div className="flex gap-4 text-sm text-muted-foreground mt-1">
+                              <span>{customer.email}</span>
+                              {customer.phone && <span>• {customer.phone}</span>}
+                            </div>
+                            
+                            {/* Installaties dropdown */}
+                            {customerInstallationsList.length > 0 && (
+                              <div className="mt-3 pt-3 border-t">
+                                <details className="group">
+                                  <summary className="flex items-center gap-2 cursor-pointer text-sm font-medium text-primary hover:underline">
+                                    <Thermometer className="w-4 h-4" />
+                                    {customerInstallationsList.length} installatie{customerInstallationsList.length !== 1 ? 's' : ''}
+                                  </summary>
+                                  <div className="mt-2 space-y-2 pl-6">
+                                    {customerInstallationsList.map((inst) => (
+                                      <div key={inst.id} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded">
+                                        <div>
+                                          <span className="font-medium">{inst.name}</span>
+                                          <span className="text-muted-foreground ml-2">
+                                            {inst.brand} {inst.model}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <Badge variant="outline" className={`${statusColors[inst.status]} text-white text-xs`}>
+                                            {inst.status}
+                                          </Badge>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleShowQR(inst)}
+                                          >
+                                            <QrCode className="w-4 h-4" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </details>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex flex-col items-end gap-2">
-                            <span className="text-sm text-muted-foreground">{customerInstallations} installaties</span>
+                          <div className="flex items-start gap-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingCustomer(customer);
+                                setCustomerForm({
+                                  company_name: customer.company_name || "",
+                                  contact_name: customer.contact_name,
+                                  email: customer.email,
+                                  phone: customer.phone || "",
+                                  address_street: customer.address_street,
+                                  address_number: customer.address_number,
+                                  address_postal: customer.address_postal,
+                                  address_city: customer.address_city,
+                                  notes: customer.notes || "",
+                                });
+                                setShowCustomerForm(true);
+                              }}
+                              title="Klant bewerken"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => setDeleteCustomerId(customer.id)}
                               className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                              disabled={customerInstallations > 0}
-                              title={customerInstallations > 0 ? "Verwijder eerst alle installaties van deze klant" : "Klant verwijderen"}
+                              disabled={customerInstallationsList.length > 0}
+                              title={customerInstallationsList.length > 0 ? "Verwijder eerst alle installaties van deze klant" : "Klant verwijderen"}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -836,11 +909,17 @@ const AdminInstallations = () => {
       </Dialog>
 
       {/* Customer Form Dialog */}
-      <Dialog open={showCustomerForm} onOpenChange={setShowCustomerForm}>
+      <Dialog open={showCustomerForm} onOpenChange={(open) => {
+        setShowCustomerForm(open);
+        if (!open) {
+          setEditingCustomer(null);
+          setCustomerForm({ contact_name: "", email: "", address_street: "", address_number: "", address_postal: "", address_city: "" });
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nieuwe Klant</DialogTitle>
-            <DialogDescription>Voeg een nieuwe klant toe</DialogDescription>
+            <DialogTitle>{editingCustomer ? "Klant Bewerken" : "Nieuwe Klant"}</DialogTitle>
+            <DialogDescription>{editingCustomer ? "Wijzig de klantgegevens" : "Voeg een nieuwe klant toe"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -904,7 +983,7 @@ const AdminInstallations = () => {
                 onChange={(e) => setCustomerForm({ ...customerForm, address_city: e.target.value })}
               />
             </div>
-            <Button onClick={handleCreateCustomer} className="w-full">Klant Opslaan</Button>
+            <Button onClick={handleSaveCustomer} className="w-full">{editingCustomer ? "Wijzigingen Opslaan" : "Klant Aanmaken"}</Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -30,10 +30,12 @@ import { Customer, CreateCustomer, installationsApi } from "@/lib/installationsA
 interface EBoekhoudenRelatie {
   id: string;
   code: string;
+  type: string; // B = Bedrijf, P = Persoon
   bedrijf: string;
   contactpersoon: string;
   email: string;
   telefoon: string;
+  mobiel: string;
   adres: string;
   postcode: string;
   plaats: string;
@@ -107,16 +109,32 @@ export const CustomerSelector = ({
   const importFromEboekhouden = async (relatie: EBoekhoudenRelatie) => {
     setImportingId(relatie.id);
     try {
-      // Parse adres naar straat en nummer
+      // Parse adres naar straat en nummer - probeer straatnaam en huisnummer te scheiden
       const adresParts = (relatie.adres || "").match(/^(.+?)\s+(\d+.*)$/) || ["", relatie.adres || "", ""];
       
+      // Combineer telefoon en mobiel, geef voorkeur aan mobiel
+      const phoneNumber = relatie.mobiel || relatie.telefoon || "";
+      
+      // Voor contactpersoon: als er geen contactpersoon is maar wel een bedrijfsnaam, gebruik dan leeg
+      // Als er geen bedrijf is, dan is de "naam" waarschijnlijk de contactpersoon
+      let companyName = relatie.bedrijf || "";
+      let contactName = relatie.contactpersoon || "";
+      
+      // Als contactpersoon leeg is maar bedrijf ook, gebruik dan de naam als contact
+      if (!contactName && !companyName) {
+        contactName = "Onbekend";
+      } else if (!contactName && companyName) {
+        // Bedrijf zonder contactpersoon - houd bedrijfsnaam en zet contact op bedrijfsnaam
+        contactName = companyName;
+      }
+      
       const newCustomer: CreateCustomer = {
-        company_name: relatie.bedrijf || undefined,
-        contact_name: relatie.contactpersoon || relatie.bedrijf || "Onbekend",
+        company_name: companyName || undefined,
+        contact_name: contactName,
         email: relatie.email || "",
-        phone: relatie.telefoon || undefined,
-        address_street: adresParts[1] || "",
-        address_number: adresParts[2] || "",
+        phone: phoneNumber || undefined,
+        address_street: adresParts[1]?.trim() || "",
+        address_number: adresParts[2]?.trim() || "",
         address_postal: relatie.postcode || "",
         address_city: relatie.plaats || "",
         notes: `Geïmporteerd uit e-Boekhouden (code: ${relatie.code})`,
@@ -126,7 +144,7 @@ export const CustomerSelector = ({
       
       toast({ 
         title: "Klant geïmporteerd", 
-        description: `${relatie.bedrijf || relatie.contactpersoon} is toegevoegd` 
+        description: `${companyName || contactName} is toegevoegd` 
       });
       
       // Select the new customer
