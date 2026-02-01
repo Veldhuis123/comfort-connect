@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { 
-  Trash2, Mail, Phone, Calendar, Image, FileText, ExternalLink, 
-  Send, X, Loader2, MapPin, Ruler, Thermometer, Package
+  Trash2, Mail, Phone, Calendar, Image, FileText, 
+  Send, X, Loader2, MapPin, Ruler, Thermometer, Package, Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +53,14 @@ interface Relatie {
   telefoon: string;
 }
 
+interface ProductRegel {
+  omschrijving: string;
+  code: string;
+  aantal: number;
+  eenheid: string;
+  prijsPerEenheid: number;
+}
+
 const statusColors: Record<string, string> = {
   nieuw: "bg-blue-500 text-white",
   in_behandeling: "bg-yellow-500 text-white",
@@ -74,22 +82,27 @@ const QuoteDetailDialog = ({
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [showOfferteDialog, setShowOfferteDialog] = useState(false);
   const [relaties, setRelaties] = useState<Relatie[]>([]);
   const [selectedRelatieId, setSelectedRelatieId] = useState<string>("");
-  const [invoiceDescription, setInvoiceDescription] = useState("");
-  const [invoiceAmount, setInvoiceAmount] = useState("");
-  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const [productRegels, setProductRegels] = useState<ProductRegel[]>([]);
+  const [notitieKlant, setNotitieKlant] = useState("");
+  const [isCreatingOfferte, setIsCreatingOfferte] = useState(false);
   const [loadingRelaties, setLoadingRelaties] = useState(false);
 
   // Fetch quote details with photos when opened
   useEffect(() => {
     if (open && quote) {
       fetchQuoteDetails();
-      setInvoiceDescription(`Airco installatie - ${quote.selected_airco_brand || ''} ${quote.selected_airco_name || ''}`);
-      setInvoiceAmount(quote.estimated_price?.toString() || "");
     }
   }, [open, quote]);
+
+  // Initialize product regels when opening offerte dialog
+  useEffect(() => {
+    if (showOfferteDialog && quote) {
+      initializeProductRegels();
+    }
+  }, [showOfferteDialog, quote]);
 
   const fetchQuoteDetails = async () => {
     if (!quote) return;
@@ -102,6 +115,55 @@ const QuoteDetailDialog = ({
     } finally {
       setLoadingPhotos(false);
     }
+  };
+
+  const initializeProductRegels = () => {
+    if (!quote) return;
+    
+    const regels: ProductRegel[] = [];
+    
+    // Add airco unit
+    if (quote.selected_airco_name) {
+      regels.push({
+        omschrijving: `Airco ${quote.selected_airco_brand || ''} ${quote.selected_airco_name}`,
+        code: quote.selected_airco_id || '',
+        aantal: 1,
+        eenheid: 'stuk',
+        prijsPerEenheid: Number(quote.estimated_price || 0) * 0.6 // Estimate airco is 60% of total
+      });
+    }
+    
+    // Add pipe/leiding
+    if (quote.pipe_length) {
+      regels.push({
+        omschrijving: `Koelleiding ${quote.pipe_color || 'wit'}`,
+        code: 'LEIDING',
+        aantal: Number(quote.pipe_length),
+        eenheid: 'meter',
+        prijsPerEenheid: 25 // €25 per meter estimate
+      });
+    }
+    
+    // Add goot (pipe cover)
+    regels.push({
+      omschrijving: 'Leidinggoot',
+      code: 'GOOT',
+      aantal: quote.pipe_length ? Number(quote.pipe_length) : 5,
+      eenheid: 'meter',
+      prijsPerEenheid: 15 // €15 per meter estimate
+    });
+    
+    // Add installation labor
+    regels.push({
+      omschrijving: 'Installatiewerkzaamheden',
+      code: 'INSTALL',
+      aantal: 1,
+      eenheid: 'stuk',
+      prijsPerEenheid: 350 // €350 flat rate estimate
+    });
+    
+    setProductRegels(regels);
+    setNotitieKlant(quote.additional_notes || '');
   };
 
   const fetchRelaties = async () => {
@@ -144,12 +206,36 @@ const QuoteDetailDialog = ({
     }
   };
 
-  const handleOpenInvoiceDialog = () => {
-    setShowInvoiceDialog(true);
+  const handleOpenOfferteDialog = () => {
+    setShowOfferteDialog(true);
     fetchRelaties();
   };
 
-  const handleCreateInvoice = async () => {
+  const handleAddRegel = () => {
+    setProductRegels([...productRegels, {
+      omschrijving: '',
+      code: '',
+      aantal: 1,
+      eenheid: 'stuk',
+      prijsPerEenheid: 0
+    }]);
+  };
+
+  const handleRemoveRegel = (index: number) => {
+    setProductRegels(productRegels.filter((_, i) => i !== index));
+  };
+
+  const handleRegelChange = (index: number, field: keyof ProductRegel, value: string | number) => {
+    const newRegels = [...productRegels];
+    newRegels[index] = { ...newRegels[index], [field]: value };
+    setProductRegels(newRegels);
+  };
+
+  const calculateTotaal = () => {
+    return productRegels.reduce((sum, r) => sum + (r.aantal * r.prijsPerEenheid), 0);
+  };
+
+  const handleCreateOfferte = async () => {
     if (!quote || !selectedRelatieId) {
       toast({
         title: "Selecteer een klant",
@@ -159,49 +245,31 @@ const QuoteDetailDialog = ({
       return;
     }
 
-    setIsCreatingInvoice(true);
+    if (productRegels.length === 0 || productRegels.every(r => !r.omschrijving)) {
+      toast({
+        title: "Voeg productregels toe",
+        description: "Een offerte moet minimaal 1 productregel bevatten",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingOfferte(true);
     try {
-      // Parse rooms if available
-      let rooms = [];
-      try {
-        rooms = typeof quote.rooms === 'string' ? JSON.parse(quote.rooms) : quote.rooms;
-      } catch (e) {
-        rooms = [];
-      }
-
-      // Build description with all quote details
-      let fullDescription = invoiceDescription;
-      if (rooms.length > 0) {
-        fullDescription += `\n\nRuimtes:\n${rooms.map((r: any, i: number) => 
-          `${i + 1}. ${r.name || r.type}: ${r.size}m²`
-        ).join('\n')}`;
-      }
-      if (quote.total_size) {
-        fullDescription += `\n\nTotaal oppervlakte: ${quote.total_size}m²`;
-      }
-      if (quote.pipe_color) {
-        fullDescription += `\nLeidingkleur: ${quote.pipe_color}`;
-      }
-      if (quote.pipe_length) {
-        fullDescription += `\nLeidinglengte: ${quote.pipe_length}m`;
-      }
-      if (quote.additional_notes) {
-        fullDescription += `\n\nOpmerkingen: ${quote.additional_notes}`;
-      }
-
-      // Create invoice in e-Boekhouden
-      await apiRequest('/eboekhouden/facturen', {
+      // Create offerte in e-Boekhouden
+      await apiRequest('/eboekhouden/offertes', {
         method: 'POST',
         body: JSON.stringify({
           relatieId: selectedRelatieId,
-          regels: [{
-            omschrijving: fullDescription,
-            aantal: 1,
-            prijsPerEenheid: parseFloat(invoiceAmount) || quote.estimated_price || 0,
+          regels: productRegels.filter(r => r.omschrijving).map(r => ({
+            omschrijving: r.omschrijving,
+            code: r.code || null,
+            aantal: r.aantal,
+            eenheid: r.eenheid,
+            prijsPerEenheid: r.prijsPerEenheid,
             btwCode: 'HOOG_VERK_21'
-          }],
-          betalingstermijn: 14,
-          opmerkingen: `Offerte aanvraag #${quote.id}`
+          })),
+          notitieKlant: notitieKlant || null
         }),
       });
 
@@ -210,35 +278,43 @@ const QuoteDetailDialog = ({
 
       toast({
         title: "Offerte aangemaakt!",
-        description: "De factuur is aangemaakt in e-Boekhouden",
+        description: "De offerte is aangemaakt in e-Boekhouden",
       });
 
-      setShowInvoiceDialog(false);
+      setShowOfferteDialog(false);
       onUpdated();
     } catch (error: any) {
-      console.error('Failed to create invoice:', error);
+      console.error('Failed to create offerte:', error);
       toast({
-        title: "Fout bij aanmaken factuur",
-        description: error.message || "Kon factuur niet aanmaken in e-Boekhouden",
+        title: "Fout bij aanmaken offerte",
+        description: error.message || "Kon offerte niet aanmaken in e-Boekhouden",
         variant: "destructive",
       });
     } finally {
-      setIsCreatingInvoice(false);
+      setIsCreatingOfferte(false);
     }
   };
 
   const getPhotoUrl = (photo: QuotePhoto) => {
-    // Photos are stored with full path in database, serve from backend
-    const backendUrl = API_URL.replace('/api', '');
-    return `${backendUrl}/${photo.file_path.replace('./uploads/', 'uploads/')}`;
+    // Determine the backend base URL
+    // In development via Vite proxy, API_URL is '/api' so we use the same origin
+    // In production, API_URL might be a full URL
+    const baseUrl = API_URL.startsWith('http') 
+      ? API_URL.replace('/api', '') 
+      : window.location.origin;
+    
+    // Clean up the file path - remove leading ./ if present
+    const cleanPath = photo.file_path.replace(/^\.\//, '');
+    
+    return `${baseUrl}/${cleanPath}`;
   };
 
   if (!quote) return null;
 
   // Parse rooms
-  let rooms = [];
+  let rooms: any[] = [];
   try {
-    rooms = typeof quote.rooms === 'string' ? JSON.parse(quote.rooms) : quote.rooms;
+    rooms = typeof quote.rooms === 'string' ? JSON.parse(quote.rooms) : (quote.rooms || []);
   } catch (e) {
     rooms = [];
   }
@@ -394,6 +470,10 @@ const QuoteDetailDialog = ({
                         alt={photo.file_name}
                         className="w-full aspect-square object-cover rounded-lg border cursor-pointer hover:opacity-90"
                         onClick={() => window.open(getPhotoUrl(photo), '_blank')}
+                        onError={(e) => {
+                          console.error('Failed to load photo:', getPhotoUrl(photo));
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
                       />
                       <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 rounded-b-lg truncate">
                         {photo.category}
@@ -423,7 +503,7 @@ const QuoteDetailDialog = ({
               Sluiten
             </Button>
             <Button
-              onClick={handleOpenInvoiceDialog}
+              onClick={handleOpenOfferteDialog}
               className="w-full sm:w-auto bg-accent hover:bg-accent/90"
             >
               <FileText className="w-4 h-4 mr-2" />
@@ -463,19 +543,20 @@ const QuoteDetailDialog = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Create Invoice Dialog */}
-      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
-        <DialogContent className="max-w-md">
+      {/* Create Offerte Dialog */}
+      <Dialog open={showOfferteDialog} onOpenChange={setShowOfferteDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Offerte aanmaken in e-Boekhouden</DialogTitle>
             <DialogDescription>
-              Maak een officiële offerte/factuur aan in e-Boekhouden
+              Maak een officiële offerte aan met productregels
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Klant selecteren */}
             <div>
-              <Label>Klant selecteren</Label>
+              <Label>Klant selecteren *</Label>
               {loadingRelaties ? (
                 <div className="flex items-center gap-2 text-muted-foreground py-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -500,35 +581,164 @@ const QuoteDetailDialog = ({
               </p>
             </div>
 
+            {/* Productregels tabel */}
             <div>
-              <Label>Omschrijving</Label>
-              <Textarea
-                value={invoiceDescription}
-                onChange={(e) => setInvoiceDescription(e.target.value)}
-                rows={3}
-              />
+              <div className="flex items-center justify-between mb-2">
+                <Label>Productregels</Label>
+                <Button size="sm" variant="outline" onClick={handleAddRegel}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  Regel toevoegen
+                </Button>
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-2 font-medium">Omschrijving</th>
+                        <th className="text-left p-2 font-medium w-20">Code</th>
+                        <th className="text-right p-2 font-medium w-20">Aantal</th>
+                        <th className="text-left p-2 font-medium w-20">Eenheid</th>
+                        <th className="text-right p-2 font-medium w-28">Prijs p.e.</th>
+                        <th className="text-right p-2 font-medium w-28">Totaal</th>
+                        <th className="w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productRegels.map((regel, index) => (
+                        <tr key={index} className="border-t">
+                          <td className="p-1">
+                            <Input
+                              value={regel.omschrijving}
+                              onChange={(e) => handleRegelChange(index, 'omschrijving', e.target.value)}
+                              placeholder="Omschrijving"
+                              className="h-8"
+                            />
+                          </td>
+                          <td className="p-1">
+                            <Input
+                              value={regel.code}
+                              onChange={(e) => handleRegelChange(index, 'code', e.target.value)}
+                              placeholder="Code"
+                              className="h-8"
+                            />
+                          </td>
+                          <td className="p-1">
+                            <Input
+                              type="number"
+                              value={regel.aantal}
+                              onChange={(e) => handleRegelChange(index, 'aantal', parseFloat(e.target.value) || 0)}
+                              className="h-8 text-right"
+                              min="0"
+                              step="0.5"
+                            />
+                          </td>
+                          <td className="p-1">
+                            <Select 
+                              value={regel.eenheid} 
+                              onValueChange={(v) => handleRegelChange(index, 'eenheid', v)}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="stuk">stuk</SelectItem>
+                                <SelectItem value="meter">meter</SelectItem>
+                                <SelectItem value="uur">uur</SelectItem>
+                                <SelectItem value="m2">m²</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-1">
+                            <Input
+                              type="number"
+                              value={regel.prijsPerEenheid}
+                              onChange={(e) => handleRegelChange(index, 'prijsPerEenheid', parseFloat(e.target.value) || 0)}
+                              className="h-8 text-right"
+                              min="0"
+                              step="0.01"
+                            />
+                          </td>
+                          <td className="p-2 text-right font-medium">
+                            €{(regel.aantal * regel.prijsPerEenheid).toFixed(2)}
+                          </td>
+                          <td className="p-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleRemoveRegel(index)}
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                      {productRegels.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="p-4 text-center text-muted-foreground">
+                            Geen productregels. Klik op "Regel toevoegen" om te beginnen.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                    <tfoot className="bg-muted/30 border-t">
+                      <tr>
+                        <td colSpan={5} className="p-2 text-right font-semibold">
+                          Totaal excl. BTW:
+                        </td>
+                        <td className="p-2 text-right font-bold text-accent">
+                          €{calculateTotaal().toFixed(2)}
+                        </td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td colSpan={5} className="p-2 text-right text-muted-foreground">
+                          BTW 21%:
+                        </td>
+                        <td className="p-2 text-right text-muted-foreground">
+                          €{(calculateTotaal() * 0.21).toFixed(2)}
+                        </td>
+                        <td></td>
+                      </tr>
+                      <tr className="border-t">
+                        <td colSpan={5} className="p-2 text-right font-semibold">
+                          Totaal incl. BTW:
+                        </td>
+                        <td className="p-2 text-right font-bold text-lg">
+                          €{(calculateTotaal() * 1.21).toFixed(2)}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
             </div>
 
+            {/* Notitie voor klant */}
             <div>
-              <Label>Bedrag (excl. BTW)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={invoiceAmount}
-                onChange={(e) => setInvoiceAmount(e.target.value)}
+              <Label>Notitie voor klant (optioneel)</Label>
+              <Textarea
+                value={notitieKlant}
+                onChange={(e) => setNotitieKlant(e.target.value)}
+                placeholder="Eventuele opmerkingen voor de klant..."
+                rows={3}
               />
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInvoiceDialog(false)}>
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setShowOfferteDialog(false)}>
               Annuleren
             </Button>
             <Button
-              onClick={handleCreateInvoice}
-              disabled={isCreatingInvoice || !selectedRelatieId}
+              onClick={handleCreateOfferte}
+              disabled={isCreatingOfferte || !selectedRelatieId}
+              className="bg-accent hover:bg-accent/90"
             >
-              {isCreatingInvoice ? (
+              {isCreatingOfferte ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Aanmaken...
