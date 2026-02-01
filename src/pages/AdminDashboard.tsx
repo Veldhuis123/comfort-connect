@@ -17,6 +17,7 @@ import {
 import EBoekhoudenSync from "@/components/EBoekhoudenSync";
 import AdminProducts from "@/components/AdminProducts";
 import AdminInstallations from "@/components/AdminInstallations";
+import QuoteDetailDialog from "@/components/QuoteDetailDialog";
 import { ProductCategory } from "@/lib/api";
 import {
   Dialog,
@@ -43,6 +44,10 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState<QuoteStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Quote detail dialog state
+  const [selectedQuote, setSelectedQuote] = useState<QuoteRequest | null>(null);
+  const [showQuoteDetail, setShowQuoteDetail] = useState(false);
 
   // Calculator settings state
   const [calculatorSettings, setCalculatorSettings] = useState<CalculatorSettings>(defaultCalculatorSettings);
@@ -387,6 +392,17 @@ const AdminDashboard = () => {
                             <option value="afgewezen">Afgewezen</option>
                             <option value="voltooid">Voltooid</option>
                           </select>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedQuote(quote);
+                              setShowQuoteDetail(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            Behandelen
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -394,6 +410,15 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Quote Detail Dialog */}
+            <QuoteDetailDialog
+              quote={selectedQuote}
+              open={showQuoteDetail}
+              onOpenChange={setShowQuoteDetail}
+              onDeleted={fetchData}
+              onUpdated={fetchData}
+            />
           </TabsContent>
 
           {/* Reviews Tab */}
