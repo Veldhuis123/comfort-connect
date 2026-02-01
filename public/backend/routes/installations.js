@@ -134,6 +134,98 @@ router.put('/technicians/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// Delete technician
+router.delete('/technicians/:id', authMiddleware, async (req, res) => {
+  try {
+    // Check if technician has installations
+    const [installations] = await pool.query(
+      'SELECT COUNT(*) as count FROM installations WHERE installed_by_technician_id = ?',
+      [req.params.id]
+    );
+    
+    if (installations[0].count > 0) {
+      return res.status(400).json({ 
+        error: 'Kan monteur niet verwijderen: er zijn nog installaties gekoppeld.' 
+      });
+    }
+    
+    await pool.query('DELETE FROM technicians WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting technician:', err);
+    res.status(500).json({ error: 'Kon monteur niet verwijderen' });
+  }
+});
+
+// =============================================
+// EQUIPMENT (BRL 100 tools)
+// =============================================
+
+// Get all equipment
+router.get('/equipment', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT * FROM equipment ORDER BY equipment_type, name ASC'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching equipment:', err);
+    res.status(500).json({ error: 'Kon gereedschap niet ophalen' });
+  }
+});
+
+// Create equipment
+router.post('/equipment', authMiddleware, async (req, res) => {
+  const { equipment_type, name, brand, serial_number, calibration_date, calibration_valid_until, notes } = req.body;
+  
+  try {
+    const [result] = await pool.query(
+      `INSERT INTO equipment (equipment_type, name, brand, serial_number, calibration_date, calibration_valid_until, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [equipment_type, name, brand, serial_number, calibration_date, calibration_valid_until, notes]
+    );
+    logger.audit('EQUIPMENT_CREATED', { 
+      equipmentId: result.insertId, 
+      equipmentType: equipment_type, 
+      serialNumber: serial_number 
+    }, req);
+    res.status(201).json({ id: result.insertId });
+  } catch (err) {
+    console.error('Error creating equipment:', err);
+    res.status(500).json({ error: 'Kon gereedschap niet aanmaken' });
+  }
+});
+
+// Update equipment
+router.put('/equipment/:id', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { equipment_type, name, brand, serial_number, calibration_date, calibration_valid_until, notes, is_active } = req.body;
+  
+  try {
+    await pool.query(
+      `UPDATE equipment SET equipment_type = ?, name = ?, brand = ?, serial_number = ?, 
+       calibration_date = ?, calibration_valid_until = ?, notes = ?, is_active = ?
+       WHERE id = ?`,
+      [equipment_type, name, brand, serial_number, calibration_date, calibration_valid_until, notes, is_active, id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error updating equipment:', err);
+    res.status(500).json({ error: 'Kon gereedschap niet bijwerken' });
+  }
+});
+
+// Delete equipment
+router.delete('/equipment/:id', authMiddleware, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM equipment WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting equipment:', err);
+    res.status(500).json({ error: 'Kon gereedschap niet verwijderen' });
+  }
+});
+
 // =============================================
 // INSTALLATIONS
 // =============================================
