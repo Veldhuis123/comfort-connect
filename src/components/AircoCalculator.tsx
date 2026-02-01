@@ -223,14 +223,15 @@ const AircoCalculator = () => {
     return aircoUnits.filter(unit => totalSize >= unit.minM2 && totalSize <= unit.maxM2);
   };
 
-  const calculateTotalPrice = (unit: AircoUnit) => {
+  const calculateTotalPrice = (unit: AircoUnit): number => {
     const totalSize = getTotalSize();
+    const basePrice = Number(unit.basePrice) || 0;
     const baseInstallation = totalSize > 40 ? 450 : 350;
     const roomMultiplier = rooms.length > 1 && systemType === "multisplit" ? rooms.length * 200 : 0;
-    const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * unit.basePrice * 0.8 : 0;
+    const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * basePrice * 0.8 : 0;
     const pipeLengthCost = parseFloat(pipeLength) > 5 ? (parseFloat(pipeLength) - 5) * 25 : 0;
     const separateGroupCost = separateGroup ? 250 : 0;
-    return unit.basePrice + baseInstallation + roomMultiplier + singleUnitMultiplier + pipeLengthCost + separateGroupCost;
+    return basePrice + baseInstallation + roomMultiplier + singleUnitMultiplier + pipeLengthCost + separateGroupCost;
   };
 
   const handleCalculate = () => {
