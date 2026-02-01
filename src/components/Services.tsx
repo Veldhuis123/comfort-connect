@@ -1,5 +1,6 @@
 import { Wind, Flame, Zap, Droplets, PipetteIcon, Wifi, Camera, Sun, Battery } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 
 const Services = () => {
   const services = [
@@ -8,6 +9,7 @@ const Services = () => {
       title: "Airconditioning",
       description: "Installatie en onderhoud van airconditioningsystemen. Koel in de zomer, warm in de winter.",
       features: ["Split-unit airco's", "Multi-split systemen", "Onderhoud & reparatie"],
+      calculatorLink: "/calculators?tab=airco",
     },
     {
       icon: Flame,
@@ -38,24 +40,28 @@ const Services = () => {
       title: "UniFi Netwerken",
       description: "Professionele netwerk- en WiFi oplossingen voor thuis en bedrijf.",
       features: ["UniFi access points", "Netwerk switches", "Volledige dekking"],
+      calculatorLink: "/calculators?tab=unifi",
     },
     {
       icon: Camera,
       title: "Camerabewaking",
       description: "Beveiligingscamera's en videobewakingssystemen voor optimale veiligheid.",
       features: ["UniFi Protect camera's", "Nachtzicht & 4K", "App bediening"],
+      calculatorLink: "/calculators?tab=unifi",
     },
     {
       icon: Sun,
       title: "Zonnepanelen",
       description: "Duurzame energie met PV-systemen voor uw woning of bedrijf.",
       features: ["Zonnepanelen installatie", "Omvormers", "Monitoring systemen"],
+      calculatorLink: "/calculators?tab=pv",
     },
     {
       icon: Battery,
       title: "Thuisaccu's",
       description: "Sla uw zonne-energie op en gebruik deze wanneer u wilt.",
       features: ["Thuisbatterijen", "Noodstroom functie", "Smart energy management"],
+      calculatorLink: "/calculators?tab=battery",
     },
   ];
 
@@ -76,32 +82,50 @@ const Services = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service, index) => (
-            <Card 
-              key={service.title} 
-              className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-accent/30 bg-card"
-            >
-              <CardHeader>
-                <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <service.icon className="w-7 h-7 text-accent" />
-                </div>
-                <CardTitle className="font-heading text-xl">{service.title}</CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  {service.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {service.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="w-1.5 h-1.5 bg-accent rounded-full" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          ))}
+          {services.map((service) => {
+            const CardWrapper = service.calculatorLink 
+              ? ({ children }: { children: React.ReactNode }) => (
+                  <Link to={service.calculatorLink!} className="block">
+                    {children}
+                  </Link>
+                )
+              : ({ children }: { children: React.ReactNode }) => <>{children}</>;
+            
+            return (
+              <CardWrapper key={service.title}>
+                <Card 
+                  className={`group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-accent/30 bg-card h-full ${
+                    service.calculatorLink ? "cursor-pointer" : ""
+                  }`}
+                >
+                  <CardHeader>
+                    <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                      <service.icon className="w-7 h-7 text-accent" />
+                    </div>
+                    <CardTitle className="font-heading text-xl">{service.title}</CardTitle>
+                    <CardDescription className="text-muted-foreground">
+                      {service.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {service.features.map((feature) => (
+                        <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="w-1.5 h-1.5 bg-accent rounded-full" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    {service.calculatorLink && (
+                      <p className="text-sm text-accent font-medium mt-4 group-hover:underline">
+                        Bereken uw prijs →
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </CardWrapper>
+            );
+          })}
         </div>
       </div>
     </section>

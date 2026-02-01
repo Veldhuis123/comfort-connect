@@ -152,6 +152,10 @@ const AircoCalculator = () => {
     }
   };
 
+  const formatPrice = (price: number) => {
+    return `€${price.toFixed(2).replace('.', ',')}`;
+  };
+
   const getCompareProductsData = (): CompareProduct[] => {
     return aircoUnits.map(u => ({
       id: u.id,
@@ -281,7 +285,7 @@ const AircoCalculator = () => {
     
     if (selectedAirco) {
       message += `\n\n❄️ Geselecteerde airco: ${selectedAirco.brand} ${selectedAirco.name}\n`;
-      message += `💰 Indicatieprijs: €${calculateTotalPrice(selectedAirco).toLocaleString('nl-NL')},-\n`;
+      message += `💰 Indicatieprijs: ${formatPrice(calculateTotalPrice(selectedAirco))}\n`;
     }
     
     message += `\n🎨 Gewenste kleur leidingen: ${pipeColors.find(c => c.id === selectedColor)?.label || selectedColor}`;
@@ -468,34 +472,34 @@ const AircoCalculator = () => {
       doc.setFont('helvetica', 'normal');
       
       doc.text(`Airco unit (${selectedAirco.brand} ${selectedAirco.name})`, 25, yPos);
-      doc.text(`€${selectedAirco.basePrice.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+      doc.text(`€${selectedAirco.basePrice.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
       yPos += 6;
       
       doc.text('Basisinstallatie', 25, yPos);
-      doc.text(`€${baseInstallation.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+      doc.text(`€${baseInstallation.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
       yPos += 6;
       
       if (roomMultiplier > 0) {
         doc.text(`Multi-split toeslag (${rooms.length} ruimtes)`, 25, yPos);
-        doc.text(`€${roomMultiplier.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+        doc.text(`€${roomMultiplier.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
         yPos += 6;
       }
       
       if (singleUnitMultiplier > 0) {
         doc.text(`Extra units (${rooms.length - 1}x)`, 25, yPos);
-        doc.text(`€${singleUnitMultiplier.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+        doc.text(`€${singleUnitMultiplier.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
         yPos += 6;
       }
       
       if (pipeLengthCost > 0) {
         doc.text(`Extra leidinglengte (${parseFloat(pipeLength) - 5}m)`, 25, yPos);
-        doc.text(`€${pipeLengthCost.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+        doc.text(`€${pipeLengthCost.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
         yPos += 6;
       }
       
       if (separateGroupCost > 0) {
         doc.text('Aparte groep meterkast', 25, yPos);
-        doc.text(`€${separateGroupCost.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+        doc.text(`€${separateGroupCost.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
         yPos += 6;
       }
       
@@ -509,7 +513,7 @@ const AircoCalculator = () => {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 102, 204);
       doc.text('Totaal indicatieprijs:', 25, yPos);
-      doc.text(`€${totalPrice.toLocaleString('nl-NL')},-`, pageWidth - 50, yPos);
+      doc.text(`€${totalPrice.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
     }
     
     // Footer
@@ -973,7 +977,7 @@ const AircoCalculator = () => {
                     <div className="border-t border-border pt-4">
                       <div className="text-sm text-muted-foreground">Totaalprijs incl. installatie</div>
                       <div className="text-2xl font-bold text-accent">
-                        €{calculateTotalPrice(unit).toLocaleString('nl-NL')},-
+                        €{calculateTotalPrice(unit).toFixed(2).replace('.', ',')}
                       </div>
                     </div>
                   </CardContent>
