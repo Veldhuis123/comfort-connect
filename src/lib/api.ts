@@ -79,6 +79,24 @@ export const api = {
   getQuote: (id: number) => apiRequest<QuoteRequest>(`/quotes/${id}`),
   createQuote: (quote: CreateQuoteRequest) =>
     apiRequest<{ id: number }>('/quotes', { method: 'POST', body: JSON.stringify(quote) }),
+  uploadQuotePhotos: async (quoteId: number, photos: { file: File; category: string }[]) => {
+    const formData = new FormData();
+    photos.forEach(photo => {
+      formData.append('photos', photo.file);
+    });
+    // Use first photo's category or 'general'
+    formData.append('category', photos[0]?.category || 'general');
+    
+    const response = await fetch(`${API_URL}/upload/quote/${quoteId}`, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error('Upload failed');
+    }
+    return response.json();
+  },
   updateQuoteStatus: (id: number, status: string, admin_notes?: string) =>
     apiRequest(`/quotes/${id}/status`, {
       method: 'PATCH',
