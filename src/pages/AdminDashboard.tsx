@@ -341,13 +341,13 @@ const AdminDashboard = () => {
                               {quote.selected_airco_brand} {quote.selected_airco_name || "Geen selectie"}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {quote.total_size}m² • {quote.total_capacity.toFixed(1)} kW
+                              {quote.total_size}m² • {Number(quote.total_capacity || 0).toFixed(1)} kW
                             </p>
                           </div>
                           <div className="text-right">
                             {quote.estimated_price && (
                               <p className="font-bold text-accent">
-                                €{quote.estimated_price.toLocaleString()}
+                                €{Number(quote.estimated_price).toLocaleString()}
                               </p>
                             )}
                             <p className="text-xs text-muted-foreground">
