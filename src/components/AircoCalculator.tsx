@@ -304,13 +304,23 @@ const AircoCalculator = () => {
   };
 
   const handleSubmitQuote = async () => {
+    // Validatie: email en telefoon zijn verplicht
+    if (!customerEmail || !customerPhone) {
+      toast({
+        title: "Vul uw contactgegevens in",
+        description: "E-mail en telefoonnummer zijn verplicht voor een offerte aanvraag.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const selectedAirco = aircoUnits.find(u => u.id === selectedUnit);
     setIsSubmitting(true);
 
     const quoteData = {
       customer_name: customerName || undefined,
-      customer_email: customerEmail || undefined,
-      customer_phone: customerPhone || undefined,
+      customer_email: customerEmail,
+      customer_phone: customerPhone,
       rooms: rooms.map(r => ({
         name: r.name,
         size: r.size,
@@ -332,11 +342,34 @@ const AircoCalculator = () => {
     };
 
     try {
-      await api.createQuote(quoteData);
+      const result = await api.createQuote(quoteData);
+      
+      // Upload foto's als die er zijn
+      if (photos.length > 0) {
+        try {
+          // Groepeer foto's per categorie en upload ze
+          const photosByCategory = photos.reduce((acc, photo) => {
+            if (!acc[photo.category]) acc[photo.category] = [];
+            acc[photo.category].push(photo);
+            return acc;
+          }, {} as Record<string, UploadedPhoto[]>);
+
+          for (const [category, categoryPhotos] of Object.entries(photosByCategory)) {
+            await api.uploadQuotePhotos(
+              result.id, 
+              categoryPhotos.map(p => ({ file: p.file, category }))
+            );
+          }
+        } catch (uploadError) {
+          console.error('Photo upload failed:', uploadError);
+          // Continue anyway, quote is created
+        }
+      }
+
       setQuoteSubmitted(true);
       toast({
         title: "Offerte aanvraag verzonden!",
-        description: "Bedankt! Ik neem binnen 24 uur contact met u op.",
+        description: `Bedankt! Ik neem binnen 24 uur contact met u op.${photos.length > 0 ? ` ${photos.length} foto(s) meegestuurd.` : ''}`,
       });
     } catch (error) {
       // Fallback to WhatsApp if API fails
@@ -1001,7 +1034,7 @@ const AircoCalculator = () => {
                 {/* Customer Details Form */}
                 <div className="max-w-md mx-auto space-y-4 mb-6">
                   <p className="text-sm text-muted-foreground text-center mb-4">
-                    Alle velden zijn optioneel. U kunt ook direct een PDF downloaden.
+                    Vul uw contactgegevens in zodat ik u kan bereiken.
                   </p>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
@@ -1018,23 +1051,29 @@ const AircoCalculator = () => {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <Mail className="w-4 h-4 inline mr-2" />
-                        E-mail <span className="text-muted-foreground font-normal">(optioneel)</span>
+                        E-mail <span className="text-destructive">*</span>
                       </label>
                       <Input
+                        type="email"
                         placeholder="uw@email.nl"
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
+                        className={!customerEmail ? "border-muted-foreground/50" : "border-green-500"}
+                        required
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <Phone className="w-4 h-4 inline mr-2" />
-                        Telefoon <span className="text-muted-foreground font-normal">(optioneel)</span>
+                        Telefoon <span className="text-destructive">*</span>
                       </label>
                       <Input
+                        type="tel"
                         placeholder="06-12345678"
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
+                        className={!customerPhone ? "border-muted-foreground/50" : "border-green-500"}
+                        required
                       />
                     </div>
                   </div>
@@ -1044,8 +1083,8 @@ const AircoCalculator = () => {
                   <Button 
                     size="lg" 
                     onClick={handleSubmitQuote}
-                    disabled={isSubmitting}
-                    className="bg-accent hover:bg-accent/90"
+                    disabled={isSubmitting || !customerEmail || !customerPhone}
+                    className="bg-accent hover:bg-accent/90 disabled:opacity-50"
                   >
                     <Send className="w-5 h-5 mr-2" />
                     {isSubmitting ? "Verzenden..." : "Offerte Aanvragen"}
@@ -1059,6 +1098,11 @@ const AircoCalculator = () => {
                     Download PDF
                   </Button>
                 </div>
+                {(!customerEmail || !customerPhone) && (
+                  <p className="text-sm text-muted-foreground text-center mt-2">
+                    Vul e-mail en telefoon in om een offerte aan te vragen
+                  </p>
+                )}
               </div>
             )}
 
