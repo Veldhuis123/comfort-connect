@@ -457,9 +457,10 @@ const AircoCalculator = () => {
       yPos += 15;
       
       // Price breakdown
+      const basePrice = Number(selectedAirco.basePrice) || 0;
       const baseInstallation = totalSize > 40 ? 450 : 350;
       const roomMultiplier = rooms.length > 1 && systemType === "multisplit" ? rooms.length * 200 : 0;
-      const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * selectedAirco.basePrice * 0.8 : 0;
+      const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * basePrice * 0.8 : 0;
       const pipeLengthCost = parseFloat(pipeLength) > 5 ? (parseFloat(pipeLength) - 5) * 25 : 0;
       const separateGroupCost = separateGroup ? 250 : 0;
       const totalPrice = calculateTotalPrice(selectedAirco);
@@ -473,7 +474,7 @@ const AircoCalculator = () => {
       doc.setFont('helvetica', 'normal');
       
       doc.text(`Airco unit (${selectedAirco.brand} ${selectedAirco.name})`, 25, yPos);
-      doc.text(`€${selectedAirco.basePrice.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
+      doc.text(`€${basePrice.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
       yPos += 6;
       
       doc.text('Basisinstallatie', 25, yPos);
@@ -999,10 +1000,13 @@ const AircoCalculator = () => {
 
                 {/* Customer Details Form */}
                 <div className="max-w-md mx-auto space-y-4 mb-6">
+                  <p className="text-sm text-muted-foreground text-center mb-4">
+                    Alle velden zijn optioneel. U kunt ook direct een PDF downloaden.
+                  </p>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
                       <User className="w-4 h-4 inline mr-2" />
-                      Uw naam
+                      Uw naam <span className="text-muted-foreground font-normal">(optioneel)</span>
                     </label>
                     <Input
                       placeholder="Uw volledige naam"
@@ -1014,10 +1018,9 @@ const AircoCalculator = () => {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <Mail className="w-4 h-4 inline mr-2" />
-                        E-mail
+                        E-mail <span className="text-muted-foreground font-normal">(optioneel)</span>
                       </label>
                       <Input
-                        type="email"
                         placeholder="uw@email.nl"
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
@@ -1026,10 +1029,9 @@ const AircoCalculator = () => {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         <Phone className="w-4 h-4 inline mr-2" />
-                        Telefoon
+                        Telefoon <span className="text-muted-foreground font-normal">(optioneel)</span>
                       </label>
                       <Input
-                        type="tel"
                         placeholder="06-12345678"
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
