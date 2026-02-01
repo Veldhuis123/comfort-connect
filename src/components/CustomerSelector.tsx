@@ -257,7 +257,12 @@ export const CustomerSelector = ({
 
   // Check if relatie already exists as customer (by email)
   const isAlreadyImported = (relatie: EBoekhoudenRelatie) => {
-    return customers.some(c => c.email === relatie.email);
+    // Geen match op lege e-mails
+    if (!relatie.email?.trim()) return false;
+    
+    return customers.some(c => 
+      c.email?.trim().toLowerCase() === relatie.email?.trim().toLowerCase()
+    );
   };
 
   return (
@@ -481,11 +486,19 @@ export const CustomerSelector = ({
                                   variant={alreadyImported ? "secondary" : "default"}
                                   onClick={() => {
                                     if (alreadyImported) {
-                                      // Select the existing customer
-                                      const existing = customers.find(c => c.email === relatie.email);
+                                      // Select the existing customer (case-insensitive email match)
+                                      const existing = customers.find(c => 
+                                        c.email?.trim().toLowerCase() === relatie.email?.trim().toLowerCase()
+                                      );
                                       if (existing) {
                                         onSelectCustomer(existing.id);
                                         setShowDialog(false);
+                                      } else {
+                                        toast({ 
+                                          title: "Klant niet gevonden", 
+                                          description: "De gekoppelde klant kon niet worden gevonden. Probeer opnieuw te importeren.",
+                                          variant: "destructive" 
+                                        });
                                       }
                                     } else {
                                       importFromEboekhouden(relatie);
