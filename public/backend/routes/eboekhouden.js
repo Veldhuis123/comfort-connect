@@ -195,6 +195,7 @@ router.get('/administraties', authMiddleware, async (req, res) => {
 
 // Get all relations (customers) - WITH FULL DETAILS
 router.get('/relaties', authMiddleware, async (req, res) => {
+  console.log('=== GET /relaties called ===');
   try {
     const { limit = 100, offset = 0, name, code, type } = req.query;
     
@@ -203,7 +204,9 @@ router.get('/relaties', authMiddleware, async (req, res) => {
     if (code) endpoint += `&code=${encodeURIComponent(code)}`;
     if (type) endpoint += `&type=${type}`; // B = Bedrijf, P = Persoon
     
+    console.log('Fetching from e-Boekhouden:', endpoint);
     const data = await apiRequest('GET', endpoint);
+    console.log('e-Boekhouden response items count:', Array.isArray(data) ? data.length : (data.items?.length || 'unknown'));
     
     // Handle both array and object with items property
     const items = Array.isArray(data) ? data : (data.items || data.data || []);
