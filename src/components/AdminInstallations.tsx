@@ -33,8 +33,10 @@ import {
 import { 
   Plus, Trash2, Edit, QrCode, Wrench, AlertTriangle, 
   Users, UserCog, Search, X, Thermometer, Calendar, MapPin,
-  FileText, ClipboardList, Eye, Download
+  FileText, ClipboardList, Eye, Download, Building2, User
 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { AircoInstallationWizard } from "./AircoInstallationWizard";
 import { CustomerSelector } from "./CustomerSelector";
 import {
@@ -113,6 +115,7 @@ const AdminInstallations = () => {
   
   // Edit state
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [customerType, setCustomerType] = useState<"B" | "P">("P");
 
   // Forms
   const [installationForm, setInstallationForm] = useState<CreateInstallation>({
@@ -213,15 +216,21 @@ const AdminInstallations = () => {
 
   const handleSaveCustomer = async () => {
     try {
+      // Bij particulier, zorg dat company_name leeg is
+      const formData = customerType === "P" 
+        ? { ...customerForm, company_name: undefined }
+        : customerForm;
+      
       if (editingCustomer) {
-        await installationsApi.updateCustomer(editingCustomer.id, customerForm);
+        await installationsApi.updateCustomer(editingCustomer.id, formData);
         toast({ title: "Klant bijgewerkt" });
       } else {
-        await installationsApi.createCustomer(customerForm);
+        await installationsApi.createCustomer(formData);
         toast({ title: "Klant aangemaakt" });
       }
       setShowCustomerForm(false);
       setEditingCustomer(null);
+      setCustomerType("P");
       setCustomerForm({ contact_name: "", email: "", address_street: "", address_number: "", address_postal: "", address_city: "" });
       fetchData();
     } catch (err) {
@@ -665,6 +674,7 @@ const AdminInstallations = () => {
                               size="sm"
                               onClick={() => {
                                 setEditingCustomer(customer);
+                                setCustomerType(customer.company_name ? "B" : "P");
                                 setCustomerForm({
                                   company_name: customer.company_name || "",
                                   contact_name: customer.contact_name,
@@ -919,18 +929,48 @@ const AdminInstallations = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingCustomer ? "Klant Bewerken" : "Nieuwe Klant"}</DialogTitle>
-            <DialogDescription>{editingCustomer ? "Wijzig de klantgegevens" : "Voeg een nieuwe klant toe"}</DialogDescription>
+            <DialogDescription>{editingCustomer ? "Pas de klantgegevens aan of wijzig het type" : "Voeg een nieuwe klant toe"}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Bedrijfsnaam</label>
-              <Input
-                value={customerForm.company_name || ""}
-                onChange={(e) => setCustomerForm({ ...customerForm, company_name: e.target.value })}
-              />
+            {/* Type selectie */}
+            <div className="p-3 bg-muted/30 rounded-lg">
+              <Label className="mb-2 block">Type klant</Label>
+              <RadioGroup
+                value={customerType}
+                onValueChange={(v) => setCustomerType(v as "B" | "P")}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="P" id="cust-type-p" />
+                  <Label htmlFor="cust-type-p" className="flex items-center gap-2 cursor-pointer font-normal">
+                    <User className="w-4 h-4 text-green-600" />
+                    Particulier
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="B" id="cust-type-b" />
+                  <Label htmlFor="cust-type-b" className="flex items-center gap-2 cursor-pointer font-normal">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                    Bedrijf
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
+            
+            {/* Bedrijfsnaam - alleen voor bedrijven */}
+            {customerType === "B" && (
+              <div>
+                <Label>Bedrijfsnaam*</Label>
+                <Input
+                  value={customerForm.company_name || ""}
+                  onChange={(e) => setCustomerForm({ ...customerForm, company_name: e.target.value })}
+                  placeholder="Verplicht voor bedrijven"
+                />
+              </div>
+            )}
+            
             <div>
-              <label className="text-sm font-medium">Contactpersoon*</label>
+              <Label>{customerType === "B" ? "Contactpersoon*" : "Naam*"}</Label>
               <Input
                 value={customerForm.contact_name}
                 onChange={(e) => setCustomerForm({ ...customerForm, contact_name: e.target.value })}
@@ -938,7 +978,7 @@ const AdminInstallations = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">E-mail*</label>
+                <Label>E-mail*</Label>
                 <Input
                   type="email"
                   value={customerForm.email}
@@ -946,7 +986,7 @@ const AdminInstallations = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Telefoon</label>
+                <Label>Telefoon</Label>
                 <Input
                   value={customerForm.phone || ""}
                   onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
@@ -955,21 +995,21 @@ const AdminInstallations = () => {
             </div>
             <div className="grid grid-cols-4 gap-2">
               <div className="col-span-2">
-                <label className="text-sm font-medium">Straat*</label>
+                <Label>Straat*</Label>
                 <Input
                   value={customerForm.address_street}
                   onChange={(e) => setCustomerForm({ ...customerForm, address_street: e.target.value })}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Nr*</label>
+                <Label>Nr*</Label>
                 <Input
                   value={customerForm.address_number}
                   onChange={(e) => setCustomerForm({ ...customerForm, address_number: e.target.value })}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Postcode*</label>
+                <Label>Postcode*</Label>
                 <Input
                   value={customerForm.address_postal}
                   onChange={(e) => setCustomerForm({ ...customerForm, address_postal: e.target.value })}
@@ -977,7 +1017,7 @@ const AdminInstallations = () => {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Plaats*</label>
+              <Label>Plaats*</Label>
               <Input
                 value={customerForm.address_city}
                 onChange={(e) => setCustomerForm({ ...customerForm, address_city: e.target.value })}
