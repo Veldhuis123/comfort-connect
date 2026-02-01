@@ -193,7 +193,7 @@ router.get('/administraties', authMiddleware, async (req, res) => {
 // RELATIES (Klanten)
 // =============================================
 
-// Get all relations (customers)
+// Get all relations (customers) - WITH FULL DETAILS
 router.get('/relaties', authMiddleware, async (req, res) => {
   try {
     const { limit = 100, offset = 0, name, code, type } = req.query;
@@ -205,43 +205,65 @@ router.get('/relaties', authMiddleware, async (req, res) => {
     
     const data = await apiRequest('GET', endpoint);
     
-    // Log raw response for debugging
-    console.log('e-Boekhouden raw response:', JSON.stringify(data, null, 2).substring(0, 1000));
-    
     // Handle both array and object with items property
     const items = Array.isArray(data) ? data : (data.items || data.data || []);
     
-    // Map to consistent format - check both camelCase and snake_case
-    const relations = items.map(rel => {
-      // Log first item structure for debugging
-      if (items.indexOf(rel) === 0) {
-        console.log('First relation object keys:', Object.keys(rel));
-      }
-      
-      return {
-        id: rel.id || rel.Id,
-        code: rel.code || rel.Code,
-        type: rel.type || rel.Type, // B or P
-        // Name can be in different fields
-        bedrijf: rel.name || rel.Name || rel.bedrijf || rel.Bedrijf || '',
-        contactpersoon: rel.contact || rel.Contact || rel.contactpersoon || rel.Contactpersoon || '',
-        email: rel.email || rel.Email || rel.emailAdres || rel.EmailAdres || '',
-        telefoon: rel.phone || rel.Phone || rel.telefoon || rel.Telefoon || '',
-        mobiel: rel.mobile || rel.Mobile || rel.mobiel || rel.Mobiel || '',
-        adres: rel.address || rel.Address || rel.adres || rel.Adres || '',
-        postcode: rel.postalCode || rel.PostalCode || rel.postcode || rel.Postcode || '',
-        plaats: rel.city || rel.City || rel.plaats || rel.Plaats || '',
-        land: rel.country || rel.Country || rel.land || rel.Land || 'NL',
-        iban: rel.iban || rel.IBAN || rel.Iban || '',
-        btwNummer: rel.vatNumber || rel.VatNumber || rel.btwNummer || rel.BTWNummer || '',
-        kvkNummer: rel.companyRegistrationNumber || rel.CompanyRegistrationNumber || rel.kvkNummer || rel.KVKNummer || '',
-        betalingstermijn: rel.termOfPayment || rel.TermOfPayment || rel.betalingstermijn || 14,
-        notities: rel.note || rel.Note || rel.notities || rel.Notities || '',
-        actief: rel.isActive !== false && rel.IsActive !== false
-      };
-    });
+    // The list endpoint only returns id, type, code - we need to fetch details for each
+    // Fetch details in parallel (max 10 concurrent)
+    const batchSize = 10;
+    const allDetails = [];
     
-    res.json(relations);
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize);
+      const detailPromises = batch.map(async (item) => {
+        try {
+          const detail = await apiRequest('GET', `/relation/${item.id}`);
+          return {
+            id: detail.id,
+            code: detail.code,
+            type: detail.type, // B or P
+            bedrijf: detail.name || '',
+            contactpersoon: detail.contact || '',
+            email: detail.email || '',
+            telefoon: detail.phone || '',
+            mobiel: detail.mobile || '',
+            adres: detail.address || '',
+            postcode: detail.postalCode || '',
+            plaats: detail.city || '',
+            land: detail.country || 'NL',
+            iban: detail.iban || '',
+            btwNummer: detail.vatNumber || '',
+            kvkNummer: detail.companyRegistrationNumber || '',
+            betalingstermijn: detail.termOfPayment || 14,
+            notities: detail.note || '',
+            actief: detail.isActive !== false
+          };
+        } catch (err) {
+          console.error(`Failed to fetch details for relation ${item.id}:`, err.message);
+          // Return basic info if detail fetch fails
+          return {
+            id: item.id,
+            code: item.code,
+            type: item.type,
+            bedrijf: '',
+            contactpersoon: '',
+            email: '',
+            telefoon: '',
+            mobiel: '',
+            adres: '',
+            postcode: '',
+            plaats: '',
+            land: 'NL',
+            actief: true
+          };
+        }
+      });
+      
+      const batchResults = await Promise.all(detailPromises);
+      allDetails.push(...batchResults);
+    }
+    
+    res.json(allDetails);
   } catch (error) {
     console.error('Get relaties error:', error);
     res.status(500).json({ error: error.message });
