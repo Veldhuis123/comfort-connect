@@ -205,27 +205,41 @@ router.get('/relaties', authMiddleware, async (req, res) => {
     
     const data = await apiRequest('GET', endpoint);
     
-    // Map to consistent format
-    const relations = (data.items || data).map(rel => ({
-      id: rel.id,
-      code: rel.code,
-      type: rel.type, // B or P
-      bedrijf: rel.name,
-      contactpersoon: rel.contact,
-      email: rel.email,
-      telefoon: rel.phone,
-      mobiel: rel.mobile,
-      adres: rel.address,
-      postcode: rel.postalCode,
-      plaats: rel.city,
-      land: rel.country,
-      iban: rel.iban,
-      btwNummer: rel.vatNumber,
-      kvkNummer: rel.companyRegistrationNumber,
-      betalingstermijn: rel.termOfPayment,
-      notities: rel.note,
-      actief: rel.isActive !== false
-    }));
+    // Log raw response for debugging
+    console.log('e-Boekhouden raw response:', JSON.stringify(data, null, 2).substring(0, 1000));
+    
+    // Handle both array and object with items property
+    const items = Array.isArray(data) ? data : (data.items || data.data || []);
+    
+    // Map to consistent format - check both camelCase and snake_case
+    const relations = items.map(rel => {
+      // Log first item structure for debugging
+      if (items.indexOf(rel) === 0) {
+        console.log('First relation object keys:', Object.keys(rel));
+      }
+      
+      return {
+        id: rel.id || rel.Id,
+        code: rel.code || rel.Code,
+        type: rel.type || rel.Type, // B or P
+        // Name can be in different fields
+        bedrijf: rel.name || rel.Name || rel.bedrijf || rel.Bedrijf || '',
+        contactpersoon: rel.contact || rel.Contact || rel.contactpersoon || rel.Contactpersoon || '',
+        email: rel.email || rel.Email || rel.emailAdres || rel.EmailAdres || '',
+        telefoon: rel.phone || rel.Phone || rel.telefoon || rel.Telefoon || '',
+        mobiel: rel.mobile || rel.Mobile || rel.mobiel || rel.Mobiel || '',
+        adres: rel.address || rel.Address || rel.adres || rel.Adres || '',
+        postcode: rel.postalCode || rel.PostalCode || rel.postcode || rel.Postcode || '',
+        plaats: rel.city || rel.City || rel.plaats || rel.Plaats || '',
+        land: rel.country || rel.Country || rel.land || rel.Land || 'NL',
+        iban: rel.iban || rel.IBAN || rel.Iban || '',
+        btwNummer: rel.vatNumber || rel.VatNumber || rel.btwNummer || rel.BTWNummer || '',
+        kvkNummer: rel.companyRegistrationNumber || rel.CompanyRegistrationNumber || rel.kvkNummer || rel.KVKNummer || '',
+        betalingstermijn: rel.termOfPayment || rel.TermOfPayment || rel.betalingstermijn || 14,
+        notities: rel.note || rel.Note || rel.notities || rel.Notities || '',
+        actief: rel.isActive !== false && rel.IsActive !== false
+      };
+    });
     
     res.json(relations);
   } catch (error) {
