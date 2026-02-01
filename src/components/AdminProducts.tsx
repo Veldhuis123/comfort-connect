@@ -646,30 +646,31 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
   return (
     <Card>
       <CardHeader className="space-y-4">
-        <div className="flex flex-row items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle>Productbeheer</CardTitle>
             <CardDescription>
               Beheer producten per categorie - sleep om volgorde te wijzigen
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {hasOrderChanged && (
               <Button 
                 onClick={handleSaveOrder} 
                 disabled={savingOrder}
                 variant="secondary"
+                size="sm"
               >
                 {savingOrder ? (
-                  <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                  <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full sm:mr-2" />
                 ) : (
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="w-4 h-4 sm:mr-2" />
                 )}
-                Volgorde Opslaan
+                <span className="hidden sm:inline">Volgorde Opslaan</span>
               </Button>
             )}
             <Select value={selectedCategory} onValueChange={(v) => onCategoryChange(v as ProductCategory)}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[140px] sm:w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -680,19 +681,19 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={handleAdd}>
-              <Plus className="w-4 h-4 mr-2" />
-              Product Toevoegen
+            <Button onClick={handleAdd} size="sm">
+              <Plus className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Product Toevoegen</span>
             </Button>
           </div>
         </div>
         
         {/* Search Bar and Status Filter */}
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Zoek op naam, merk of beschrijving..."
+              placeholder="Zoek op naam..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -707,7 +708,7 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
             )}
           </div>
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | "active" | "inactive")}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
