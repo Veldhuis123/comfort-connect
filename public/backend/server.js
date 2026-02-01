@@ -5,6 +5,7 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
+const logger = require('./services/logger');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -49,6 +50,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' })); // Limit body size
 app.use(cookieParser());
 app.use(limiter);
+app.use(logger.requestMiddleware); // BRL 100 audit logging
 
 // Static files voor uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -71,11 +73,16 @@ app.get('/api/health', (req, res) => {
 
 // Error handling
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error('SERVER', 'Unhandled error', { 
+    error: err.message, 
+    stack: err.stack,
+    requestId: req.requestId 
+  });
   res.status(500).json({ error: 'Er is iets misgegaan!' });
 });
 
 // Start server
 app.listen(PORT, () => {
+  logger.info('SERVER', `Server gestart op poort ${PORT}`, { port: PORT });
   console.log(`🚀 Server draait op http://localhost:${PORT}`);
 });
