@@ -34,7 +34,7 @@ import {
   Plus, Trash2, Edit, QrCode, Wrench, AlertTriangle, 
   Users, UserCog, Search, X, Thermometer, Calendar, MapPin,
   FileText, ClipboardList, Eye, Download, Building2, User, Printer,
-  Ruler
+  Ruler, Cylinder
 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -59,6 +59,9 @@ import {
   Equipment,
   CreateEquipment,
   EquipmentType,
+  RefrigerantCylinder,
+  CreateRefrigerantCylinder,
+  CylinderStatus,
 } from "@/lib/installationsApi";
 import { generateKenplaatPDF } from "@/lib/kenplaatPdfExport";
 import { generateCommissioningPDF } from "@/lib/commissioningPdfExport";
@@ -80,6 +83,22 @@ const equipmentTypeLabels: Record<EquipmentType, string> = {
   recovery_unit: "Recovery-unit",
   thermometer: "Thermometer",
   other: "Overig",
+};
+
+const cylinderStatusLabels: Record<CylinderStatus, string> = {
+  vol: "Vol",
+  in_gebruik: "In gebruik",
+  bijna_leeg: "Bijna leeg",
+  leeg: "Leeg",
+  retour: "Retour",
+};
+
+const cylinderStatusColors: Record<CylinderStatus, string> = {
+  vol: "bg-green-500",
+  in_gebruik: "bg-blue-500",
+  bijna_leeg: "bg-yellow-500",
+  leeg: "bg-gray-500",
+  retour: "bg-purple-500",
 };
 
 const statusColors: Record<string, string> = {
@@ -109,6 +128,7 @@ const AdminInstallations = () => {
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [faultReports, setFaultReports] = useState<FaultReport[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [cylinders, setCylinders] = useState<RefrigerantCylinder[]>([]);
   const [stats, setStats] = useState<InstallationStats>({
     totalInstallations: 0,
     maintenanceDue: 0,
@@ -132,12 +152,15 @@ const AdminInstallations = () => {
   const [deleteCustomerId, setDeleteCustomerId] = useState<number | null>(null);
   const [deleteTechnicianId, setDeleteTechnicianId] = useState<number | null>(null);
   const [deleteEquipmentId, setDeleteEquipmentId] = useState<number | null>(null);
+  const [deleteCylinderId, setDeleteCylinderId] = useState<number | null>(null);
   
   // Edit state
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [editingTechnician, setEditingTechnician] = useState<Technician | null>(null);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+  const [editingCylinder, setEditingCylinder] = useState<RefrigerantCylinder | null>(null);
   const [showEquipmentForm, setShowEquipmentForm] = useState(false);
+  const [showCylinderForm, setShowCylinderForm] = useState(false);
   const [customerType, setCustomerType] = useState<"B" | "P">("P");
 
   // Forms
@@ -173,6 +196,14 @@ const AdminInstallations = () => {
     serial_number: "",
   });
 
+  const [cylinderForm, setCylinderForm] = useState<CreateRefrigerantCylinder>({
+    refrigerant_type: "R32",
+    refrigerant_gwp: REFRIGERANT_GWP["R32"],
+    cylinder_size_kg: 9,
+    current_weight_kg: 0,
+    tare_weight_kg: 0,
+  });
+
   const [fgasForm, setFgasForm] = useState<CreateFGasLog>({
     technician_id: 0,
     activity_type: "lekcontrole",
@@ -184,13 +215,14 @@ const AdminInstallations = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [installationsData, customersData, techniciansData, faultsData, statsData, equipmentData] = await Promise.all([
+      const [installationsData, customersData, techniciansData, faultsData, statsData, equipmentData, cylindersData] = await Promise.all([
         installationsApi.getInstallations().catch((e) => { console.error('Installations error:', e); return []; }),
         installationsApi.getCustomers().catch((e) => { console.error('Customers error:', e); return []; }),
         installationsApi.getTechnicians().catch((e) => { console.error('Technicians error:', e); return []; }),
         installationsApi.getAllFaultReports().catch((e) => { console.error('Faults error:', e); return []; }),
         installationsApi.getStats().catch((e) => { console.error('Stats error:', e); return null; }),
         installationsApi.getEquipment().catch((e) => { console.error('Equipment error:', e); return []; }),
+        installationsApi.getCylinders().catch((e) => { console.error('Cylinders error:', e); return []; }),
       ]);
       setInstallations(Array.isArray(installationsData) ? installationsData : []);
       setCustomers(Array.isArray(customersData) ? customersData : []);
@@ -198,6 +230,7 @@ const AdminInstallations = () => {
       setFaultReports(Array.isArray(faultsData) ? faultsData : []);
       setStats(statsData);
       setEquipment(Array.isArray(equipmentData) ? equipmentData : []);
+      setCylinders(Array.isArray(cylindersData) ? cylindersData : []);
     } catch (err) {
       console.error('FetchData error:', err);
       toast({ title: "Fout", description: "Kon gegevens niet laden", variant: "destructive" });
@@ -331,6 +364,36 @@ const AdminInstallations = () => {
       fetchData();
     } catch (err) {
       toast({ title: "Fout", description: "Kon gereedschap niet verwijderen", variant: "destructive" });
+    }
+  };
+
+  const handleSaveCylinder = async () => {
+    try {
+      if (editingCylinder) {
+        await installationsApi.updateCylinder(editingCylinder.id, cylinderForm);
+        toast({ title: "Cilinder bijgewerkt" });
+      } else {
+        await installationsApi.createCylinder(cylinderForm);
+        toast({ title: "Cilinder aangemaakt" });
+      }
+      setShowCylinderForm(false);
+      setEditingCylinder(null);
+      setCylinderForm({ refrigerant_type: "R32", refrigerant_gwp: REFRIGERANT_GWP["R32"], cylinder_size_kg: 9, current_weight_kg: 0, tare_weight_kg: 0 });
+      fetchData();
+    } catch (err) {
+      toast({ title: "Fout", description: editingCylinder ? "Kon cilinder niet bijwerken" : "Kon cilinder niet aanmaken", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteCylinder = async () => {
+    if (!deleteCylinderId) return;
+    try {
+      await installationsApi.deleteCylinder(deleteCylinderId);
+      toast({ title: "Cilinder verwijderd" });
+      setDeleteCylinderId(null);
+      fetchData();
+    } catch (err) {
+      toast({ title: "Fout", description: "Kon cilinder niet verwijderen", variant: "destructive" });
     }
   };
 
@@ -538,6 +601,10 @@ const AdminInstallations = () => {
           <TabsTrigger value="equipment" className="text-xs sm:text-sm">
             <Ruler className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Gereedschap</span> ({equipment?.length ?? 0})
+          </TabsTrigger>
+          <TabsTrigger value="cylinders" className="text-xs sm:text-sm">
+            <Cylinder className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Cilinders</span> ({cylinders?.length ?? 0})
           </TabsTrigger>
         </TabsList>
 
@@ -1005,6 +1072,121 @@ const AdminInstallations = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Cylinders Tab */}
+        <TabsContent value="cylinders">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Koelmiddel Cilinders</CardTitle>
+                <CardDescription>Voorraad- en verbruiksbeheer van koudemiddelen</CardDescription>
+              </div>
+              <Button onClick={() => {
+                setEditingCylinder(null);
+                setCylinderForm({ refrigerant_type: "R32", refrigerant_gwp: REFRIGERANT_GWP["R32"], cylinder_size_kg: 9, current_weight_kg: 0, tare_weight_kg: 0 });
+                setShowCylinderForm(true);
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nieuwe Cilinder
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {cylinders.length === 0 ? (
+                <p className="text-muted-foreground">Nog geen cilinders geregistreerd</p>
+              ) : (
+                <div className="space-y-4">
+                  {cylinders.map((cyl) => {
+                    const contentKg = cyl.current_weight_kg - cyl.tare_weight_kg;
+                    const fillPercentage = cyl.cylinder_size_kg > 0 ? Math.round((contentKg / cyl.cylinder_size_kg) * 100) : 0;
+                    const isExpired = cyl.expiry_date && new Date(cyl.expiry_date) < new Date();
+                    return (
+                      <div key={cyl.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge className={`${cylinderStatusColors[cyl.status]} text-white`}>{cylinderStatusLabels[cyl.status]}</Badge>
+                              <h4 className="font-semibold">{cyl.refrigerant_type}</h4>
+                              <span className="text-sm text-muted-foreground">({cyl.cylinder_size_kg} kg cilinder)</span>
+                              {isExpired && (
+                                <Badge variant="destructive">Verlopen</Badge>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mt-2">
+                              <div>
+                                <span className="text-muted-foreground">Inhoud:</span>{" "}
+                                <span className="font-medium">{contentKg.toFixed(2)} kg ({fillPercentage}%)</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">GWP:</span>{" "}
+                                <span className="font-medium">{cyl.refrigerant_gwp}</span>
+                              </div>
+                              {cyl.batch_number && (
+                                <div>
+                                  <span className="text-muted-foreground">Batch:</span>{" "}
+                                  <span className="font-medium">{cyl.batch_number}</span>
+                                </div>
+                              )}
+                              {cyl.supplier && (
+                                <div>
+                                  <span className="text-muted-foreground">Leverancier:</span>{" "}
+                                  <span className="font-medium">{cyl.supplier}</span>
+                                </div>
+                              )}
+                            </div>
+                            {cyl.location && (
+                              <p className="text-xs text-muted-foreground mt-1">📍 {cyl.location}</p>
+                            )}
+                            {/* Progress bar for fill level */}
+                            <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full transition-all ${fillPercentage > 50 ? 'bg-green-500' : fillPercentage > 20 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                style={{ width: `${Math.min(fillPercentage, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingCylinder(cyl);
+                                setCylinderForm({
+                                  refrigerant_type: cyl.refrigerant_type,
+                                  refrigerant_gwp: cyl.refrigerant_gwp,
+                                  cylinder_size_kg: cyl.cylinder_size_kg,
+                                  current_weight_kg: cyl.current_weight_kg,
+                                  tare_weight_kg: cyl.tare_weight_kg,
+                                  batch_number: cyl.batch_number || "",
+                                  supplier: cyl.supplier || "",
+                                  purchase_date: cyl.purchase_date || "",
+                                  expiry_date: cyl.expiry_date || "",
+                                  location: cyl.location || "",
+                                  status: cyl.status,
+                                  notes: cyl.notes || "",
+                                });
+                                setShowCylinderForm(true);
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDeleteCylinderId(cyl.id)}
+                              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Installation Form Dialog */}
@@ -1437,6 +1619,146 @@ const AdminInstallations = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Cylinder Form Dialog */}
+      <Dialog open={showCylinderForm} onOpenChange={setShowCylinderForm}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingCylinder ? "Cilinder Bewerken" : "Nieuwe Cilinder"}</DialogTitle>
+            <DialogDescription>Registreer koudemiddel voorraad voor BRL 100 administratie</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Koudemiddel*</label>
+                <Select
+                  value={cylinderForm.refrigerant_type}
+                  onValueChange={(v) => setCylinderForm({ 
+                    ...cylinderForm, 
+                    refrigerant_type: v,
+                    refrigerant_gwp: REFRIGERANT_GWP[v] || 0
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REFRIGERANT_OPTIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r} (GWP: {REFRIGERANT_GWP[r]})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Status</label>
+                <Select
+                  value={cylinderForm.status || "vol"}
+                  onValueChange={(v) => setCylinderForm({ ...cylinderForm, status: v as CylinderStatus })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(cylinderStatusLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium">Cilinder grootte (kg)*</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={cylinderForm.cylinder_size_kg}
+                  onChange={(e) => setCylinderForm({ ...cylinderForm, cylinder_size_kg: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Huidig gewicht (kg)*</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={cylinderForm.current_weight_kg}
+                  onChange={(e) => setCylinderForm({ ...cylinderForm, current_weight_kg: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Leeggewicht (kg)*</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={cylinderForm.tare_weight_kg}
+                  onChange={(e) => setCylinderForm({ ...cylinderForm, tare_weight_kg: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+            {cylinderForm.current_weight_kg > 0 && cylinderForm.tare_weight_kg > 0 && (
+              <div className="p-3 bg-muted rounded-lg text-sm">
+                <strong>Berekende inhoud:</strong> {(cylinderForm.current_weight_kg - cylinderForm.tare_weight_kg).toFixed(2)} kg koudemiddel
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Batchnummer</label>
+                <Input
+                  value={cylinderForm.batch_number || ""}
+                  onChange={(e) => setCylinderForm({ ...cylinderForm, batch_number: e.target.value })}
+                  placeholder="bijv. BATCH-2025-001"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Leverancier</label>
+                <Input
+                  value={cylinderForm.supplier || ""}
+                  onChange={(e) => setCylinderForm({ ...cylinderForm, supplier: e.target.value })}
+                  placeholder="bijv. Koelgas Nederland"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Aankoopdatum</label>
+                <Input
+                  type="date"
+                  value={cylinderForm.purchase_date || ""}
+                  onChange={(e) => setCylinderForm({ ...cylinderForm, purchase_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Vervaldatum</label>
+                <Input
+                  type="date"
+                  value={cylinderForm.expiry_date || ""}
+                  onChange={(e) => setCylinderForm({ ...cylinderForm, expiry_date: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Opslaglocatie</label>
+              <Input
+                value={cylinderForm.location || ""}
+                onChange={(e) => setCylinderForm({ ...cylinderForm, location: e.target.value })}
+                placeholder="bijv. Bus, Magazijn schap 3"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Opmerkingen</label>
+              <Textarea
+                value={cylinderForm.notes || ""}
+                onChange={(e) => setCylinderForm({ ...cylinderForm, notes: e.target.value })}
+                placeholder="Eventuele opmerkingen"
+                rows={2}
+              />
+            </div>
+            <Button onClick={handleSaveCylinder} className="w-full">
+              {editingCylinder ? "Wijzigingen Opslaan" : "Cilinder Aanmaken"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* QR Code Dialog */}
       <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
         <DialogContent>
@@ -1732,6 +2054,24 @@ const AdminInstallations = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Annuleren</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteEquipment} className="bg-destructive hover:bg-destructive/90">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Cylinder Confirmation */}
+      <AlertDialog open={deleteCylinderId !== null} onOpenChange={(open) => !open && setDeleteCylinderId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cilinder verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je deze cilinder wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCylinder} className="bg-destructive hover:bg-destructive/90">
               Verwijderen
             </AlertDialogAction>
           </AlertDialogFooter>
