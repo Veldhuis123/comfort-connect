@@ -305,35 +305,46 @@ export const CustomerSelector = ({
                         c.address_city?.toLowerCase().includes(q)
                       );
                     })
-                    .map((customer) => (
-                      <div
-                        key={customer.id}
-                        className={`p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors ${
-                          selectedCustomerId === customer.id ? 'border-primary bg-accent' : ''
-                        }`}
-                        onClick={() => {
-                          onSelectCustomer(customer.id);
-                          setShowDialog(false);
-                        }}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="font-medium flex items-center gap-2">
-                              {customer.company_name || customer.contact_name}
-                              {selectedCustomerId === customer.id && (
-                                <CheckCircle2 className="w-4 h-4 text-primary" />
+                    .map((customer) => {
+                      const isBedrijf = !!customer.company_name;
+                      return (
+                        <div
+                          key={customer.id}
+                          className={`p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors ${
+                            selectedCustomerId === customer.id ? 'border-primary bg-accent' : ''
+                          }`}
+                          onClick={() => {
+                            onSelectCustomer(customer.id);
+                            setShowDialog(false);
+                          }}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="font-medium flex items-center gap-2">
+                                {isBedrijf ? (
+                                  <Building2 className="w-4 h-4 text-blue-600" />
+                                ) : (
+                                  <User className="w-4 h-4 text-green-600" />
+                                )}
+                                {customer.company_name || customer.contact_name}
+                                <Badge variant={isBedrijf ? "default" : "secondary"} className="text-xs">
+                                  {isBedrijf ? "Bedrijf" : "Particulier"}
+                                </Badge>
+                                {selectedCustomerId === customer.id && (
+                                  <CheckCircle2 className="w-4 h-4 text-primary" />
+                                )}
+                              </div>
+                              {customer.company_name && (
+                                <p className="text-sm text-muted-foreground ml-6">{customer.contact_name}</p>
                               )}
+                              <p className="text-sm text-muted-foreground ml-6">
+                                {customer.address_city} • {customer.email}
+                              </p>
                             </div>
-                            {customer.company_name && (
-                              <p className="text-sm text-muted-foreground">{customer.contact_name}</p>
-                            )}
-                            <p className="text-sm text-muted-foreground">
-                              {customer.address_city} • {customer.email}
-                            </p>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   {customers.length === 0 && (
                     <p className="text-muted-foreground text-center py-8">
                       Nog geen klanten. Importeer uit e-Boekhouden of maak een nieuwe aan.
@@ -386,6 +397,7 @@ export const CustomerSelector = ({
                       <div className="space-y-2">
                         {filteredRelaties.map((relatie) => {
                           const alreadyImported = isAlreadyImported(relatie);
+                          const isBedrijf = relatie.type === 'B';
                           return (
                             <div
                               key={relatie.id}
@@ -393,20 +405,28 @@ export const CustomerSelector = ({
                             >
                               <div className="flex items-start justify-between">
                                 <div>
-                                  <div className="font-medium flex items-center gap-2">
+                                  <div className="font-medium flex items-center gap-2 flex-wrap">
+                                    {isBedrijf ? (
+                                      <Building2 className="w-4 h-4 text-blue-600" />
+                                    ) : (
+                                      <User className="w-4 h-4 text-green-600" />
+                                    )}
                                     {relatie.bedrijf || relatie.contactpersoon}
+                                    <Badge variant={isBedrijf ? "default" : "secondary"} className="text-xs">
+                                      {isBedrijf ? "Bedrijf" : "Particulier"}
+                                    </Badge>
                                     <Badge variant="outline" className="text-xs">{relatie.code}</Badge>
                                     {alreadyImported && (
-                                      <Badge variant="secondary" className="text-xs">
+                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
                                         <CheckCircle2 className="w-3 h-3 mr-1" />
                                         Geïmporteerd
                                       </Badge>
                                     )}
                                   </div>
-                                  {relatie.bedrijf && relatie.contactpersoon && (
-                                    <p className="text-sm text-muted-foreground">{relatie.contactpersoon}</p>
+                                  {isBedrijf && relatie.contactpersoon && (
+                                    <p className="text-sm text-muted-foreground ml-6">{relatie.contactpersoon}</p>
                                   )}
-                                  <p className="text-sm text-muted-foreground">
+                                  <p className="text-sm text-muted-foreground ml-6">
                                     {relatie.plaats} • {relatie.email}
                                   </p>
                                 </div>
