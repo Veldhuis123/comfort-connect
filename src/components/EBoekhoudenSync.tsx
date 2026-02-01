@@ -201,7 +201,7 @@ const EBoekhoudenSync = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <div className="flex items-center gap-2">
               {isConnected === null ? (
                 <Badge variant="secondary">Controleren...</Badge>
@@ -216,13 +216,13 @@ const EBoekhoudenSync = () => {
               )}
             </div>
             <Button variant="outline" size="sm" onClick={testConnection} disabled={isLoading}>
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Test Verbinding
+              <RefreshCw className={`w-4 h-4 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Test Verbinding</span>
             </Button>
             <Button variant="ghost" size="sm" asChild>
               <a href="https://www.e-boekhouden.nl" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-4 h-4 mr-2" />
-                e-Boekhouden.nl
+                <ExternalLink className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">e-Boekhouden.nl</span>
               </a>
             </Button>
           </div>
@@ -261,17 +261,17 @@ const EBoekhoudenSync = () => {
           {/* Klanten Tab */}
           <TabsContent value="klanten" className="space-y-4">
             <Card>
-              <CardHeader className="flex-row items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <CardTitle className="text-lg">Klanten (Relaties)</CardTitle>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={fetchRelaties} disabled={isLoading}>
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    Ophalen
+                    <RefreshCw className={`w-4 h-4 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">Ophalen</span>
                   </Button>
                   <Dialog open={showAddRelatie} onOpenChange={setShowAddRelatie}>
                     <DialogTrigger asChild>
                       <Button size="sm">
-                        <Plus className="w-4 h-4 mr-2" /> Toevoegen
+                        <Plus className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Toevoegen</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -379,17 +379,17 @@ const EBoekhoudenSync = () => {
           {/* Producten Tab */}
           <TabsContent value="producten" className="space-y-4">
             <Card>
-              <CardHeader className="flex-row items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <CardTitle className="text-lg">Producten (Artikelen)</CardTitle>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={fetchArtikelen} disabled={isLoading}>
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    Ophalen
+                    <RefreshCw className={`w-4 h-4 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                    <span className="hidden sm:inline">Ophalen</span>
                   </Button>
                   <Dialog open={showAddArtikel} onOpenChange={setShowAddArtikel}>
                     <DialogTrigger asChild>
                       <Button size="sm">
-                        <Plus className="w-4 h-4 mr-2" /> Toevoegen
+                        <Plus className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Toevoegen</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
@@ -474,11 +474,11 @@ const EBoekhoudenSync = () => {
           {/* Facturen Tab */}
           <TabsContent value="facturen" className="space-y-4">
             <Card>
-              <CardHeader className="flex-row items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <CardTitle className="text-lg">Facturen</CardTitle>
                 <Button variant="outline" size="sm" onClick={fetchFacturen} disabled={isLoading}>
-                  <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                  Ophalen
+                  <RefreshCw className={`w-4 h-4 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">Ophalen</span>
                 </Button>
               </CardHeader>
               <CardContent>
