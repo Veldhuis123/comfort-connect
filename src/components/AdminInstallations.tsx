@@ -33,7 +33,7 @@ import {
 import { 
   Plus, Trash2, Edit, QrCode, Wrench, AlertTriangle, 
   Users, UserCog, Search, X, Thermometer, Calendar, MapPin,
-  FileText, ClipboardList, Eye, Download, Building2, User
+  FileText, ClipboardList, Eye, Download, Building2, User, Printer
 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -56,6 +56,9 @@ import {
   CreateFGasLog,
   FGasActivityType,
 } from "@/lib/installationsApi";
+import { generateKenplaatPDF } from "@/lib/kenplaatPdfExport";
+import { generateCommissioningPDF } from "@/lib/commissioningPdfExport";
+import type { CommissioningData } from "@/lib/installationTypes";
 
 const installationTypeLabels: Record<InstallationType, string> = {
   airco: "Airco",
@@ -329,13 +332,31 @@ const AdminInstallations = () => {
     }
   };
 
-  const handleAircoWizardComplete = async (data: CreateInstallation & { brl_checklist: any }) => {
+  const handleAircoWizardComplete = async (data: CreateInstallation & { brl_checklist: any; commissioning_data?: CommissioningData }) => {
     try {
-      const { brl_checklist, ...installationData } = data;
+      const { brl_checklist, commissioning_data, ...installationData } = data;
       // Store BRL checklist in notes for now
       const notes = `BRL 100 Checklist voltooid op ${new Date().toLocaleDateString('nl-NL')}`;
-      await installationsApi.createInstallation({ ...installationData, notes });
-      toast({ title: "Installatie succesvol aangemaakt", description: "BRL 100 checklist voltooid" });
+      const result = await installationsApi.createInstallation({ ...installationData, notes });
+      
+      // Generate PDF with correct QR code now that we have the installation qr_code
+      if (commissioning_data && result.qr_code) {
+        const fullCommissioningData = {
+          ...commissioning_data,
+          qr_code: result.qr_code,
+          brand: installationData.brand,
+          model_outdoor: installationData.model,
+          serial_outdoor: installationData.serial_number || "",
+          refrigerant_type: installationData.refrigerant_type || "R32",
+          standard_charge: String(installationData.refrigerant_charge_kg || 0),
+          commissioning_date: installationData.installation_date || new Date().toISOString().split("T")[0],
+        };
+        await generateCommissioningPDF(fullCommissioningData, installationData.name);
+        toast({ title: "Installatie succesvol aangemaakt", description: "BRL 100 rapport met QR-code gedownload" });
+      } else {
+        toast({ title: "Installatie succesvol aangemaakt", description: "BRL 100 checklist voltooid" });
+      }
+      
       setShowAircoWizard(false);
       fetchData();
     } catch (err) {
@@ -1119,17 +1140,28 @@ const AdminInstallations = () => {
               <div className="text-xs text-muted-foreground break-all">
                 {window.location.origin}/installatie/{selectedInstallation.qr_code}
               </div>
-              <Button
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = getQRCodeUrl(selectedInstallation.qr_code);
-                  link.download = `QR-${selectedInstallation.name}.png`;
-                  link.click();
-                }}
-                className="w-full"
-              >
-                Download QR Code
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = getQRCodeUrl(selectedInstallation.qr_code);
+                    link.download = `QR-${selectedInstallation.name}.png`;
+                    link.click();
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  QR Code
+                </Button>
+                <Button
+                  onClick={() => generateKenplaatPDF(selectedInstallation, window.location.origin)}
+                  className="flex-1"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Kenplaat
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

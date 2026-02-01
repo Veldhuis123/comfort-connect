@@ -10,17 +10,25 @@ export const generateCommissioningPDF = async (
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
-  // Generate QR code with installation data
-  const qrData = JSON.stringify({
-    werkbon: data.werkbon_number,
-    datum: data.commissioning_date,
-    klant: data.customer_name,
-    installatie: installationName,
-    merk: data.brand,
-    model: data.model_outdoor,
-    koudemiddel: data.refrigerant_type,
-    vulling: `${parseFloat(data.standard_charge || "0") + parseFloat(data.additional_charge || "0")} kg`,
-  });
+  // Generate QR code - use URL if qr_code is provided, otherwise fall back to JSON
+  let qrData: string;
+  if (data.qr_code) {
+    // URL-based QR code that links to the installation page
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://rv-installatie.nl';
+    qrData = `${baseUrl}/installatie/${data.qr_code}`;
+  } else {
+    // Fallback to JSON data (for preview before installation is saved)
+    qrData = JSON.stringify({
+      werkbon: data.werkbon_number,
+      datum: data.commissioning_date,
+      klant: data.customer_name,
+      installatie: installationName,
+      merk: data.brand,
+      model: data.model_outdoor,
+      koudemiddel: data.refrigerant_type,
+      vulling: `${parseFloat(data.standard_charge || "0") + parseFloat(data.additional_charge || "0")} kg`,
+    });
+  }
   
   const qrCodeDataUrl = await QRCode.toDataURL(qrData, { width: 100, margin: 1 });
 
