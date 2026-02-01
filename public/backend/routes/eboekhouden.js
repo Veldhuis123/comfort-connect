@@ -589,6 +589,116 @@ router.patch('/producten/:id', authMiddleware, async (req, res) => {
 });
 
 // =============================================
+// OFFERTES (Quotes)
+// =============================================
+
+// Get all quotes
+router.get('/offertes', authMiddleware, async (req, res) => {
+  try {
+    const { limit = 100, offset = 0, dateFrom, dateTo, relationId } = req.query;
+    
+    let endpoint = `/quote?limit=${limit}&offset=${offset}`;
+    if (dateFrom) endpoint += `&date[gte]=${dateFrom}`;
+    if (dateTo) endpoint += `&date[lte]=${dateTo}`;
+    if (relationId) endpoint += `&relationId=${relationId}`;
+    
+    const data = await apiRequest('GET', endpoint);
+    
+    const quotes = (data.items || data).map(q => ({
+      id: q.id,
+      offertenummer: q.quoteNumber,
+      relatieId: q.relationId,
+      datum: q.date,
+      vervaldatum: q.expirationDate,
+      totaalExcl: q.totalExcl,
+      totaalBtw: q.totalVat,
+      totaalIncl: q.totalIncl,
+      status: q.status
+    }));
+    
+    res.json(quotes);
+  } catch (error) {
+    console.error('Get offertes error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add new quote (offerte) - NO DELETE, only ADD
+router.post('/offertes', authMiddleware, async (req, res) => {
+  try {
+    const { 
+      relatieId,
+      offertenummer, // optioneel, wordt anders automatisch gegenereerd
+      datum,
+      vervaldatum,
+      btwType = 'EX', // IN of EX (inclusief/exclusief BTW)
+      sjabloonId, // quote template ID
+      regels = [], // Array of { omschrijving, code, aantal, eenheid, prijsPerEenheid, btwCode }
+      notitieKlant,
+      notitieIntern
+    } = req.body;
+
+    if (!relatieId) {
+      return res.status(400).json({ error: 'Relatie ID is verplicht' });
+    }
+
+    if (!regels || regels.length === 0) {
+      return res.status(400).json({ error: 'Minimaal 1 offerteregel is verplicht' });
+    }
+
+    // Calculate expiration date if not provided (default 30 days)
+    const quoteDate = datum || new Date().toISOString().split('T')[0];
+    let expirationDate = vervaldatum;
+    if (!expirationDate) {
+      const expDate = new Date(quoteDate);
+      expDate.setDate(expDate.getDate() + 30);
+      expirationDate = expDate.toISOString().split('T')[0];
+    }
+
+    const quoteData = {
+      relationId: relatieId,
+      date: quoteDate,
+      expirationDate: expirationDate,
+      vat: btwType,
+      items: regels.map(regel => ({
+        description: regel.omschrijving,
+        code: regel.code || null,
+        quantity: regel.aantal || 1,
+        unit: regel.eenheid || null,
+        pricePerUnit: regel.prijsPerEenheid || 0,
+        vatCode: regel.btwCode || 'HOOG_VERK_21'
+      }))
+    };
+
+    if (offertenummer) {
+      quoteData.quoteNumber = offertenummer;
+    }
+    if (sjabloonId) {
+      quoteData.templateId = sjabloonId;
+    }
+    if (notitieKlant) {
+      quoteData.quoteText = notitieKlant;
+    }
+    if (notitieIntern) {
+      quoteData.internalNote = notitieIntern;
+    }
+
+    console.log('Creating quote with data:', JSON.stringify(quoteData, null, 2));
+    const result = await apiRequest('POST', '/quote', quoteData);
+    
+    res.json({ 
+      success: true, 
+      id: result.id,
+      offertenummer: result.quoteNumber,
+      message: 'Offerte toegevoegd aan e-Boekhouden' 
+    });
+  } catch (error) {
+    console.error('Add offerte error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================================
 // FACTUREN (Invoices)
 // =============================================
 

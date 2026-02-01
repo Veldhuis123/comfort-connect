@@ -379,7 +379,7 @@ const AdminDashboard = () => {
                           </div>
                         )}
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <select
                             value={quote.status}
                             onChange={(e) => handleUpdateQuoteStatus(quote.id, e.target.value)}
@@ -402,6 +402,22 @@ const AdminDashboard = () => {
                           >
                             <Eye className="w-4 h-4 mr-1" />
                             Behandelen
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={async () => {
+                              if (confirm(`Weet je zeker dat je offerte #${quote.id} wilt verwijderen?`)) {
+                                try {
+                                  await api.deleteQuote(quote.id);
+                                  fetchData();
+                                } catch (err) {
+                                  alert("Fout bij verwijderen offerte");
+                                }
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
