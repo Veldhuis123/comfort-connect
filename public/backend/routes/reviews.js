@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
-const { notifyNewReview } = require('../services/whatsapp');
+const { sendReviewNotification } = require('../services/email');
 
 const router = express.Router();
 
@@ -85,14 +85,14 @@ router.post('/submit', async (req, res) => {
       [name.trim(), location.trim(), rating, review_text.trim(), service, review_date, false]
     );
 
-    // Send WhatsApp notification (async, don't wait for result)
-    notifyNewReview({
+    // Send email notification (async, don't wait for result)
+    sendReviewNotification({
       name: name.trim(),
       location: location.trim(),
       rating,
       review_text: review_text.trim(),
       service,
-    }).catch(err => console.error('WhatsApp notification failed:', err));
+    }).catch(err => console.error('Email notification failed:', err));
 
     res.status(201).json({ 
       id: result.insertId, 
