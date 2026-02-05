@@ -2,13 +2,17 @@ import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
+import ReCAPTCHA from "react-google-recaptcha";
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "";
 
 const Contact = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const contactInfo = [
     { icon: Phone, label: "Telefoon", value: "06 - 1362 9947", href: "tel:0613629947" },
@@ -19,6 +23,20 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Verify reCAPTCHA if enabled
+    if (RECAPTCHA_SITE_KEY) {
+      const captchaValue = recaptchaRef.current?.getValue();
+      if (!captchaValue) {
+        toast({
+          title: "Verificatie vereist",
+          description: "Bevestig dat u geen robot bent.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     setIsSubmitting(true);
     
     const formData = new FormData(e.currentTarget);
@@ -37,6 +55,7 @@ const Contact = () => {
         description: "Bedankt voor uw bericht. Ik neem zo snel mogelijk contact met u op.",
       });
       (e.target as HTMLFormElement).reset();
+      recaptchaRef.current?.reset();
     } catch (error) {
       // Fallback: open email client if API not available
       const subject = encodeURIComponent(`Contactformulier: ${data.subject || "Algemeen"}`);
@@ -184,6 +203,18 @@ const Contact = () => {
                   rows={5}
                 />
               </div>
+              
+              {/* reCAPTCHA */}
+              {RECAPTCHA_SITE_KEY && (
+                <div className="flex justify-center">
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    sitekey={RECAPTCHA_SITE_KEY}
+                    theme="light"
+                  />
+                </div>
+              )}
+              
               <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Verzenden..." : "Verstuur Bericht"}
               </Button>

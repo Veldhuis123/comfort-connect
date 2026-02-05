@@ -37,7 +37,7 @@
     <meta name="theme-color" content="#1e40af" />
     <meta name="msapplication-TileColor" content="#1e40af" />
     
-    <!-- Structured Data -->
+    <!-- Structured Data: LocalBusiness -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -45,8 +45,8 @@
       "name": "R. Veldhuis Installatie",
       "description": "Specialist in airco installatie, cv-ketel onderhoud, elektra aanleg en loodgieterswerk",
       "url": "https://rveldhuisinstallatie.nl",
-      "telephone": "+31612345678",
-      "email": "info@rveldhuisinstallatie.nl",
+      "telephone": "+31613629947",
+      "email": "info@rv-installatie.nl",
       "address": {
         "@type": "PostalAddress",
         "addressLocality": "Zwolle",
@@ -61,7 +61,7 @@
       "openingHoursSpecification": [
         {
           "@type": "OpeningHoursSpecification",
-          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
           "opens": "08:00",
           "closes": "18:00"
         }
@@ -113,6 +113,26 @@
       "sameAs": []
     }
     </script>
+    
+    <!-- Structured Data: AggregateRating (Google Reviews placeholder) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "R. Veldhuis Installatie",
+      "@id": "https://rveldhuisinstallatie.nl/#business",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "reviewCount": "10",
+        "bestRating": "5",
+        "worstRating": "1"
+      }
+    }
+    </script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   </head>
 
   <body>
