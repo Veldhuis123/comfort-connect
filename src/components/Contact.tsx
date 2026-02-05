@@ -2,51 +2,27 @@ import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useRef, Suspense, lazy, forwardRef, ComponentType } from "react";
+import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "";
 
-// Fallback component when reCAPTCHA module is not available
-const FallbackReCAPTCHA = forwardRef<any, any>(() => null);
-FallbackReCAPTCHA.displayName = "FallbackReCAPTCHA";
+const contactInfo = [
+  { icon: Phone, label: "Telefoon", value: "06 - 1362 9947", href: "tel:0613629947" },
+  { icon: Mail, label: "E-mail", value: "info@rv-installatie.nl", href: "mailto:info@rv-installatie.nl" },
+  { icon: MapPin, label: "Werkgebied", value: "Regio Nederland", href: null },
+  { icon: Clock, label: "Bereikbaar", value: "Ma-Za 08:00-18:00", href: null },
+];
 
-// Lazy load reCAPTCHA - gracefully handles missing module
-const LazyReCAPTCHA = lazy((): Promise<{ default: ComponentType<any> }> =>
-  import("react-google-recaptcha")
-    .then((module) => ({ default: module.default as ComponentType<any> }))
-    .catch(() => ({ default: FallbackReCAPTCHA }))
-);
-
-const Contact = () => {
+const ContactForm = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const recaptchaRef = useRef<any>(null);
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
-  const contactInfo = [
-    { icon: Phone, label: "Telefoon", value: "06 - 1362 9947", href: "tel:0613629947" },
-    { icon: Mail, label: "E-mail", value: "info@rv-installatie.nl", href: "mailto:info@rv-installatie.nl" },
-    { icon: MapPin, label: "Werkgebied", value: "Regio Nederland", href: null },
-    { icon: Clock, label: "Bereikbaar", value: "Ma-Za 08:00-18:00", href: null },
-  ];
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    // Verify reCAPTCHA if enabled
-    if (RECAPTCHA_SITE_KEY) {
-      const captchaValue = recaptchaRef.current?.getValue();
-      if (!captchaValue) {
-        toast({
-          title: "Verificatie vereist",
-          description: "Bevestig dat u geen robot bent.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
     setIsSubmitting(true);
     
     const formData = new FormData(e.currentTarget);
@@ -59,14 +35,18 @@ const Contact = () => {
     };
 
     try {
-      const captchaValue = RECAPTCHA_SITE_KEY ? recaptchaRef.current?.getValue() : undefined;
-      await api.createMessage({ ...data, recaptchaToken: captchaValue });
+      // Get reCAPTCHA v3 token
+      let recaptchaToken: string | undefined;
+      if (executeRecaptcha) {
+        recaptchaToken = await executeRecaptcha('contact_form');
+      }
+
+      await api.createMessage({ ...data, recaptchaToken });
       toast({
         title: "Bericht verzonden!",
         description: "Bedankt voor uw bericht. Ik neem zo snel mogelijk contact met u op.",
       });
       (e.target as HTMLFormElement).reset();
-      recaptchaRef.current?.reset();
     } catch (error) {
       // Fallback: open email client if API not available
       const subject = encodeURIComponent(`Contactformulier: ${data.subject || "Algemeen"}`);
@@ -79,8 +59,99 @@ const Contact = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [executeRecaptcha, toast]);
 
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
+            Naam *
+          </label>
+          <Input 
+            id="name" 
+            name="name" 
+            required 
+            placeholder="Uw naam"
+          />
+        </div>
+        <div>
+          <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
+            Telefoonnummer *
+          </label>
+          <Input 
+            id="phone" 
+            name="phone" 
+            type="tel" 
+            required 
+            placeholder="Uw telefoonnummer"
+          />
+        </div>
+      </div>
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+          E-mailadres *
+        </label>
+        <Input 
+          id="email" 
+          name="email" 
+          type="email" 
+          required
+          placeholder="Uw e-mailadres"
+        />
+      </div>
+      <div>
+        <label htmlFor="service" className="block text-sm font-medium text-foreground mb-2">
+          Dienst
+        </label>
+        <select 
+          id="service" 
+          name="service"
+          className="w-full h-10 px-3 rounded-md border border-input bg-background text-foreground"
+        >
+          <option value="">Selecteer een dienst</option>
+          <option value="airco">Airconditioning</option>
+          <option value="verwarming">Verwarming</option>
+          <option value="elektra">Elektra</option>
+          <option value="water">Water & Sanitair</option>
+          <option value="riolering">Riolering</option>
+          <option value="anders">Anders</option>
+        </select>
+      </div>
+      <div>
+        <label htmlFor="message" className="block text-sm font-medium text-foreground mb-2">
+          Bericht *
+        </label>
+        <Textarea 
+          id="message" 
+          name="message" 
+          required 
+          placeholder="Beschrijf uw vraag of project..."
+          rows={5}
+        />
+      </div>
+      
+      <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Verzenden..." : "Verstuur Bericht"}
+      </Button>
+      
+      {RECAPTCHA_SITE_KEY && (
+        <p className="text-xs text-muted-foreground text-center">
+          Beschermd door reCAPTCHA. Google{" "}
+          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline">
+            Privacy
+          </a>{" "}
+          &{" "}
+          <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline">
+            Voorwaarden
+          </a>
+        </p>
+      )}
+    </form>
+  );
+};
+
+const Contact = () => {
   return (
     <section id="contact" className="py-20 md:py-32 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -147,92 +218,13 @@ const Contact = () => {
             <h3 className="font-heading text-2xl font-bold text-foreground mb-6">
               Stuur een Bericht
             </h3>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-foreground mb-2">
-                    Naam *
-                  </label>
-                  <Input 
-                    id="name" 
-                    name="name" 
-                    required 
-                    placeholder="Uw naam"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
-                    Telefoonnummer *
-                  </label>
-                  <Input 
-                    id="phone" 
-                    name="phone" 
-                    type="tel" 
-                    required 
-                    placeholder="Uw telefoonnummer"
-                  />
-                </div>
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                  E-mailadres *
-                </label>
-                <Input 
-                  id="email" 
-                  name="email" 
-                  type="email" 
-                  required
-                  placeholder="Uw e-mailadres"
-                />
-              </div>
-              <div>
-                <label htmlFor="service" className="block text-sm font-medium text-foreground mb-2">
-                  Dienst
-                </label>
-                <select 
-                  id="service" 
-                  name="service"
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-foreground"
-                >
-                  <option value="">Selecteer een dienst</option>
-                  <option value="airco">Airconditioning</option>
-                  <option value="verwarming">Verwarming</option>
-                  <option value="elektra">Elektra</option>
-                  <option value="water">Water & Sanitair</option>
-                  <option value="riolering">Riolering</option>
-                  <option value="anders">Anders</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-foreground mb-2">
-                  Bericht *
-                </label>
-                <Textarea 
-                  id="message" 
-                  name="message" 
-                  required 
-                  placeholder="Beschrijf uw vraag of project..."
-                  rows={5}
-                />
-              </div>
-              
-              {/* reCAPTCHA */}
-              {RECAPTCHA_SITE_KEY && (
-                <Suspense fallback={null}>
-                  <div className="flex justify-center">
-                    <LazyReCAPTCHA
-                      ref={recaptchaRef}
-                      sitekey={RECAPTCHA_SITE_KEY}
-                      theme="light"
-                    />
-                  </div>
-                </Suspense>
-              )}
-              
-              <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Verzenden..." : "Verstuur Bericht"}
-              </Button>
-            </form>
+            {RECAPTCHA_SITE_KEY ? (
+              <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
+                <ContactForm />
+              </GoogleReCaptchaProvider>
+            ) : (
+              <ContactForm />
+            )}
           </div>
         </div>
       </div>
