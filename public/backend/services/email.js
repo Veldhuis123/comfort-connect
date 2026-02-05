@@ -247,6 +247,84 @@ ${message.message}
 Ontvangen op: ${new Date().toLocaleString('nl-NL')}
       `
     };
+  },
+
+  newReviewNotification: (review) => {
+    const stars = '⭐'.repeat(review.rating);
+    return {
+      subject: `🆕 Nieuwe Review van ${review.name} - ${stars}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #1e3a5f; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+            .stars { font-size: 24px; text-align: center; margin: 15px 0; }
+            .review-box { background: white; padding: 20px; border-left: 4px solid #fbbf24; margin: 20px 0; font-style: italic; }
+            .info-row { margin-bottom: 10px; }
+            .info-label { font-weight: bold; color: #666; }
+            .button { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 15px; }
+            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+            .pending { background: #fef3c7; border: 1px solid #f59e0b; padding: 10px; border-radius: 6px; text-align: center; margin-top: 15px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🆕 Nieuwe Review Ontvangen</h1>
+              <p>Wacht op goedkeuring</p>
+            </div>
+            
+            <div class="content">
+              <div class="stars">${stars}</div>
+              
+              <div class="info-row"><span class="info-label">Van:</span> ${review.name}</div>
+              <div class="info-row"><span class="info-label">Plaats:</span> ${review.location}</div>
+              <div class="info-row"><span class="info-label">Dienst:</span> ${review.service}</div>
+              
+              <div class="review-box">
+                "${review.review_text}"
+              </div>
+              
+              <div class="pending">
+                ⚠️ Deze review is nog niet zichtbaar op de website en moet eerst worden goedgekeurd.
+              </div>
+              
+              <div style="text-align: center;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin" class="button">
+                  Bekijk & Goedkeuren →
+                </a>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <p>Ontvangen op: ${new Date().toLocaleString('nl-NL', { dateStyle: 'full', timeStyle: 'short' })}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Nieuwe Review Ontvangen
+
+${stars}
+
+Van: ${review.name}
+Plaats: ${review.location}
+Dienst: ${review.service}
+
+"${review.review_text}"
+
+---
+⚠️ Deze review wacht op goedkeuring.
+Ga naar het admin panel om te controleren en publiceren.
+
+Ontvangen op: ${new Date().toLocaleString('nl-NL')}
+      `
+    };
   }
 };
 
@@ -264,9 +342,17 @@ const sendContactNotification = async (message) => {
   return sendEmail({ to, ...template });
 };
 
+// Send notification for new review
+const sendReviewNotification = async (review) => {
+  const to = process.env.EMAIL_TO || 'info@rv-installatie.nl';
+  const template = templates.newReviewNotification(review);
+  return sendEmail({ to, ...template });
+};
+
 module.exports = {
   sendEmail,
   sendQuoteNotification,
   sendContactNotification,
+  sendReviewNotification,
   templates
 };
