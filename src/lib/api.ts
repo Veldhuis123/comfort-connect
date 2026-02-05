@@ -248,6 +248,7 @@ export interface CreateContactMessage {
   phone?: string;
   subject?: string;
   message: string;
+  recaptchaToken?: string;
 }
 
 export interface AircoUnit {
