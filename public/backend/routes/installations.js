@@ -4,6 +4,7 @@ const pool = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../services/logger');
+const { sendFaultNotification, sendEquipmentExpiringNotification } = require('../services/email');
 
 // =============================================
 // CUSTOMERS
@@ -616,9 +617,10 @@ router.post('/qr/:qrCode/fault', async (req, res) => {
   const { reporter_name, reporter_phone, reporter_email, fault_type, error_code, description, urgency } = req.body;
   
   try {
-    // Find installation by QR code
+    // Find installation by QR code with details
     const [installations] = await pool.query(
-      'SELECT id FROM installations WHERE qr_code = ?',
+      `SELECT i.id, i.name, i.brand, i.model, i.location_description 
+       FROM installations i WHERE i.qr_code = ?`,
       [qrCode]
     );
     
@@ -626,16 +628,25 @@ router.post('/qr/:qrCode/fault', async (req, res) => {
       return res.status(404).json({ error: 'Installatie niet gevonden' });
     }
     
-    const installation_id = installations[0].id;
+    const installation = installations[0];
     
     const [result] = await pool.query(
       `INSERT INTO fault_reports (
         installation_id, reporter_name, reporter_phone, reporter_email,
         fault_type, error_code, description, urgency
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [installation_id, reporter_name, reporter_phone, reporter_email,
+      [installation.id, reporter_name, reporter_phone, reporter_email,
        fault_type, error_code, description, urgency]
     );
+    
+    // Send email notification (async, don't wait for result)
+    const faultData = {
+      reporter_name, reporter_phone, reporter_email,
+      fault_type, error_code, description, urgency
+    };
+    sendFaultNotification(faultData, installation).catch(err => {
+      console.error('Failed to send fault notification email:', err.message);
+    });
     
     res.status(201).json({ id: result.insertId, message: 'Storingsmelding ontvangen' });
   } catch (err) {
@@ -708,6 +719,74 @@ router.get('/stats/summary', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Error fetching stats:', err);
     res.status(500).json({ error: 'Kon statistieken niet ophalen' });
+  }
+});
+
+// =============================================
+// EQUIPMENT CALIBRATION CHECK & NOTIFICATIONS
+// =============================================
+
+// Check expiring equipment and send notification (can be called by cron or manually)
+router.post('/equipment/check-calibration', authMiddleware, async (req, res) => {
+  try {
+    const daysAhead = req.body.daysAhead || 30; // Default: check 30 days ahead
+    
+    // Get equipment expiring within the specified days
+    const [expiringEquipment] = await pool.query(`
+      SELECT * FROM equipment 
+      WHERE is_active = 1 
+        AND calibration_valid_until IS NOT NULL
+        AND calibration_valid_until <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+      ORDER BY calibration_valid_until ASC
+    `, [daysAhead]);
+    
+    if (expiringEquipment.length === 0) {
+      return res.json({ 
+        success: true, 
+        message: 'Geen gereedschap verloopt binnenkort',
+        count: 0 
+      });
+    }
+    
+    // Send notification
+    const result = await sendEquipmentExpiringNotification(expiringEquipment);
+    
+    res.json({
+      success: result.success,
+      message: result.success 
+        ? `Notificatie verzonden voor ${expiringEquipment.length} item(s)` 
+        : 'Kon notificatie niet verzenden',
+      count: expiringEquipment.length,
+      items: expiringEquipment.map(eq => ({
+        id: eq.id,
+        name: eq.name,
+        type: eq.equipment_type,
+        validUntil: eq.calibration_valid_until
+      }))
+    });
+  } catch (err) {
+    console.error('Error checking equipment calibration:', err);
+    res.status(500).json({ error: 'Kon kalibratie check niet uitvoeren' });
+  }
+});
+
+// Get expiring equipment list without sending notification
+router.get('/equipment/expiring', authMiddleware, async (req, res) => {
+  try {
+    const daysAhead = parseInt(req.query.days) || 30;
+    
+    const [expiringEquipment] = await pool.query(`
+      SELECT * FROM equipment 
+      WHERE is_active = 1 
+        AND calibration_valid_until IS NOT NULL
+        AND calibration_valid_until <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
+      ORDER BY calibration_valid_until ASC
+    `, [daysAhead]);
+    
+    res.json(expiringEquipment);
+  } catch (err) {
+    console.error('Error fetching expiring equipment:', err);
+    res.status(500).json({ error: 'Kon verlopend gereedschap niet ophalen' });
   }
 });
 
