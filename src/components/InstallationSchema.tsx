@@ -317,7 +317,7 @@ const InstallationSchema = ({
               {!readOnly && (
                 <div className="border-t pt-4 mt-4 space-y-3">
                   <p className="font-medium text-sm">Apparaat toevoegen</p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Input
                       placeholder="Naam (bijv. UDM-SE)"
                       value={newDevice.name}
@@ -329,7 +329,7 @@ const InstallationSchema = ({
                       onChange={e => setNewDevice({ ...newDevice, location: e.target.value })}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Select value={newDevice.type} onValueChange={v => setNewDevice({ ...newDevice, type: v as InstallationDevice["type"] })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Type" />
@@ -354,10 +354,11 @@ const InstallationSchema = ({
                         value={newDevice.quantity}
                         onChange={e => setNewDevice({ ...newDevice, quantity: parseInt(e.target.value) || 1 })}
                         min={1}
-                        className="w-20"
+                        className="w-16 sm:w-20"
                       />
                       <Button onClick={addDevice} className="flex-1">
-                        <Plus className="w-4 h-4 mr-1" /> Toevoegen
+                        <Plus className="w-4 h-4 sm:mr-1" /> 
+                        <span className="hidden sm:inline">Toevoegen</span>
                       </Button>
                     </div>
                   </div>
@@ -470,7 +471,7 @@ const InstallationSchema = ({
               {!readOnly && devices.length >= 2 && (
                 <div className="border-t pt-4 mt-4 space-y-3">
                   <p className="font-medium text-sm">Kabelverbinding toevoegen</p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <Select value={newCable.from} onValueChange={v => setNewCable({ ...newCable, from: v })}>
                       <SelectTrigger><SelectValue placeholder="Van..." /></SelectTrigger>
                       <SelectContent>
@@ -488,7 +489,7 @@ const InstallationSchema = ({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Select value={newCable.cableType} onValueChange={v => setNewCable({ ...newCable, cableType: v })}>
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder="Kabeltype..." />
@@ -504,13 +505,13 @@ const InstallationSchema = ({
                         ))}
                       </SelectContent>
                     </Select>
-                    <div className="relative">
+                    <div className="relative w-full sm:w-auto">
                       <Input
                         type="number"
                         placeholder="Lengte"
                         value={newCable.length || ""}
                         onChange={e => setNewCable({ ...newCable, length: parseFloat(e.target.value) || 0 })}
-                        className="w-28 pr-8"
+                        className="w-full sm:w-28 pr-8"
                         min={0}
                         step={0.5}
                       />
@@ -525,7 +526,8 @@ const InstallationSchema = ({
                       className="flex-1"
                     />
                     <Button onClick={addCable}>
-                      <Plus className="w-4 h-4 mr-1" /> Toevoegen
+                      <Plus className="w-4 h-4 sm:mr-1" /> 
+                      <span className="hidden sm:inline">Toevoegen</span>
                     </Button>
                   </div>
                 </div>
