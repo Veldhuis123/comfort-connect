@@ -1,4 +1,4 @@
-import { Phone, Menu, X } from "lucide-react";
+import { Phone, Menu, X, LogIn } from "lucide-react";
 import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,11 @@ const Header = () => {
             <Button variant="default" asChild>
               <a href="#contact">Offerte Aanvragen</a>
             </Button>
+            <Button variant="ghost" size="icon" asChild title="Admin Login">
+              <Link to="/admin">
+                <LogIn className="w-5 h-5" />
+              </Link>
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -102,6 +107,12 @@ const Header = () => {
               </a>
               <Button variant="default" className="w-full" asChild>
                 <a href="#contact">Offerte Aanvragen</a>
+              </Button>
+              <Button variant="outline" className="w-full" asChild>
+                <Link to="/admin" className="flex items-center gap-2">
+                  <LogIn className="w-4 h-4" />
+                  Admin Login
+                </Link>
               </Button>
             </nav>
           </div>
