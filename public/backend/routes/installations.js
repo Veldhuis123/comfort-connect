@@ -398,15 +398,17 @@ router.post('/', authMiddleware, async (req, res) => {
        next_maintenance_date, installed_by_technician_id, notes]
     );
     
-    // Create initial F-gas log entry for installation
-    await pool.query(
-      `INSERT INTO fgas_logs (
-        installation_id, technician_id, activity_type, refrigerant_type,
-        refrigerant_gwp, quantity_kg, is_addition, new_total_charge_kg, performed_at
-      ) VALUES (?, ?, 'installatie', ?, ?, ?, true, ?, ?)`,
-      [result.insertId, installed_by_technician_id, refrigerant_type, 
-       refrigerant_gwp, refrigerant_charge_kg, refrigerant_charge_kg, installation_date]
-    );
+    // Create initial F-gas log entry for installation (only if technician is provided)
+    if (installed_by_technician_id) {
+      await pool.query(
+        `INSERT INTO fgas_logs (
+          installation_id, technician_id, activity_type, refrigerant_type,
+          refrigerant_gwp, quantity_kg, is_addition, new_total_charge_kg, performed_at
+        ) VALUES (?, ?, 'installatie', ?, ?, ?, true, ?, ?)`,
+        [result.insertId, installed_by_technician_id, refrigerant_type, 
+         refrigerant_gwp, refrigerant_charge_kg, refrigerant_charge_kg, installation_date]
+      );
+    }
     
     // BRL 100 Audit log
     logger.installation('CREATED', {
