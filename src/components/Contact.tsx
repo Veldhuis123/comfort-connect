@@ -49,7 +49,8 @@ const Contact = () => {
     };
 
     try {
-      await api.createMessage(data);
+      const captchaValue = RECAPTCHA_SITE_KEY ? recaptchaRef.current?.getValue() : undefined;
+      await api.createMessage({ ...data, recaptchaToken: captchaValue });
       toast({
         title: "Bericht verzonden!",
         description: "Bedankt voor uw bericht. Ik neem zo snel mogelijk contact met u op.",

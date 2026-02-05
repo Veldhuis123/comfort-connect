@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
 const { sendContactNotification } = require('../services/email');
@@ -48,10 +49,37 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // Create contact message (public)
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone, subject, message } = req.body;
+    const { name, email, phone, subject, message, recaptchaToken } = req.body;
 
     if (!name || !email || !message) {
       return res.status(400).json({ error: 'Naam, email en bericht zijn verplicht' });
+    }
+
+    // Verify reCAPTCHA if secret key is configured
+    if (process.env.RECAPTCHA_SECRET_KEY) {
+      if (!recaptchaToken) {
+        return res.status(400).json({ error: 'reCAPTCHA verificatie is verplicht' });
+      }
+
+      try {
+        const recaptchaResponse = await axios.post(
+          'https://www.google.com/recaptcha/api/siteverify',
+          null,
+          {
+            params: {
+              secret: process.env.RECAPTCHA_SECRET_KEY,
+              response: recaptchaToken
+            }
+          }
+        );
+
+        if (!recaptchaResponse.data.success) {
+          return res.status(400).json({ error: 'reCAPTCHA verificatie mislukt' });
+        }
+      } catch (recaptchaError) {
+        console.error('reCAPTCHA verification error:', recaptchaError.message);
+        return res.status(500).json({ error: 'reCAPTCHA verificatie fout' });
+      }
     }
 
     const [result] = await db.query(
@@ -69,6 +97,7 @@ router.post('/', async (req, res) => {
       message: 'Bericht verzonden' 
     });
   } catch (error) {
+    console.error('Contact message error:', error.message);
     res.status(500).json({ error: 'Server fout' });
   }
 });
