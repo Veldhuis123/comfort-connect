@@ -72,6 +72,8 @@ export const api = {
     apiRequest(`/reviews/${id}`, { method: 'DELETE' }),
   toggleReviewVisibility: (id: number) =>
     apiRequest(`/reviews/${id}/toggle`, { method: 'PATCH' }),
+  submitPublicReview: (review: { name: string; location: string; rating: number; review_text: string; service: string }) =>
+    apiRequest<{ id: number; message: string }>('/reviews/submit', { method: 'POST', body: JSON.stringify(review) }),
 
   // Quotes
   getQuotes: (status?: string) =>
