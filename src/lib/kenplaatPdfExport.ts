@@ -3,6 +3,24 @@ import QRCode from "qrcode";
 import logoImg from "@/assets/logo.png";
 import type { Installation } from "@/lib/installationsApi";
 
+// Format date to Dutch format DD-MM-YYYY
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("nl-NL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+};
+
+// Format number with comma as decimal separator
+const formatNumber = (num: number | null | undefined, decimals: number = 3): string => {
+  if (num === null || num === undefined) return "-";
+  return num.toFixed(decimals).replace(".", ",");
+};
+
 export const generateKenplaatPDF = async (
   installation: Installation,
   baseUrl: string
@@ -11,7 +29,7 @@ export const generateKenplaatPDF = async (
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",
-    format: [85, 150] // Custom size for kenplaat
+    format: [90, 155] // Slightly larger for better readability
   });
   
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -23,15 +41,17 @@ export const generateKenplaatPDF = async (
   
   // Diagonal accent
   doc.setFillColor(220, 235, 250);
-  doc.triangle(pageWidth * 0.6, 0, pageWidth, 0, pageWidth, pageHeight, "F");
+  doc.triangle(pageWidth * 0.55, 0, pageWidth, 0, pageWidth, pageHeight, "F");
   
   // Border
-  doc.setDrawColor(100, 130, 160);
-  doc.setLineWidth(0.5);
+  doc.setDrawColor(30, 60, 90);
+  doc.setLineWidth(0.8);
   doc.rect(2, 2, pageWidth - 4, pageHeight - 4);
+  doc.setLineWidth(0.3);
+  doc.rect(3, 3, pageWidth - 6, pageHeight - 6);
   
   // === LEFT SIDE: Company info & QR ===
-  const leftColumnWidth = 45;
+  const leftColumnWidth = 48;
   
   // Try to add logo
   try {
@@ -41,163 +61,208 @@ export const generateKenplaatPDF = async (
       img.onload = resolve;
       img.onerror = reject;
     });
-    doc.addImage(img, "PNG", 5, 5, 35, 12);
+    doc.addImage(img, "PNG", 6, 6, 36, 13);
   } catch {
-    // Fallback: draw logo placeholder
-    doc.setFillColor(76, 175, 80);
-    doc.roundedRect(5, 5, 35, 12, 2, 2, "F");
+    // Fallback: company name text
+    doc.setFillColor(30, 60, 90);
+    doc.roundedRect(6, 6, 36, 13, 2, 2, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.text("RV Installatie", 7, 12);
+    doc.text("R.V. INSTALLATIE", 8, 14);
   }
   
-  // Company details
-  doc.setTextColor(60, 60, 60);
-  doc.setFontSize(6);
+  // Company details - using plain text without emoji
+  doc.setTextColor(50, 50, 50);
+  doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
-  let y = 22;
+  let y = 24;
   
-  // Icons are simulated with unicode symbols
-  doc.text("📍 Adres hier", 5, y);
+  doc.text("Adres: Leverancieradres", 6, y);
   y += 4;
-  doc.text("✉ info@rv-installatie.nl", 5, y);
+  doc.text("E: info@rv-installatie.nl", 6, y);
   y += 4;
-  doc.text("📞 06-13629947", 5, y);
+  doc.text("T: 06-13629947", 6, y);
   y += 4;
-  doc.text("🌐 www.rv-installatie.nl", 5, y);
-  y += 6;
+  doc.text("W: www.rv-installatie.nl", 6, y);
+  y += 8;
   
   // QR Code
   const qrUrl = `${baseUrl}/installatie/${installation.qr_code}`;
-  const qrCodeDataUrl = await QRCode.toDataURL(qrUrl, { width: 150, margin: 1 });
-  doc.addImage(qrCodeDataUrl, "PNG", 8, y, 25, 25);
+  const qrCodeDataUrl = await QRCode.toDataURL(qrUrl, { 
+    width: 200, 
+    margin: 1,
+    color: { dark: "#1e3a5a", light: "#ffffff" }
+  });
+  doc.addImage(qrCodeDataUrl, "PNG", 10, y, 28, 28);
   
-  doc.setFontSize(5);
-  doc.text("Bezoek website", 12, y + 28);
+  doc.setFontSize(5.5);
+  doc.setTextColor(60, 60, 60);
+  doc.text("Scan voor installatie-info", 11, y + 31);
   
   // === RIGHT SIDE: Installation info ===
-  const rightX = leftColumnWidth + 5;
+  const rightX = leftColumnWidth + 4;
   
-  // Title
+  // Title with background
   doc.setFillColor(30, 60, 90);
-  doc.setTextColor(30, 60, 90);
-  doc.setFontSize(12);
+  doc.roundedRect(rightX - 1, 5, pageWidth - rightX - 4, 10, 1, 1, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text("KENPLAAT KOELINSTALLATIE", rightX, 12);
+  doc.text("KENPLAAT KOELINSTALLATIE", rightX + 2, 12);
+  
+  // F-gas verordening subtitle
+  doc.setFontSize(5);
+  doc.setFont("helvetica", "italic");
+  doc.text("Conform EU Verordening 517/2014 (F-gassen)", rightX + 2, 14);
   
   // Form fields
   doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
   doc.setTextColor(40, 40, 40);
   
   y = 22;
-  const fieldWidth = pageWidth - rightX - 8;
-  const valueX = rightX + 40;
-  const lineHeight = 8;
+  const valueX = rightX + 38;
+  const lineHeight = 7.5;
+  const fieldWidth = pageWidth - valueX - 6;
   
-  const drawField = (label: string, value: string, yPos: number) => {
+  const drawField = (label: string, value: string, yPos: number, width: number = fieldWidth) => {
     doc.setFont("helvetica", "bold");
     doc.text(label, rightX, yPos);
     
     // Draw input box
-    doc.setDrawColor(150, 150, 150);
+    doc.setDrawColor(120, 140, 160);
     doc.setFillColor(255, 255, 255);
-    doc.roundedRect(valueX, yPos - 4, fieldWidth - 40, 5, 1, 1, "FD");
+    doc.roundedRect(valueX, yPos - 4, width, 5.5, 0.8, 0.8, "FD");
     
     // Value
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(6);
-    doc.text(value || "", valueX + 1, yPos - 0.5);
+    doc.setFontSize(6.5);
+    doc.text(value || "-", valueX + 1.5, yPos);
     doc.setFontSize(7);
   };
   
-  drawField("Identificatienummer", installation.qr_code || "", y);
+  // Identificatienummer (shortened UUID)
+  const shortId = installation.qr_code ? installation.qr_code.substring(0, 18) + "..." : "-";
+  drawField("Identificatienummer", shortId, y);
   y += lineHeight;
+  
+  // Leverancier
   drawField("Leverancier/Installateur", "R. Veldhuis Installatie", y);
   y += lineHeight;
-  drawField("Type koelinstallatie", installation.installation_type || "Airco", y);
+  
+  // Merk/Model (NEW - required info)
+  const merkModel = `${installation.brand || ""} ${installation.model || ""}`.trim() || "-";
+  drawField("Merk / Model", merkModel, y);
   y += lineHeight;
   
-  // Double fields row
+  // Type koelinstallatie
+  const typeLabels: Record<string, string> = {
+    "airco": "Airconditioning",
+    "warmtepomp": "Warmtepomp",
+    "koeling": "Koelinstallatie",
+    "ventilatie": "Ventilatie",
+    "overig": "Overig"
+  };
+  drawField("Type installatie", typeLabels[installation.installation_type] || installation.installation_type || "-", y);
+  y += lineHeight;
+  
+  // Row with refrigerant + GWP
   doc.setFont("helvetica", "bold");
   doc.text("Type koudemiddel", rightX, y);
-  doc.setDrawColor(150, 150, 150);
+  doc.setDrawColor(120, 140, 160);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(valueX, y - 4, 20, 5, 1, 1, "FD");
+  doc.roundedRect(valueX, y - 4, 18, 5.5, 0.8, 0.8, "FD");
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  doc.text(installation.refrigerant_type || "R32", valueX + 1, y - 0.5);
+  doc.setFontSize(6.5);
+  doc.text(installation.refrigerant_type || "-", valueX + 1.5, y);
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
-  doc.text("GWP-waarde", valueX + 25, y);
-  doc.setDrawColor(150, 150, 150);
+  const gwpX = valueX + 22;
+  doc.text("GWP-waarde", gwpX, y);
+  doc.setDrawColor(120, 140, 160);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(valueX + 48, y - 4, 15, 5, 1, 1, "FD");
+  doc.roundedRect(gwpX + 22, y - 4, 18, 5.5, 0.8, 0.8, "FD");
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  doc.text(String(installation.refrigerant_gwp || "675"), valueX + 49, y - 0.5);
+  doc.setFontSize(6.5);
+  doc.text(String(installation.refrigerant_gwp || "-"), gwpX + 23.5, y);
   y += lineHeight;
   
-  // Charge and CO2
+  // Row with charge + CO2 equivalent
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
-  doc.text("Nominale vulling (kg)", rightX, y);
-  doc.setDrawColor(150, 150, 150);
+  doc.text("Vulling (kg)", rightX, y);
+  doc.setDrawColor(120, 140, 160);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(valueX, y - 4, 20, 5, 1, 1, "FD");
+  doc.roundedRect(valueX, y - 4, 18, 5.5, 0.8, 0.8, "FD");
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  const chargeKg = installation.refrigerant_charge_kg || 0;
-  doc.text(String(chargeKg), valueX + 1, y - 0.5);
+  doc.setFontSize(6.5);
+  const chargeKg = Number(installation.refrigerant_charge_kg) || 0;
+  doc.text(formatNumber(chargeKg), valueX + 1.5, y);
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
-  doc.text("CO₂equivalent", valueX + 25, y);
-  doc.setDrawColor(150, 150, 150);
+  doc.text("CO2-eq (ton)", gwpX, y);
+  doc.setDrawColor(120, 140, 160);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(valueX + 48, y - 4, 15, 5, 1, 1, "FD");
+  doc.roundedRect(gwpX + 22, y - 4, 18, 5.5, 0.8, 0.8, "FD");
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  const co2eq = ((chargeKg * (installation.refrigerant_gwp || 675)) / 1000).toFixed(2);
-  doc.text(co2eq, valueX + 49, y - 0.5);
+  doc.setFontSize(6.5);
+  const gwp = Number(installation.refrigerant_gwp) || 0;
+  const co2eq = (chargeKg * gwp) / 1000;
+  doc.text(formatNumber(co2eq, 2), gwpX + 23.5, y);
   y += lineHeight;
   
-  // Logboek aanwezig
+  // Logboek aanwezig with proper checkboxes
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
   doc.text("Logboek aanwezig", rightX, y);
   
-  // Checkboxes
-  doc.setDrawColor(150, 150, 150);
-  doc.rect(valueX, y - 4, 4, 4);
-  doc.text("Ja", valueX + 6, y - 0.5);
-  doc.rect(valueX + 15, y - 4, 4, 4);
-  doc.text("Nee", valueX + 21, y - 0.5);
+  // "Ja" checkbox - checked
+  doc.setDrawColor(120, 140, 160);
+  doc.setFillColor(255, 255, 255);
+  doc.rect(valueX, y - 4, 4, 4, "FD");
+  // Draw checkmark with lines instead of unicode
+  doc.setDrawColor(30, 120, 60);
+  doc.setLineWidth(0.5);
+  doc.line(valueX + 0.8, y - 1.5, valueX + 1.8, y - 0.5);
+  doc.line(valueX + 1.8, y - 0.5, valueX + 3.2, y - 3);
+  doc.setLineWidth(0.3);
   
-  // Check "Ja" by default
   doc.setFont("helvetica", "normal");
-  doc.text("✓", valueX + 0.5, y - 0.5);
+  doc.setFontSize(6.5);
+  doc.text("Ja", valueX + 5.5, y);
+  
+  // "Nee" checkbox - unchecked
+  doc.setDrawColor(120, 140, 160);
+  doc.rect(valueX + 14, y - 4, 4, 4);
+  doc.text("Nee", valueX + 19.5, y);
   y += lineHeight;
   
   // Datum installatiecontrole
-  doc.setFont("helvetica", "bold");
-  doc.text("Datum installatiecontrole", rightX, y);
-  doc.setDrawColor(150, 150, 150);
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(valueX, y - 4, fieldWidth - 40, 5, 1, 1, "FD");
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6);
-  doc.text(installation.installation_date || new Date().toISOString().split("T")[0], valueX + 1, y - 0.5);
+  drawField("Datum installatie", formatDate(installation.installation_date), y);
+  y += lineHeight;
   
-  // Footer
+  // Serial number if available
+  if (installation.serial_number) {
+    drawField("Serienummer", installation.serial_number, y);
+  }
+  
+  // Footer with required F-gas warning
+  doc.setFillColor(255, 245, 230);
+  doc.roundedRect(rightX - 1, pageHeight - 12, pageWidth - rightX - 4, 8, 1, 1, "F");
+  doc.setDrawColor(200, 150, 50);
+  doc.roundedRect(rightX - 1, pageHeight - 12, pageWidth - rightX - 4, 8, 1, 1, "S");
+  
   doc.setFontSize(6);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(80, 80, 80);
-  doc.text("Bevat gefluoreerde broeikasgassen.", pageWidth - 8, pageHeight - 4, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(150, 100, 0);
+  doc.text("LET OP: Bevat gefluoreerde broeikasgassen", rightX + 2, pageHeight - 8);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(5);
+  doc.text("Onderhoud en buitengebruikstelling uitsluitend door gecertificeerde technici (F-gas)", rightX + 2, pageHeight - 5.5);
   
   // Save
-  const fileName = `Kenplaat-${installation.name || installation.qr_code}.pdf`;
+  const fileName = `Kenplaat-${installation.name || installation.qr_code?.substring(0, 8)}.pdf`;
   doc.save(fileName);
 };
