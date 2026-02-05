@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const logger = require('./services/logger');
+const { initCronJobs } = require('./services/cron');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -85,4 +86,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   logger.info('SERVER', `Server gestart op poort ${PORT}`, { port: PORT });
   console.log(`🚀 Server draait op http://localhost:${PORT}`);
+  
+  // Initialize cron jobs
+  initCronJobs();
 });

@@ -86,6 +86,16 @@ Pas in je React frontend de API URL aan:
 const API_URL = 'https://jouw-server.nl/api';
 ```
 
+## Automatische taken (Cron Jobs)
+
+De server start automatisch de volgende cron jobs:
+
+| Taak | Schema | Beschrijving |
+|------|--------|--------------|
+| Gereedschapskeuring check | Dagelijks 08:00 | Controleert of gereedschap (binnen 30 dagen) verloopt en stuurt e-mail notificatie |
+
+De cron jobs draaien in de Europe/Amsterdam tijdzone.
+
 ## Vereisten
 
 - Node.js 18+
