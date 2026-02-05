@@ -55,7 +55,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Naam, email en bericht zijn verplicht' });
     }
 
-    // Verify reCAPTCHA only if token is provided AND secret key is configured
+    // Verify reCAPTCHA v3 only if token is provided AND secret key is configured
     if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
       try {
         const recaptchaResponse = await axios.post(
@@ -69,9 +69,23 @@ router.post('/', async (req, res) => {
           }
         );
 
-        if (!recaptchaResponse.data.success) {
+        const { success, score, action } = recaptchaResponse.data;
+        
+        if (!success) {
+          console.error('reCAPTCHA v3 failed:', recaptchaResponse.data['error-codes']);
           return res.status(400).json({ error: 'reCAPTCHA verificatie mislukt' });
         }
+
+        // reCAPTCHA v3 returns a score from 0.0 to 1.0
+        // 1.0 = very likely human, 0.0 = very likely bot
+        // Threshold of 0.5 is recommended by Google
+        const threshold = parseFloat(process.env.RECAPTCHA_SCORE_THRESHOLD || '0.5');
+        if (score < threshold) {
+          console.warn(`reCAPTCHA v3 score too low: ${score} (threshold: ${threshold}), action: ${action}`);
+          return res.status(400).json({ error: 'Spam detectie - probeer het opnieuw' });
+        }
+
+        console.log(`reCAPTCHA v3 passed: score=${score}, action=${action}`);
       } catch (recaptchaError) {
         console.error('reCAPTCHA verification error:', recaptchaError.message);
         return res.status(500).json({ error: 'reCAPTCHA verificatie fout' });
