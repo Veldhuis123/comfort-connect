@@ -256,20 +256,29 @@ const QuoteDetailDialog = ({
 
     setIsCreatingOfferte(true);
     try {
-      // Create offerte in e-Boekhouden
+      // Find selected relation details
+      const selectedRelatie = relaties.find(r => String(r.id) === selectedRelatieId);
+      
+      // Create offerte locally (e-Boekhouden has no quote API)
       await apiRequest('/eboekhouden/offertes', {
         method: 'POST',
         body: JSON.stringify({
-          relatieId: selectedRelatieId,
+          relatieId: selectedRelatieId ? Number(selectedRelatieId) : null,
+          klantnaam: selectedRelatie?.bedrijf || selectedRelatie?.contactpersoon || quote?.customer_name || 'Onbekend',
+          klantEmail: selectedRelatie?.email || quote?.customer_email || null,
+          klantTelefoon: selectedRelatie?.telefoon || quote?.customer_phone || null,
+          klantAdres: null, // Could be expanded later
           regels: productRegels.filter(r => r.omschrijving).map(r => ({
             omschrijving: r.omschrijving,
             code: r.code || null,
             aantal: r.aantal,
             eenheid: r.eenheid,
             prijsPerEenheid: r.prijsPerEenheid,
+            btwPercentage: 21,
             btwCode: 'HOOG_VERK_21'
           })),
-          notitieKlant: notitieKlant || null
+          notitieKlant: notitieKlant || null,
+          quoteRequestId: quote?.id || null
         }),
       });
 
@@ -278,7 +287,7 @@ const QuoteDetailDialog = ({
 
       toast({
         title: "Offerte aangemaakt!",
-        description: "De offerte is aangemaakt in e-Boekhouden",
+        description: "De offerte is lokaal opgeslagen. Je kunt deze later overnemen in e-Boekhouden.",
       });
 
       setShowOfferteDialog(false);
@@ -287,7 +296,7 @@ const QuoteDetailDialog = ({
       console.error('Failed to create offerte:', error);
       toast({
         title: "Fout bij aanmaken offerte",
-        description: error.message || "Kon offerte niet aanmaken in e-Boekhouden",
+        description: error.message || "Kon offerte niet opslaan",
         variant: "destructive",
       });
     } finally {
@@ -547,9 +556,9 @@ const QuoteDetailDialog = ({
       <Dialog open={showOfferteDialog} onOpenChange={setShowOfferteDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Offerte aanmaken in e-Boekhouden</DialogTitle>
+            <DialogTitle>Offerte aanmaken</DialogTitle>
             <DialogDescription>
-              Maak een officiële offerte aan met productregels
+              Maak een officiële offerte aan. Deze wordt lokaal opgeslagen en kun je later overnemen in e-Boekhouden.
             </DialogDescription>
           </DialogHeader>
 

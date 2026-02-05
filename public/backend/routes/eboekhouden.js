@@ -623,30 +623,48 @@ router.get('/offertes', authMiddleware, async (req, res) => {
   }
 });
 
-// Add new quote (offerte) - NO DELETE, only ADD
+// Add new quote (offerte) - SAVES LOCALLY (e-Boekhouden has no quote API)
 router.post('/offertes', authMiddleware, async (req, res) => {
+  const db = require('../config/database');
+  
   try {
     const { 
       relatieId,
-      offertenummer, // optioneel, wordt anders automatisch gegenereerd
+      klantnaam,
+      klantEmail,
+      klantTelefoon,
+      klantAdres,
+      offertenummer,
       datum,
       vervaldatum,
-      btwType = 'EX', // IN of EX (inclusief/exclusief BTW)
-      sjabloonId, // quote template ID
-      regels = [], // Array of { omschrijving, code, aantal, eenheid, prijsPerEenheid, btwCode }
+      regels = [], // Array of { omschrijving, code, aantal, eenheid, prijsPerEenheid, btwPercentage }
       notitieKlant,
-      notitieIntern
+      notitieIntern,
+      quoteRequestId // Link naar oorspronkelijke aanvraag
     } = req.body;
 
-    if (!relatieId) {
-      return res.status(400).json({ error: 'Relatie ID is verplicht' });
+    if (!klantnaam && !relatieId) {
+      return res.status(400).json({ error: 'Klantnaam of Relatie ID is verplicht' });
     }
 
     if (!regels || regels.length === 0) {
       return res.status(400).json({ error: 'Minimaal 1 offerteregel is verplicht' });
     }
 
-    // Calculate expiration date if not provided (default 30 days)
+    // Calculate totals
+    let subtotalExcl = 0;
+    let vatAmount = 0;
+    
+    regels.forEach(regel => {
+      const lineTotal = (regel.aantal || 1) * (regel.prijsPerEenheid || 0);
+      const lineVat = lineTotal * ((regel.btwPercentage || 21) / 100);
+      subtotalExcl += lineTotal;
+      vatAmount += lineVat;
+    });
+    
+    const totalIncl = subtotalExcl + vatAmount;
+
+    // Calculate dates
     const quoteDate = datum || new Date().toISOString().split('T')[0];
     let expirationDate = vervaldatum;
     if (!expirationDate) {
@@ -655,48 +673,92 @@ router.post('/offertes', authMiddleware, async (req, res) => {
       expirationDate = expDate.toISOString().split('T')[0];
     }
 
-    const quoteData = {
-      relationId: relatieId,
-      date: quoteDate,
-      expirationDate: expirationDate,
-      vat: btwType,
-      items: regels.map(regel => ({
-        description: regel.omschrijving,
-        code: regel.code || null,
-        quantity: regel.aantal || 1,
-        unit: regel.eenheid || null,
-        pricePerUnit: regel.prijsPerEenheid || 0,
-        vatCode: regel.btwCode || 'HOOG_VERK_21'
-      }))
-    };
-
-    if (offertenummer) {
-      quoteData.quoteNumber = offertenummer;
-    }
-    if (sjabloonId) {
-      quoteData.templateId = sjabloonId;
-    }
-    if (notitieKlant) {
-      quoteData.quoteText = notitieKlant;
-    }
-    if (notitieIntern) {
-      quoteData.internalNote = notitieIntern;
+    // Generate quote number if not provided
+    let quoteNumber = offertenummer;
+    if (!quoteNumber) {
+      const year = new Date().getFullYear();
+      const [lastQuote] = await db.query(
+        `SELECT quote_number FROM local_quotes 
+         WHERE quote_number LIKE ? 
+         ORDER BY id DESC LIMIT 1`,
+        [`OFF-${year}-%`]
+      );
+      
+      let nextNum = 1;
+      if (lastQuote.length > 0 && lastQuote[0].quote_number) {
+        const match = lastQuote[0].quote_number.match(/OFF-\d{4}-(\d+)/);
+        if (match) nextNum = parseInt(match[1]) + 1;
+      }
+      quoteNumber = `OFF-${year}-${String(nextNum).padStart(4, '0')}`;
     }
 
-    console.log('Creating quote with data:', JSON.stringify(quoteData, null, 2));
-    const result = await apiRequest('POST', '/quote', quoteData);
+    // Insert quote
+    const [quoteResult] = await db.query(
+      `INSERT INTO local_quotes (
+        relation_id, customer_name, customer_email, customer_phone, customer_address,
+        quote_number, quote_date, expiration_date,
+        subtotal_excl, vat_amount, total_incl,
+        customer_note, internal_note, quote_request_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        relatieId || null,
+        klantnaam || 'Onbekend',
+        klantEmail || null,
+        klantTelefoon || null,
+        klantAdres || null,
+        quoteNumber,
+        quoteDate,
+        expirationDate,
+        subtotalExcl.toFixed(2),
+        vatAmount.toFixed(2),
+        totalIncl.toFixed(2),
+        notitieKlant || null,
+        notitieIntern || null,
+        quoteRequestId || null
+      ]
+    );
+
+    const quoteId = quoteResult.insertId;
+
+    // Insert quote items
+    for (let i = 0; i < regels.length; i++) {
+      const regel = regels[i];
+      await db.query(
+        `INSERT INTO local_quote_items (
+          quote_id, description, product_code, quantity, unit, 
+          price_per_unit, vat_code, vat_percentage, sort_order
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          quoteId,
+          regel.omschrijving || 'Product',
+          regel.code || null,
+          regel.aantal || 1,
+          regel.eenheid || 'stuk',
+          regel.prijsPerEenheid || 0,
+          regel.btwCode || 'HOOG_VERK_21',
+          regel.btwPercentage || 21,
+          i
+        ]
+      );
+    }
+
+    console.log(`Quote ${quoteNumber} saved locally (ID: ${quoteId})`);
     
     res.json({ 
       success: true, 
-      id: result.id,
-      offertenummer: result.quoteNumber,
-      message: 'Offerte toegevoegd aan e-Boekhouden' 
+      id: quoteId,
+      offertenummer: quoteNumber,
+      totaalExcl: subtotalExcl.toFixed(2),
+      btw: vatAmount.toFixed(2),
+      totaalIncl: totalIncl.toFixed(2),
+      message: 'Offerte lokaal opgeslagen. Je kunt deze later overnemen in e-Boekhouden.' 
     });
   } catch (error) {
     console.error('Add offerte error:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // =============================================
 // FACTUREN (Invoices)
