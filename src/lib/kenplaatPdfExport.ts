@@ -166,57 +166,58 @@ export const generateKenplaatPDF = async (
   drawField("Type installatie", typeLabels[installation.installation_type] || installation.installation_type || "-", y);
   y += lineHeight;
   
-  // Fixed column positions for two-column rows (precise alignment)
-  const col1ValueX = valueX;
-  const col1ValueW = 22;
-  const col2LabelX = 100; // Moved left
-  const col2ValueX = 122; // Moved left
-  const col2ValueW = 18;
+  // Two-column layout - calculated from available space
+  // Available width for both columns: fieldWidth (about 59mm)
+  const halfWidth = Math.floor(fieldWidth / 2) - 2; // ~27mm each
+  const col1BoxW = 18;
+  const col2Start = valueX + col1BoxW + 3; // Start col2 label right after col1 box
+  const col2BoxX = col2Start + 22; // Label is about 22mm
+  const col2BoxW = 16;
   
   // Row with refrigerant + GWP
   doc.setFont("helvetica", "bold");
   doc.text("Type koudemiddel", rightX, y);
   doc.setDrawColor(120, 140, 160);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(col1ValueX, y - 4, col1ValueW, 5.5, 0.8, 0.8, "FD");
+  doc.roundedRect(valueX, y - 4, col1BoxW, 5.5, 0.8, 0.8, "FD");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
-  doc.text(installation.refrigerant_type || "-", col1ValueX + 1.5, y);
+  doc.text(installation.refrigerant_type || "-", valueX + 1.5, y);
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
-  doc.text("GWP-waarde", col2LabelX, y);
+  doc.text("GWP-waarde", col2Start, y);
   doc.setDrawColor(120, 140, 160);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(col2ValueX, y - 4, col2ValueW, 5.5, 0.8, 0.8, "FD");
+  doc.roundedRect(col2BoxX, y - 4, col2BoxW, 5.5, 0.8, 0.8, "FD");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
-  doc.text(String(installation.refrigerant_gwp || "-"), col2ValueX + 1.5, y);
+  doc.text(String(installation.refrigerant_gwp || "-"), col2BoxX + 1.5, y);
   y += lineHeight;
   
-  // Row with charge + CO2 equivalent
+  // Row with charge + CO2 equivalent - IDENTICAL positions
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
   doc.text("Vulling (kg)", rightX, y);
   doc.setDrawColor(120, 140, 160);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(col1ValueX, y - 4, col1ValueW, 5.5, 0.8, 0.8, "FD");
+  doc.roundedRect(valueX, y - 4, col1BoxW, 5.5, 0.8, 0.8, "FD");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
   const chargeKg = Number(installation.refrigerant_charge_kg) || 0;
-  doc.text(formatNumber(chargeKg), col1ValueX + 1.5, y);
+  doc.text(formatNumber(chargeKg), valueX + 1.5, y);
   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
-  doc.text("CO2-eq (ton)", col2LabelX, y);
+  doc.text("CO2-eq (ton)", col2Start, y);
   doc.setDrawColor(120, 140, 160);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(col2ValueX, y - 4, col2ValueW, 5.5, 0.8, 0.8, "FD");
+  doc.roundedRect(col2BoxX, y - 4, col2BoxW, 5.5, 0.8, 0.8, "FD");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
   const gwp = Number(installation.refrigerant_gwp) || 0;
   const co2eq = (chargeKg * gwp) / 1000;
-  doc.text(formatNumber(co2eq, 2), col2ValueX + 1.5, y);
+  doc.text(formatNumber(co2eq, 2), col2BoxX + 1.5, y);
   y += lineHeight;
   
   // Logboek aanwezig with proper checkboxes
