@@ -1,36 +1,62 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter
+// Create transporter with detailed logging
 const createTransporter = () => {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
+  const config = {
+    host: process.env.SMTP_HOST || 'smtp.transip.email',
+    port: parseInt(process.env.SMTP_PORT) || 465,
+    secure: process.env.SMTP_SECURE !== 'false', // Default to true for TransIP
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    // Enable debug logging
+    logger: process.env.NODE_ENV !== 'production',
+    debug: process.env.NODE_ENV !== 'production',
+  };
+
+  console.log('📧 SMTP Config:', {
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    user: config.auth.user ? config.auth.user.substring(0, 5) + '...' : 'NOT SET',
+    pass: config.auth.pass ? '***SET***' : 'NOT SET'
   });
+
+  return nodemailer.createTransport(config);
 };
 
 // Send email
 const sendEmail = async ({ to, subject, html, text }) => {
+  // Check if SMTP is configured
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.error('❌ SMTP not configured: SMTP_USER or SMTP_PASS missing');
+    return { success: false, error: 'SMTP not configured' };
+  }
+
   try {
     const transporter = createTransporter();
     
+    // Verify connection first
+    console.log('📧 Verifying SMTP connection...');
+    await transporter.verify();
+    console.log('✅ SMTP connection verified');
+    
     const mailOptions = {
-      from: process.env.EMAIL_FROM || 'R. Veldhuis Installatie <noreply@rv-installatie.nl>',
+      from: process.env.EMAIL_FROM || 'R. Veldhuis Installatie <info@rv-installatie.nl>',
       to,
       subject,
       html,
       text,
     };
 
+    console.log('📧 Sending email to:', to, 'Subject:', subject);
     const info = await transporter.sendMail(mailOptions);
-    console.log('📧 Email sent:', info.messageId);
+    console.log('✅ Email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('❌ Email error:', error.message);
+    console.error('❌ Email error:', error.code, '-', error.message);
+    console.error('❌ Full error:', error);
     return { success: false, error: error.message };
   }
 };
