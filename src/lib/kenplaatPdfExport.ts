@@ -169,9 +169,9 @@ export const generateKenplaatPDF = async (
   // Fixed column positions for two-column rows (precise alignment)
   const col1ValueX = valueX;
   const col1ValueW = 22;
-  const col2LabelX = 113; // Fixed position for second label
-  const col2ValueX = 136; // Fixed position for second value
-  const col2ValueW = 16;
+  const col2LabelX = 100; // Moved left
+  const col2ValueX = 122; // Moved left
+  const col2ValueW = 18;
   
   // Row with refrigerant + GWP
   doc.setFont("helvetica", "bold");
