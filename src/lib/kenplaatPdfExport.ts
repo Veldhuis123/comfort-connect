@@ -166,12 +166,12 @@ export const generateKenplaatPDF = async (
   drawField("Type installatie", typeLabels[installation.installation_type] || installation.installation_type || "-", y);
   y += lineHeight;
   
-  // Consistent column positions for two-column rows
+  // Fixed column positions for two-column rows (precise alignment)
   const col1ValueX = valueX;
-  const col1ValueW = 20;
-  const col2LabelX = col1ValueX + col1ValueW + 4; // Start label right after first value box + spacing
-  const col2ValueX = col2LabelX + 22; // Label is about 22mm wide
-  const col2ValueW = 18;
+  const col1ValueW = 22;
+  const col2LabelX = 113; // Fixed position for second label
+  const col2ValueX = 136; // Fixed position for second value
+  const col2ValueW = 16;
   
   // Row with refrigerant + GWP
   doc.setFont("helvetica", "bold");
