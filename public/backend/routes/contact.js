@@ -55,12 +55,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Naam, email en bericht zijn verplicht' });
     }
 
-    // Verify reCAPTCHA if secret key is configured
-    if (process.env.RECAPTCHA_SECRET_KEY) {
-      if (!recaptchaToken) {
-        return res.status(400).json({ error: 'reCAPTCHA verificatie is verplicht' });
-      }
-
+    // Verify reCAPTCHA only if token is provided AND secret key is configured
+    if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
       try {
         const recaptchaResponse = await axios.post(
           'https://www.google.com/recaptcha/api/siteverify',
