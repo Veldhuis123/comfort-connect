@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Star, Quote } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { api, Review } from "@/lib/api";
+import ReviewSubmitDialog from "./ReviewSubmitDialog";
 
 const Testimonials = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -56,11 +57,12 @@ const Testimonials = () => {
                   <Quote className="w-8 h-8 text-accent" />
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-3">
-                  Klantreviews Komen Binnenkort
+                  Deel je ervaring
                 </h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Reviews van tevreden klanten worden hier getoond.
+                <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                  Ben je tevreden over onze diensten? Laat een review achter!
                 </p>
+                <ReviewSubmitDialog />
               </CardContent>
             </Card>
           </div>
@@ -100,7 +102,7 @@ const Testimonials = () => {
             Wat Klanten Zeggen
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Lees de ervaringen van onze tevreden klanten met onze airco installaties.
+            Lees de ervaringen van onze tevreden klanten met onze installaties.
           </p>
           
           {/* Overall Rating */}
@@ -114,6 +116,11 @@ const Testimonials = () => {
               {averageRating.toFixed(1)}
             </span>
             <span className="text-muted-foreground">gemiddeld ({reviews.length} reviews)</span>
+          </div>
+          
+          {/* Submit Review Button */}
+          <div className="mt-6">
+            <ReviewSubmitDialog />
           </div>
         </div>
 
