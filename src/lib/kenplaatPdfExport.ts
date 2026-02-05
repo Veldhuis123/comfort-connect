@@ -168,10 +168,10 @@ export const generateKenplaatPDF = async (
   
   // Consistent column positions for two-column rows
   const col1ValueX = valueX;
-  const col1ValueW = 22;
-  const col2LabelX = valueX + 26;
-  const col2ValueX = valueX + 50;
-  const col2ValueW = 16;
+  const col1ValueW = 20;
+  const col2LabelX = col1ValueX + col1ValueW + 4; // Start label right after first value box + spacing
+  const col2ValueX = col2LabelX + 22; // Label is about 22mm wide
+  const col2ValueW = 18;
   
   // Row with refrigerant + GWP
   doc.setFont("helvetica", "bold");
