@@ -175,12 +175,13 @@ const Contact = () => {
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                  E-mailadres
+                  E-mailadres *
                 </label>
                 <Input 
                   id="email" 
                   name="email" 
                   type="email" 
+                  required
                   placeholder="Uw e-mailadres"
                 />
               </div>
