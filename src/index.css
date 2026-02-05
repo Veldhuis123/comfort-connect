@@ -1,6 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
 @tailwind base;
+
+/* Hide reCAPTCHA v3 badge - allowed when privacy text is shown on form */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
 @tailwind components;
 @tailwind utilities;
 
