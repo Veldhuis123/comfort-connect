@@ -816,6 +816,34 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
+                {/* Schema/Installatie Calculator */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-border rounded-lg gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Cable className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <Input
+                        value={calculatorSettings.schema.name}
+                        onChange={(e) => handleUpdateCalculatorSetting("schema", "name", e.target.value)}
+                        className="font-medium h-8 w-40"
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Interactief installatieschema
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {calculatorSettings.schema.enabled ? "Actief" : "Inactief"}
+                    </span>
+                    <Switch
+                      checked={calculatorSettings.schema.enabled}
+                      onCheckedChange={(checked) => handleUpdateCalculatorSetting("schema", "enabled", checked)}
+                    />
+                  </div>
+                </div>
+
                 <div className="p-4 bg-muted/30 rounded-lg">
                   <p className="text-sm text-muted-foreground">
                     💡 <strong>Tip:</strong> Wijzigingen worden direct opgeslagen en zijn meteen zichtbaar op de website.
