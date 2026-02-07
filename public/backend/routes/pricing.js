@@ -136,6 +136,55 @@ router.put('/capacity/:category', authMiddleware, async (req, res) => {
 });
 
 // ============================================
+// PIPE DIAMETER PRICING
+// ============================================
+
+// Get pipe diameter pricing for a category
+router.get('/pipes/:category', async (req, res) => {
+  try {
+    const { category } = req.params;
+    
+    const [pricing] = await db.query(
+      'SELECT * FROM pipe_diameter_pricing WHERE category = ? ORDER BY min_capacity',
+      [category]
+    );
+    
+    res.json(pricing);
+  } catch (error) {
+    console.error('Error fetching pipe pricing:', error);
+    res.status(500).json({ error: 'Server fout' });
+  }
+});
+
+// Update pipe diameter pricing - admin
+router.put('/pipes/:category', authMiddleware, async (req, res) => {
+  try {
+    const { category } = req.params;
+    const { pricing } = req.body;
+    
+    if (!Array.isArray(pricing)) {
+      return res.status(400).json({ error: 'Ongeldige prijzen' });
+    }
+    
+    // Delete existing and insert new
+    await db.query('DELETE FROM pipe_diameter_pricing WHERE category = ?', [category]);
+    
+    for (const p of pricing) {
+      await db.query(
+        `INSERT INTO pipe_diameter_pricing (category, min_capacity, max_capacity, liquid_line, suction_line, price_per_meter, notes) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [category, p.min_capacity, p.max_capacity, p.liquid_line, p.suction_line, p.price_per_meter, p.notes || null]
+      );
+    }
+    
+    res.json({ message: 'Leidingprijzen opgeslagen' });
+  } catch (error) {
+    console.error('Error updating pipe pricing:', error);
+    res.status(500).json({ error: 'Server fout' });
+  }
+});
+
+// ============================================
 // PRICE CALCULATION
 // ============================================
 
@@ -195,10 +244,18 @@ router.post('/calculate', async (req, res) => {
     
     const capacityExtras = capacityPricing[0] || { extra_hours: 0, extra_materials: 0 };
     
+    // Get pipe diameter pricing based on capacity
+    const [pipeDiameterPricing] = await db.query(
+      'SELECT liquid_line, suction_line, price_per_meter FROM pipe_diameter_pricing WHERE category = ? AND ? >= min_capacity AND ? <= max_capacity LIMIT 1',
+      [category, coolingCapacity, coolingCapacity]
+    );
+    
+    const pipeInfo = pipeDiameterPricing[0] || { liquid_line: '1/4"', suction_line: '3/8"', price_per_meter: 35 };
+    
     // Calculate totals
     const hourlyRate = config.hourly_rate || 55;
     const travelCost = config.travel_cost || 35;
-    const pipePerMeter = config.pipe_per_meter || 35;
+    const pipePerMeter = parseFloat(pipeInfo.price_per_meter) || config.pipe_per_meter || 35;
     const includedPipeMeters = config.pipe_included_meters || 3;
     const cableDuctPerMeter = config.cable_duct_per_meter || 12.5;
     const electricalGroup = config.electrical_group || 185;
@@ -243,6 +300,11 @@ router.post('/calculate', async (req, res) => {
         },
         materials: {
           pipes: pipeCost,
+          pipePerMeter: pipePerMeter,
+          pipeDiameter: {
+            liquid: pipeInfo.liquid_line,
+            suction: pipeInfo.suction_line
+          },
           duct: ductCost,
           electrical: electricalCost,
           pump: pumpCost,

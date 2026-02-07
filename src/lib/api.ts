@@ -196,6 +196,13 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ pricing }),
     }),
+  getPipeDiameterPricing: (category: string) =>
+    apiRequest<PipeDiameterPricing[]>(`/pricing/pipes/${category}`),
+  updatePipeDiameterPricing: (category: string, pricing: PipeDiameterPricing[]) =>
+    apiRequest(`/pricing/pipes/${category}`, {
+      method: 'PUT',
+      body: JSON.stringify({ pricing }),
+    }),
   calculateInstallationPrice: (params: PriceCalculationParams) =>
     apiRequest<PriceCalculationResult>('/pricing/calculate', {
       method: 'POST',
@@ -441,6 +448,17 @@ export interface CapacityPricing {
   notes?: string | null;
 }
 
+export interface PipeDiameterPricing {
+  id?: number;
+  category?: string;
+  min_capacity: number;
+  max_capacity: number;
+  liquid_line: string;
+  suction_line: string;
+  price_per_meter: number;
+  notes?: string | null;
+}
+
 export interface PriceCalculationParams {
   productId?: string;
   category?: string;
@@ -455,7 +473,16 @@ export interface PriceCalculationResult {
   breakdown: {
     product: { price: number; quantity: number; total: number };
     labor: { hours: number; rate: number; travel: number; total: number };
-    materials: { pipes: number; duct: number; electrical: number; pump: number; small: number; total: number };
+    materials: { 
+      pipes: number; 
+      pipePerMeter: number;
+      pipeDiameter: { liquid: string; suction: string };
+      duct: number; 
+      electrical: number; 
+      pump: number; 
+      small: number; 
+      total: number;
+    };
   };
   totals: {
     subtotal_excl: number;

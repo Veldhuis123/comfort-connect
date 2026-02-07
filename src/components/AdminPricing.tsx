@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api, InstallationSettingsResponse, CapacityPricing } from "@/lib/api";
+import { api, InstallationSettingsResponse, CapacityPricing, PipeDiameterPricing } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { 
   Save, RefreshCw, Euro, Clock, Wrench, Zap, 
-  Thermometer, Plus, Trash2 
+  Thermometer, Plus, Trash2, Cable 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,7 +30,7 @@ const settingGroups: SettingGroup[] = [
   {
     title: "Leidingen & Goot",
     icon: <Wrench className="w-4 h-4" />,
-    settings: ["pipe_per_meter", "pipe_included_meters", "cable_duct_per_meter"]
+    settings: ["pipe_included_meters", "cable_duct_per_meter"]
   },
   {
     title: "Montage",
@@ -50,10 +50,9 @@ const settingGroups: SettingGroup[] = [
 ];
 
 const settingLabels: Record<string, string> = {
-  hourly_rate: "Uurtarief",
+  hourly_rate: "Uurtarief (excl. BTW)",
   travel_cost: "Voorrijkosten",
   min_hours: "Minimum uren",
-  pipe_per_meter: "Leiding per meter",
   pipe_included_meters: "Inbegrepen meters",
   cable_duct_per_meter: "Goot per meter",
   mounting_bracket: "Montagebeugel buiten",
@@ -72,14 +71,16 @@ const AdminPricing = () => {
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<Record<string, number>>({});
   const [capacityPricing, setCapacityPricing] = useState<CapacityPricing[]>([]);
+  const [pipePricing, setPipePricing] = useState<PipeDiameterPricing[]>([]);
   const category = "airco";
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [settingsRes, capacityRes] = await Promise.all([
+      const [settingsRes, capacityRes, pipeRes] = await Promise.all([
         api.getInstallationSettings(category),
-        api.getCapacityPricing(category)
+        api.getCapacityPricing(category),
+        api.getPipeDiameterPricing(category).catch(() => [])
       ]);
       
       // Convert settings object to flat key-value pairs
@@ -89,6 +90,7 @@ const AdminPricing = () => {
       });
       setSettings(flatSettings);
       setCapacityPricing(capacityRes);
+      setPipePricing(pipeRes);
     } catch (error) {
       toast({
         title: "Fout",
@@ -175,6 +177,54 @@ const AdminPricing = () => {
     }
   };
 
+  // Pipe diameter handlers
+  const handlePipeChange = (index: number, field: keyof PipeDiameterPricing, value: string) => {
+    setPipePricing(prev => {
+      const updated = [...prev];
+      if (field === 'liquid_line' || field === 'suction_line' || field === 'notes') {
+        updated[index] = { ...updated[index], [field]: value };
+      } else {
+        updated[index] = { ...updated[index], [field]: parseFloat(value) || 0 };
+      }
+      return updated;
+    });
+  };
+
+  const handleAddPipe = () => {
+    const lastRow = pipePricing[pipePricing.length - 1];
+    setPipePricing(prev => [...prev, {
+      min_capacity: lastRow ? lastRow.max_capacity + 0.01 : 0,
+      max_capacity: lastRow ? lastRow.max_capacity + 3.5 : 3.5,
+      liquid_line: '1/4"',
+      suction_line: '3/8"',
+      price_per_meter: 35,
+      notes: ""
+    }]);
+  };
+
+  const handleRemovePipe = (index: number) => {
+    setPipePricing(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSavePipes = async () => {
+    setSaving(true);
+    try {
+      await api.updatePipeDiameterPricing(category, pipePricing);
+      toast({
+        title: "Opgeslagen",
+        description: "Leidingprijzen zijn bijgewerkt",
+      });
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Kon leidingprijzen niet opslaan",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -193,7 +243,7 @@ const AdminPricing = () => {
             <div>
               <CardTitle>Prijsbeheer Airco</CardTitle>
               <CardDescription>
-                Beheer installatie-instellingen, uurtarieven en materiaalkosten
+                Beheer installatie-instellingen, uurtarieven en materiaalkosten (excl. BTW)
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={fetchData}>
@@ -205,9 +255,10 @@ const AdminPricing = () => {
       </Card>
 
       <Tabs defaultValue="settings">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="settings">Installatie-instellingen</TabsTrigger>
-          <TabsTrigger value="capacity">Capaciteit-prijzen</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="settings">Instellingen</TabsTrigger>
+          <TabsTrigger value="pipes">Leidingdiameters</TabsTrigger>
+          <TabsTrigger value="capacity">Capaciteit</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="space-y-4">
@@ -236,7 +287,7 @@ const AdminPricing = () => {
                           step="0.01"
                           value={settings[key] ?? 0}
                           onChange={(e) => handleSettingChange(key, e.target.value)}
-                          className={key === "vat_rate" || key.includes("hours") || key.includes("meters") ? "pl-7" : "pl-7"}
+                          className="pl-7"
                         />
                       </div>
                     </div>
@@ -254,12 +305,123 @@ const AdminPricing = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="pipes" className="space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <Cable className="w-5 h-5" />
+                <div>
+                  <CardTitle className="text-base">Leidingdiameter per vermogensklasse</CardTitle>
+                  <CardDescription>
+                    Prijs per meter afhankelijk van unit-vermogen (excl. BTW)
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Min kW</TableHead>
+                    <TableHead>Max kW</TableHead>
+                    <TableHead>Vloeistof</TableHead>
+                    <TableHead>Zuig</TableHead>
+                    <TableHead>€/meter</TableHead>
+                    <TableHead className="w-16"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pipePricing.map((row, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={row.min_capacity}
+                          onChange={(e) => handlePipeChange(index, "min_capacity", e.target.value)}
+                          className="w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={row.max_capacity}
+                          onChange={(e) => handlePipeChange(index, "max_capacity", e.target.value)}
+                          className="w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          value={row.liquid_line}
+                          onChange={(e) => handlePipeChange(index, "liquid_line", e.target.value)}
+                          className="w-20"
+                          placeholder='1/4"'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          value={row.suction_line}
+                          onChange={(e) => handlePipeChange(index, "suction_line", e.target.value)}
+                          className="w-20"
+                          placeholder='3/8"'
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          step="1"
+                          value={row.price_per_meter}
+                          onChange={(e) => handlePipeChange(index, "price_per_meter", e.target.value)}
+                          className="w-20"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemovePipe(index)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              <div className="flex justify-between mt-4">
+                <Button variant="outline" onClick={handleAddPipe}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Rij toevoegen
+                </Button>
+                <Button onClick={handleSavePipes} disabled={saving}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {saving ? "Opslaan..." : "Leidingprijzen opslaan"}
+                </Button>
+              </div>
+
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                <p><strong>💡 Tip:</strong> Standaard leidingdiameters:</p>
+                <ul className="list-disc list-inside mt-1 space-y-0.5">
+                  <li>Tot 3.5 kW: 1/4" x 3/8" (6.35mm x 9.52mm)</li>
+                  <li>3.5-5 kW: 1/4" x 1/2" (6.35mm x 12.7mm)</li>
+                  <li>5-7 kW: 3/8" x 5/8" (9.52mm x 15.88mm)</li>
+                  <li>&gt;7 kW: 3/8" x 3/4" (9.52mm x 19.05mm)</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="capacity" className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Capaciteit-afhankelijke prijzen</CardTitle>
+              <CardTitle className="text-base">Capaciteit-afhankelijke extra's</CardTitle>
               <CardDescription>
-                Extra uren en materiaalkosten per vermogensklasse
+                Extra uren en materiaalkosten per vermogensklasse (excl. BTW)
               </CardDescription>
             </CardHeader>
             <CardContent>
