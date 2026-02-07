@@ -118,8 +118,8 @@ const Calculators = () => {
             </div>
 
             <Tabs defaultValue={defaultTab} className="max-w-6xl mx-auto">
-              <div className="flex justify-center mb-8">
-                <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+              <TabsList className="flex flex-wrap justify-center gap-1 h-auto w-full bg-transparent mb-8">
+                <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
                 {settings.airco.enabled && (
                   <TabsTrigger value="airco" className="flex items-center gap-1 text-xs sm:text-sm">
                     <Wind className="w-4 h-4" />
@@ -156,8 +156,8 @@ const Calculators = () => {
                     <span className="hidden sm:inline">{settings.schema.name}</span>
                   </TabsTrigger>
                 )}
+                </div>
               </TabsList>
-              </div>
               
               {settings.airco.enabled && (
                 <TabsContent value="airco">
