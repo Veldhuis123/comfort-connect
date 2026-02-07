@@ -547,15 +547,22 @@ const AircoCalculator = () => {
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 102, 204);
-      doc.text('Totaal indicatieprijs:', 25, yPos);
+      doc.text('Totaal indicatieprijs (excl. BTW):', 25, yPos);
       doc.text(`€${totalPrice.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
+      yPos += 8;
+      // Add incl. BTW line
+      const totalInclBTW = totalPrice * 1.21;
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Incl. 21% BTW:', 25, yPos);
+      doc.text(`€${totalInclBTW.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
     }
     
     // Footer
     doc.setTextColor(128, 128, 128);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'italic');
-    doc.text('* Prijzen zijn indicatief en kunnen afwijken afhankelijk van de situatie ter plaatse.', 20, 280);
+    doc.text('* Alle prijzen zijn exclusief BTW (21%) tenzij anders vermeld. Prijzen zijn indicatief.', 20, 280);
     doc.text('RV Installatie | info@rv-installatie.nl | 06-13629947', 20, 286);
     
     // Save PDF
@@ -1014,6 +1021,7 @@ const AircoCalculator = () => {
                       <div className="text-2xl font-bold text-accent">
                         €{calculateTotalPrice(unit).toFixed(2).replace('.', ',')}
                       </div>
+                      <div className="text-xs text-muted-foreground">excl. BTW</div>
                     </div>
                   </CardContent>
                 </Card>
@@ -1142,8 +1150,7 @@ const AircoCalculator = () => {
 
             {/* Disclaimer */}
             <p className="text-center text-sm text-muted-foreground mt-8">
-              * Prijzen zijn indicatief en kunnen afwijken afhankelijk van de situatie ter plaatse. 
-              Vraag een vrijblijvende offerte aan voor een exacte prijs.
+              * Alle prijzen zijn exclusief BTW (21%) en indicatief. Vraag een vrijblijvende offerte aan voor een exacte prijs.
             </p>
           </div>
         )}

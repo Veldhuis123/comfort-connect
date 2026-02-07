@@ -50,18 +50,18 @@ const settingGroups: SettingGroup[] = [
 ];
 
 const settingLabels: Record<string, string> = {
-  hourly_rate: "Uurtarief (excl. BTW)",
-  travel_cost: "Voorrijkosten",
+  hourly_rate: "Uurtarief excl. BTW",
+  travel_cost: "Voorrijkosten excl. BTW",
   min_hours: "Minimum uren",
   pipe_included_meters: "Inbegrepen meters",
-  cable_duct_per_meter: "Goot per meter",
-  mounting_bracket: "Montagebeugel buiten",
-  wall_bracket: "Wandbeugel binnen",
-  condensate_pump: "Condenspomp",
-  electrical_group: "Groep meterkast",
-  fuse_upgrade: "Zekering upgrade",
-  small_materials: "Klein materiaal",
-  vacuum_nitrogen: "Vacuüm & stikstof",
+  cable_duct_per_meter: "Goot per meter excl. BTW",
+  mounting_bracket: "Montagebeugel buiten excl. BTW",
+  wall_bracket: "Wandbeugel binnen excl. BTW",
+  condensate_pump: "Condenspomp excl. BTW",
+  electrical_group: "Groep meterkast excl. BTW",
+  fuse_upgrade: "Zekering upgrade excl. BTW",
+  small_materials: "Klein materiaal excl. BTW",
+  vacuum_nitrogen: "Vacuüm & stikstof excl. BTW",
   vat_rate: "BTW percentage"
 };
 
@@ -243,7 +243,8 @@ const AdminPricing = () => {
             <div>
               <CardTitle>Prijsbeheer Airco</CardTitle>
               <CardDescription>
-                Beheer installatie-instellingen, uurtarieven en materiaalkosten (excl. BTW)
+                Beheer installatie-instellingen, uurtarieven en materiaalkosten
+                <span className="block text-xs mt-1 font-medium text-accent">💡 Alle bedragen exclusief BTW</span>
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={fetchData}>

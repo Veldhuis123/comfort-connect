@@ -350,6 +350,11 @@ export interface Product {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  // Pricing fields
+  purchase_price?: number | null;
+  margin_percent?: number | null;
+  expected_hours?: number | null;
+  calculated_selling_price?: number | null;
 }
 
 export interface CreateProduct {
@@ -363,6 +368,10 @@ export interface CreateProduct {
   features?: string[];
   is_active?: boolean;
   sort_order?: number;
+  // Pricing fields
+  purchase_price?: number | null;
+  margin_percent?: number | null;
+  expected_hours?: number | null;
 }
 
 // Local Quotes types
