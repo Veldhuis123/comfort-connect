@@ -1138,6 +1138,156 @@ router.post('/sync/quote/:quoteId', authMiddleware, async (req, res) => {
 });
 
 // =============================================
+// LOKALE OFFERTES - CRUD
+// =============================================
+
+// Get all local quotes
+router.get('/local-quotes', authMiddleware, async (req, res) => {
+  try {
+    const { status, limit = 100, offset = 0 } = req.query;
+    
+    let query = `
+      SELECT q.*, 
+        (SELECT COUNT(*) FROM local_quote_items WHERE quote_id = q.id) as item_count
+      FROM local_quotes q
+    `;
+    const params = [];
+    
+    if (status) {
+      query += ' WHERE q.status = ?';
+      params.push(status);
+    }
+    
+    query += ' ORDER BY q.created_at DESC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), parseInt(offset));
+    
+    const [quotes] = await db.query(query, params);
+    
+    // Get stats
+    const [statsTotal] = await db.query('SELECT COUNT(*) as count FROM local_quotes');
+    const [statsByStatus] = await db.query(
+      'SELECT status, COUNT(*) as count FROM local_quotes GROUP BY status'
+    );
+    
+    res.json({
+      quotes,
+      stats: {
+        total: statsTotal[0].count,
+        byStatus: statsByStatus.reduce((acc, row) => {
+          acc[row.status] = row.count;
+          return acc;
+        }, {})
+      }
+    });
+  } catch (error) {
+    console.error('Get local quotes error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get single local quote with items
+router.get('/local-quotes/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [quotes] = await db.query(
+      'SELECT * FROM local_quotes WHERE id = ?',
+      [id]
+    );
+    
+    if (quotes.length === 0) {
+      return res.status(404).json({ error: 'Offerte niet gevonden' });
+    }
+    
+    const [items] = await db.query(
+      'SELECT * FROM local_quote_items WHERE quote_id = ? ORDER BY sort_order',
+      [id]
+    );
+    
+    res.json({ ...quotes[0], items });
+  } catch (error) {
+    console.error('Get local quote error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update local quote status
+router.patch('/local-quotes/:id/status', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const validStatuses = ['concept', 'verzonden', 'geaccepteerd', 'afgewezen', 'verlopen', 'overgenomen'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Ongeldige status' });
+    }
+    
+    const updates = { status };
+    
+    // Set timestamps based on status
+    if (status === 'verzonden') {
+      updates.sent_at = new Date();
+    } else if (status === 'geaccepteerd') {
+      updates.accepted_at = new Date();
+    } else if (status === 'overgenomen') {
+      updates.eboekhouden_synced_at = new Date();
+    }
+    
+    const setClause = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    const values = [...Object.values(updates), id];
+    
+    await db.query(`UPDATE local_quotes SET ${setClause} WHERE id = ?`, values);
+    
+    res.json({ success: true, message: 'Status bijgewerkt' });
+  } catch (error) {
+    console.error('Update local quote status error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update local quote
+router.patch('/local-quotes/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customer_note, internal_note, expiration_date } = req.body;
+    
+    const updates = {};
+    if (customer_note !== undefined) updates.customer_note = customer_note;
+    if (internal_note !== undefined) updates.internal_note = internal_note;
+    if (expiration_date !== undefined) updates.expiration_date = expiration_date;
+    
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Geen wijzigingen opgegeven' });
+    }
+    
+    const setClause = Object.keys(updates).map(k => `${k} = ?`).join(', ');
+    const values = [...Object.values(updates), id];
+    
+    await db.query(`UPDATE local_quotes SET ${setClause} WHERE id = ?`, values);
+    
+    res.json({ success: true, message: 'Offerte bijgewerkt' });
+  } catch (error) {
+    console.error('Update local quote error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete local quote
+router.delete('/local-quotes/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Items worden automatisch verwijderd via CASCADE
+    await db.query('DELETE FROM local_quotes WHERE id = ?', [id]);
+    
+    res.json({ success: true, message: 'Offerte verwijderd' });
+  } catch (error) {
+    console.error('Delete local quote error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================================
 // Clear session cache (useful for testing)
 // =============================================
 router.post('/session/clear', authMiddleware, async (req, res) => {

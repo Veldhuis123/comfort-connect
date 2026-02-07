@@ -12,11 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { 
   LogOut, Star, MessageSquare, FileText, Settings, Plus, 
   Trash2, Eye, EyeOff, Check, X, Mail, Phone, Calendar,
-  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen, Package, Thermometer
+  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen, Package, Thermometer, Receipt
 } from "lucide-react";
 import EBoekhoudenSync from "@/components/EBoekhoudenSync";
 import AdminProducts from "@/components/AdminProducts";
 import AdminInstallations from "@/components/AdminInstallations";
+import AdminLocalQuotes from "@/components/AdminLocalQuotes";
 import QuoteDetailDialog from "@/components/QuoteDetailDialog";
 import { ProductCategory } from "@/lib/api";
 import {
@@ -290,6 +291,10 @@ const AdminDashboard = () => {
               <FileText className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Offertes</span> ({quotes.length})
             </TabsTrigger>
+            <TabsTrigger value="local-quotes" className="text-xs sm:text-sm">
+              <Receipt className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Lokale Offertes</span>
+            </TabsTrigger>
             <TabsTrigger value="reviews" className="text-xs sm:text-sm">
               <Star className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Reviews</span> ({reviews.length})
@@ -435,6 +440,11 @@ const AdminDashboard = () => {
               onDeleted={fetchData}
               onUpdated={fetchData}
             />
+          </TabsContent>
+
+          {/* Local Quotes Tab */}
+          <TabsContent value="local-quotes">
+            <AdminLocalQuotes />
           </TabsContent>
 
           {/* Reviews Tab */}
