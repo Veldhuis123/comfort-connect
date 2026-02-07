@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { 
   Save, RefreshCw, Euro, Clock, Wrench, Zap, 
-  Thermometer, Plus, Trash2, Cable 
+  Thermometer, Plus, Trash2, Cable, Settings, Percent 
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,6 +49,19 @@ const settingGroups: SettingGroup[] = [
   }
 ];
 
+const globalSettingGroups: SettingGroup[] = [
+  {
+    title: "Marge",
+    icon: <Percent className="w-4 h-4" />,
+    settings: ["margin_percent"]
+  },
+  {
+    title: "Installatie Basis",
+    icon: <Settings className="w-4 h-4" />,
+    settings: ["base_installation_small", "base_installation_large", "multisplit_per_room", "extra_unit_discount"]
+  }
+];
+
 const settingLabels: Record<string, string> = {
   hourly_rate: "Uurtarief excl. BTW",
   travel_cost: "Voorrijkosten excl. BTW",
@@ -62,7 +75,13 @@ const settingLabels: Record<string, string> = {
   fuse_upgrade: "Zekering upgrade excl. BTW",
   small_materials: "Klein materiaal excl. BTW",
   vacuum_nitrogen: "Vacuüm & stikstof excl. BTW",
-  vat_rate: "BTW percentage"
+  vat_rate: "BTW percentage",
+  // Global settings
+  margin_percent: "Globale marge %",
+  base_installation_small: "Basis installatie ≤40m² excl. BTW",
+  base_installation_large: "Basis installatie >40m² excl. BTW",
+  multisplit_per_room: "Multi-split per ruimte excl. BTW",
+  extra_unit_discount: "Korting extra units (factor)"
 };
 
 const AdminPricing = () => {
@@ -70,6 +89,7 @@ const AdminPricing = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<Record<string, number>>({});
+  const [globalSettings, setGlobalSettings] = useState<Record<string, number>>({});
   const [capacityPricing, setCapacityPricing] = useState<CapacityPricing[]>([]);
   const [pipePricing, setPipePricing] = useState<PipeDiameterPricing[]>([]);
   const category = "airco";
@@ -77,8 +97,9 @@ const AdminPricing = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [settingsRes, capacityRes, pipeRes] = await Promise.all([
+      const [settingsRes, globalRes, capacityRes, pipeRes] = await Promise.all([
         api.getInstallationSettings(category),
+        api.getInstallationSettings("global").catch(() => ({ settings: {} })),
         api.getCapacityPricing(category),
         api.getPipeDiameterPricing(category).catch(() => [])
       ]);
@@ -89,6 +110,14 @@ const AdminPricing = () => {
         flatSettings[key] = val.value;
       });
       setSettings(flatSettings);
+      
+      // Global settings
+      const flatGlobal: Record<string, number> = {};
+      Object.entries(globalRes.settings || {}).forEach(([key, val]) => {
+        flatGlobal[key] = (val as { value: number }).value;
+      });
+      setGlobalSettings(flatGlobal);
+      
       setCapacityPricing(capacityRes);
       setPipePricing(pipeRes);
     } catch (error) {
@@ -113,6 +142,13 @@ const AdminPricing = () => {
     }));
   };
 
+  const handleGlobalSettingChange = (key: string, value: string) => {
+    setGlobalSettings(prev => ({
+      ...prev,
+      [key]: parseFloat(value) || 0
+    }));
+  };
+
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
@@ -125,6 +161,25 @@ const AdminPricing = () => {
       toast({
         title: "Fout",
         description: "Kon instellingen niet opslaan",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveGlobalSettings = async () => {
+    setSaving(true);
+    try {
+      await api.updateInstallationSettings("global", globalSettings);
+      toast({
+        title: "Opgeslagen",
+        description: "Globale instellingen zijn bijgewerkt",
+      });
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Kon globale instellingen niet opslaan",
         variant: "destructive",
       });
     } finally {
@@ -255,12 +310,76 @@ const AdminPricing = () => {
         </CardHeader>
       </Card>
 
-      <Tabs defaultValue="settings">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="settings">Instellingen</TabsTrigger>
+      <Tabs defaultValue="global">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="global">Globaal</TabsTrigger>
+          <TabsTrigger value="settings">Airco Instellingen</TabsTrigger>
           <TabsTrigger value="pipes">Leidingdiameters</TabsTrigger>
           <TabsTrigger value="capacity">Capaciteit</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="global" className="space-y-4">
+          <Card className="border-primary/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Percent className="w-4 h-4 text-primary" />
+                Globale Marge & Installatieprijzen
+              </CardTitle>
+              <CardDescription>
+                Deze instellingen worden toegepast op alle calculators
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {globalSettingGroups.map((group) => (
+                <div key={group.title} className="mb-6 last:mb-0">
+                  <h4 className="text-sm font-medium flex items-center gap-2 mb-3">
+                    {group.icon}
+                    {group.title}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {group.settings.map((key) => (
+                      <div key={key} className="space-y-1">
+                        <Label htmlFor={`global-${key}`} className="text-sm">
+                          {settingLabels[key] || key}
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                            {key.includes("percent") ? "%" : key.includes("factor") || key.includes("discount") ? "" : "€"}
+                          </span>
+                          <Input
+                            id={`global-${key}`}
+                            type="number"
+                            step={key.includes("factor") || key.includes("discount") ? "0.05" : "0.01"}
+                            value={globalSettings[key] ?? (key.includes("factor") ? 1 : 0)}
+                            onChange={(e) => handleGlobalSettingChange(key, e.target.value)}
+                            className="pl-7"
+                          />
+                        </div>
+                        {key === "margin_percent" && (
+                          <p className="text-xs text-muted-foreground">
+                            Wordt toegepast op alle producten zonder eigen marge
+                          </p>
+                        )}
+                        {key === "extra_unit_discount" && (
+                          <p className="text-xs text-muted-foreground">
+                            0.80 = 20% korting op extra units
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button onClick={handleSaveGlobalSettings} disabled={saving}>
+              <Save className="w-4 h-4 mr-2" />
+              {saving ? "Opslaan..." : "Globale instellingen opslaan"}
+            </Button>
+          </div>
+        </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
           {settingGroups.map((group) => (
