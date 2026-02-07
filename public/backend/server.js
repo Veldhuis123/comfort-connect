@@ -18,6 +18,7 @@ const uploadRoutes = require('./routes/upload');
 const eboekhoudenRoutes = require('./routes/eboekhouden');
 const productsRoutes = require('./routes/products');
 const installationsRoutes = require('./routes/installations');
+const pricingRoutes = require('./routes/pricing');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -66,6 +67,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/eboekhouden', eboekhoudenRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/installations', installationsRoutes);
+app.use('/api/pricing', pricingRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

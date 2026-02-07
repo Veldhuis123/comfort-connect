@@ -180,6 +180,32 @@ export const api = {
     }),
   deleteLocalQuote: (id: number) =>
     apiRequest(`/eboekhouden/local-quotes/${id}`, { method: 'DELETE' }),
+
+  // Pricing API
+  getInstallationSettings: (category: string) =>
+    apiRequest<InstallationSettingsResponse>(`/pricing/settings/${category}`),
+  updateInstallationSettings: (category: string, settings: Record<string, number>) =>
+    apiRequest(`/pricing/settings/${category}`, {
+      method: 'PUT',
+      body: JSON.stringify({ settings }),
+    }),
+  getCapacityPricing: (category: string) =>
+    apiRequest<CapacityPricing[]>(`/pricing/capacity/${category}`),
+  updateCapacityPricing: (category: string, pricing: CapacityPricing[]) =>
+    apiRequest(`/pricing/capacity/${category}`, {
+      method: 'PUT',
+      body: JSON.stringify({ pricing }),
+    }),
+  calculateInstallationPrice: (params: PriceCalculationParams) =>
+    apiRequest<PriceCalculationResult>('/pricing/calculate', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+  updateProductPricing: (id: string, pricing: ProductPricingUpdate) =>
+    apiRequest(`/pricing/product/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(pricing),
+    }),
 };
 
 // Types
@@ -383,4 +409,91 @@ export interface LocalQuoteStats {
 export interface LocalQuotesResponse {
   quotes: LocalQuote[];
   stats: LocalQuoteStats;
+}
+
+// Pricing types
+export interface InstallationSetting {
+  value: number;
+  unit: string | null;
+  description: string | null;
+}
+
+export interface InstallationSettingsResponse {
+  category: string;
+  settings: Record<string, InstallationSetting>;
+  raw: Array<{
+    id: number;
+    category: string;
+    setting_key: string;
+    setting_value: number;
+    unit: string | null;
+    description: string | null;
+  }>;
+}
+
+export interface CapacityPricing {
+  id?: number;
+  category?: string;
+  min_capacity: number;
+  max_capacity: number;
+  extra_hours: number;
+  extra_materials: number;
+  notes?: string | null;
+}
+
+export interface PriceCalculationParams {
+  productId?: string;
+  category?: string;
+  pipeLength?: number;
+  needsElectricalGroup?: boolean;
+  needsCableDuct?: number;
+  needsCondensatePump?: boolean;
+  quantity?: number;
+}
+
+export interface PriceCalculationResult {
+  breakdown: {
+    product: { price: number; quantity: number; total: number };
+    labor: { hours: number; rate: number; travel: number; total: number };
+    materials: { pipes: number; duct: number; electrical: number; pump: number; small: number; total: number };
+  };
+  totals: {
+    subtotal_excl: number;
+    vat_rate: number;
+    vat_amount: number;
+    total_incl: number;
+  };
+}
+
+export interface ProductPricingUpdate {
+  purchase_price?: number;
+  margin_percent?: number;
+  expected_hours?: number;
+  model_number?: string;
+  outdoor_model?: string;
+  energy_label?: string;
+  cooling_capacity?: number;
+  heating_capacity?: number;
+  seer?: number;
+  scop?: number;
+  refrigerant?: string;
+  noise_indoor?: number;
+  noise_outdoor?: number;
+}
+
+export interface ProductWithPricing extends Product {
+  purchase_price?: number | null;
+  margin_percent?: number;
+  expected_hours?: number;
+  model_number?: string | null;
+  outdoor_model?: string | null;
+  energy_label?: string | null;
+  cooling_capacity?: number | null;
+  heating_capacity?: number | null;
+  seer?: number | null;
+  scop?: number | null;
+  refrigerant?: string | null;
+  noise_indoor?: number | null;
+  noise_outdoor?: number | null;
+  calculated_selling_price?: number;
 }
