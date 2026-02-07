@@ -116,6 +116,9 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
     features: [],
     is_active: true,
     sort_order: 0,
+    purchase_price: null,
+    margin_percent: 30,
+    expected_hours: 4,
   });
   const [featuresText, setFeaturesText] = useState("");
 
@@ -209,6 +212,9 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
       features: [],
       is_active: true,
       sort_order: products.length,
+      purchase_price: null,
+      margin_percent: 30,
+      expected_hours: 4,
     });
     setFeaturesText("");
     setShowForm(true);
@@ -227,6 +233,9 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
       features: product.features,
       is_active: product.is_active,
       sort_order: product.sort_order,
+      purchase_price: product.purchase_price ?? null,
+      margin_percent: product.margin_percent ?? 30,
+      expected_hours: product.expected_hours ?? 4,
     });
     setFeaturesText(product.features.join("\n"));
     setShowForm(true);
@@ -590,6 +599,7 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
             </div>
             <p className="text-lg font-bold text-accent">
               €{product.base_price.toLocaleString("nl-NL")},-
+              <span className="text-xs font-normal text-muted-foreground ml-1">excl. BTW</span>
             </p>
           </div>
           
@@ -826,9 +836,10 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Basisprijs (€)*</label>
+                  <label className="text-sm font-medium">Verkoopprijs (€) excl. BTW *</label>
                   <Input
                     type="number"
+                    step="0.01"
                     value={formData.base_price}
                     onChange={(e) =>
                       setFormData({ ...formData, base_price: parseFloat(e.target.value) || 0 })
@@ -845,6 +856,57 @@ const AdminProducts = ({ selectedCategory, onCategoryChange }: AdminProductsProp
                     }
                   />
                 </div>
+              </div>
+
+              {/* Pricing Section */}
+              <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  💰 Prijscalculatie <span className="text-xs text-muted-foreground">(alle bedragen excl. BTW)</span>
+                </h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Inkoopprijs (€) excl. BTW</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.purchase_price ?? ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, purchase_price: e.target.value ? parseFloat(e.target.value) : null })
+                      }
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Marge %</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={formData.margin_percent ?? 30}
+                      onChange={(e) =>
+                        setFormData({ ...formData, margin_percent: parseFloat(e.target.value) || 30 })
+                      }
+                      placeholder="30"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Verwachte uren</label>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      value={formData.expected_hours ?? 4}
+                      onChange={(e) =>
+                        setFormData({ ...formData, expected_hours: parseFloat(e.target.value) || 4 })
+                      }
+                      placeholder="4"
+                    />
+                  </div>
+                </div>
+                {formData.purchase_price && formData.margin_percent ? (
+                  <div className="text-sm text-muted-foreground bg-background p-2 rounded">
+                    <strong>Berekende verkoopprijs:</strong> €{((formData.purchase_price / (1 - (formData.margin_percent / 100)))).toFixed(2).replace('.', ',')} excl. BTW
+                    <span className="ml-2 text-xs">(inkoop + {formData.margin_percent}% marge)</span>
+                  </div>
+                ) : null}
               </div>
 
               <div>
