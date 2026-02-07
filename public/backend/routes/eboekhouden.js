@@ -1143,6 +1143,7 @@ router.post('/sync/quote/:quoteId', authMiddleware, async (req, res) => {
 
 // Get all local quotes
 router.get('/local-quotes', authMiddleware, async (req, res) => {
+  const db = require('../config/database');
   try {
     const { status, limit = 100, offset = 0 } = req.query;
     
@@ -1187,6 +1188,7 @@ router.get('/local-quotes', authMiddleware, async (req, res) => {
 
 // Get single local quote with items
 router.get('/local-quotes/:id', authMiddleware, async (req, res) => {
+  const db = require('../config/database');
   try {
     const { id } = req.params;
     
@@ -1213,6 +1215,7 @@ router.get('/local-quotes/:id', authMiddleware, async (req, res) => {
 
 // Update local quote status
 router.patch('/local-quotes/:id/status', authMiddleware, async (req, res) => {
+  const db = require('../config/database');
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -1247,6 +1250,7 @@ router.patch('/local-quotes/:id/status', authMiddleware, async (req, res) => {
 
 // Update local quote
 router.patch('/local-quotes/:id', authMiddleware, async (req, res) => {
+  const db = require('../config/database');
   try {
     const { id } = req.params;
     const { customer_note, internal_note, expiration_date } = req.body;
@@ -1274,6 +1278,7 @@ router.patch('/local-quotes/:id', authMiddleware, async (req, res) => {
 
 // Delete local quote
 router.delete('/local-quotes/:id', authMiddleware, async (req, res) => {
+  const db = require('../config/database');
   try {
     const { id } = req.params;
     
