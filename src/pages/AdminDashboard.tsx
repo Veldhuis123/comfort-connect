@@ -819,8 +819,8 @@ const AdminDashboard = () => {
                 {/* Schema/Installatie Calculator */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-border rounded-lg gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <Cable className="w-5 h-5 text-purple-600" />
+                    <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                      <Cable className="w-5 h-5 text-accent" />
                     </div>
                     <div>
                       <Input
