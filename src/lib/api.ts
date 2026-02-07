@@ -162,6 +162,24 @@ export const api = {
     apiRequest(`/products/${id}/image`, { method: 'DELETE' }),
   updateProductSort: (products: { id: string; sort_order: number }[]) =>
     apiRequest('/products/sort', { method: 'PATCH', body: JSON.stringify({ products }) }),
+
+  // Local Quotes
+  getLocalQuotes: (status?: string) =>
+    apiRequest<LocalQuotesResponse>(`/eboekhouden/local-quotes${status ? `?status=${status}` : ''}`),
+  getLocalQuote: (id: number) =>
+    apiRequest<LocalQuote>(`/eboekhouden/local-quotes/${id}`),
+  updateLocalQuoteStatus: (id: number, status: string) =>
+    apiRequest(`/eboekhouden/local-quotes/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+  updateLocalQuote: (id: number, data: { customer_note?: string; internal_note?: string; expiration_date?: string }) =>
+    apiRequest(`/eboekhouden/local-quotes/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  deleteLocalQuote: (id: number) =>
+    apiRequest(`/eboekhouden/local-quotes/${id}`, { method: 'DELETE' }),
 };
 
 // Types
@@ -312,4 +330,57 @@ export interface CreateProduct {
   features?: string[];
   is_active?: boolean;
   sort_order?: number;
+}
+
+// Local Quotes types
+export interface LocalQuoteItem {
+  id: number;
+  quote_id: number;
+  description: string;
+  product_code: string | null;
+  quantity: number;
+  unit: string;
+  price_per_unit: number;
+  vat_code: string;
+  vat_percentage: number;
+  line_total_excl: number;
+  line_vat: number;
+  line_total_incl: number;
+  sort_order: number;
+}
+
+export interface LocalQuote {
+  id: number;
+  relation_id: number | null;
+  customer_name: string;
+  customer_email: string | null;
+  customer_phone: string | null;
+  customer_address: string | null;
+  quote_number: string | null;
+  quote_date: string;
+  expiration_date: string | null;
+  subtotal_excl: number;
+  vat_amount: number;
+  total_incl: number;
+  status: 'concept' | 'verzonden' | 'geaccepteerd' | 'afgewezen' | 'verlopen' | 'overgenomen';
+  customer_note: string | null;
+  internal_note: string | null;
+  quote_request_id: number | null;
+  sent_at: string | null;
+  accepted_at: string | null;
+  eboekhouden_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+  item_count?: number;
+  items?: LocalQuoteItem[];
+}
+
+export interface LocalQuoteStats {
+  total: number;
+  byStatus: Record<string, number>;
+}
+
+export interface LocalQuotesResponse {
+  quotes: LocalQuote[];
+  stats: LocalQuoteStats;
 }
