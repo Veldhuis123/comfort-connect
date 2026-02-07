@@ -118,7 +118,7 @@ const Calculators = () => {
             </div>
 
             <Tabs defaultValue={defaultTab} className="max-w-6xl mx-auto">
-              <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-6 mb-8">
+              <TabsList className={`inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-auto mx-auto mb-8`}>
                 {settings.airco.enabled && (
                   <TabsTrigger value="airco" className="flex items-center gap-1 text-xs sm:text-sm">
                     <Wind className="w-4 h-4" />
