@@ -18,12 +18,13 @@ import {
 import { 
   LogOut, Star, MessageSquare, FileText, Settings, Plus, 
   Trash2, Eye, EyeOff, Check, X, Mail, Phone, Calendar,
-  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen, Package, Thermometer, Receipt, ChevronDown
+  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen, Package, Thermometer, Receipt, ChevronDown, Euro
 } from "lucide-react";
 import EBoekhoudenSync from "@/components/EBoekhoudenSync";
 import AdminProducts from "@/components/AdminProducts";
 import AdminInstallations from "@/components/AdminInstallations";
 import AdminLocalQuotes from "@/components/AdminLocalQuotes";
+import AdminPricing from "@/components/AdminPricing";
 import QuoteDetailDialog from "@/components/QuoteDetailDialog";
 import { ProductCategory } from "@/lib/api";
 import {
@@ -344,6 +345,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="boekhouden" className="text-xs sm:text-sm">
               <BookOpen className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">e-Boekhouden</span>
+            </TabsTrigger>
+            <TabsTrigger value="pricing" className="text-xs sm:text-sm">
+              <Euro className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Prijsbeheer</span>
             </TabsTrigger>
           </TabsList>
 
@@ -837,6 +842,11 @@ const AdminDashboard = () => {
           {/* e-Boekhouden Tab */}
           <TabsContent value="boekhouden">
             <EBoekhoudenSync />
+          </TabsContent>
+
+          {/* Prijsbeheer Tab */}
+          <TabsContent value="pricing">
+            <AdminPricing />
           </TabsContent>
         </Tabs>
       </main>
