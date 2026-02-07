@@ -115,11 +115,33 @@ const AircoCalculator = () => {
   const [compareProducts, setCompareProducts] = useState<string[]>([]);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
-  // Load products from API
+  // Pricing settings from backend
+  const [pricingSettings, setPricingSettings] = useState<Record<string, number>>({
+    electrical_group: 185,
+    pipe_per_meter: 35,
+    pipe_included_meters: 3,
+    cable_duct_per_meter: 12.5,
+    vat_rate: 21,
+  });
+  const [globalSettings, setGlobalSettings] = useState<Record<string, number>>({
+    margin_percent: 30,
+    base_installation_small: 350,
+    base_installation_large: 450,
+    multisplit_per_room: 200,
+    extra_unit_discount: 0.8,
+  });
+
+  // Load products and pricing settings from API
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const apiProducts = await api.getProducts("airco");
+        const [apiProducts, aircoSettings, globalSettingsRes] = await Promise.all([
+          api.getProducts("airco").catch(() => []),
+          api.getInstallationSettings("airco").catch(() => ({ settings: {} })),
+          api.getInstallationSettings("global").catch(() => ({ settings: {} }))
+        ]);
+
+        // Map products
         if (apiProducts.length > 0) {
           const mapped = apiProducts.map((p: Product): AircoUnit => ({
             id: p.id,
@@ -135,13 +157,31 @@ const AircoCalculator = () => {
           }));
           setAircoUnits(mapped);
         }
+
+        // Map airco pricing settings
+        const aircoSettingsFlat: Record<string, number> = {};
+        Object.entries(aircoSettings.settings || {}).forEach(([key, val]) => {
+          aircoSettingsFlat[key] = (val as { value: number }).value;
+        });
+        if (Object.keys(aircoSettingsFlat).length > 0) {
+          setPricingSettings(prev => ({ ...prev, ...aircoSettingsFlat }));
+        }
+
+        // Map global settings
+        const globalSettingsFlat: Record<string, number> = {};
+        Object.entries(globalSettingsRes.settings || {}).forEach(([key, val]) => {
+          globalSettingsFlat[key] = (val as { value: number }).value;
+        });
+        if (Object.keys(globalSettingsFlat).length > 0) {
+          setGlobalSettings(prev => ({ ...prev, ...globalSettingsFlat }));
+        }
       } catch (err) {
-        console.log("Using fallback airco units (API not available)");
+        console.log("Using fallback settings (API not available)");
       } finally {
         setLoading(false);
       }
     };
-    fetchProducts();
+    fetchData();
   }, []);
 
   const toggleCompare = (unitId: string) => {
@@ -226,11 +266,23 @@ const AircoCalculator = () => {
   const calculateTotalPrice = (unit: AircoUnit): number => {
     const totalSize = getTotalSize();
     const basePrice = Number(unit.basePrice) || 0;
-    const baseInstallation = totalSize > 40 ? 450 : 350;
-    const roomMultiplier = rooms.length > 1 && systemType === "multisplit" ? rooms.length * 200 : 0;
-    const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * basePrice * 0.8 : 0;
-    const pipeLengthCost = parseFloat(pipeLength) > 5 ? (parseFloat(pipeLength) - 5) * 25 : 0;
-    const separateGroupCost = separateGroup ? 250 : 0;
+    
+    // Use dynamic pricing from backend
+    const baseInstallation = totalSize > 40 
+      ? (globalSettings.base_installation_large || 450) 
+      : (globalSettings.base_installation_small || 350);
+    const multisplitPerRoom = globalSettings.multisplit_per_room || 200;
+    const extraUnitDiscount = globalSettings.extra_unit_discount || 0.8;
+    const pipePerMeter = pricingSettings.pipe_per_meter || 35;
+    const pipeIncluded = pricingSettings.pipe_included_meters || 3;
+    const electricalGroupPrice = pricingSettings.electrical_group || 185;
+    
+    const roomMultiplier = rooms.length > 1 && systemType === "multisplit" ? rooms.length * multisplitPerRoom : 0;
+    const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * basePrice * extraUnitDiscount : 0;
+    const pipeLengthValue = parseFloat(pipeLength) || 0;
+    const pipeLengthCost = pipeLengthValue > pipeIncluded ? (pipeLengthValue - pipeIncluded) * pipePerMeter : 0;
+    const separateGroupCost = separateGroup ? electricalGroupPrice : 0;
+    
     return basePrice + baseInstallation + roomMultiplier + singleUnitMultiplier + pipeLengthCost + separateGroupCost;
   };
 
@@ -282,7 +334,7 @@ const AircoCalculator = () => {
     message += `\n📐 Totaal: ${totalSize}m² | Benodigd: ${totalCapacity.toFixed(1)} kW\n`;
     message += `\n🏠 Isolatieklasse: ${insulationLabel}`;
     message += `\n⚡ Systeem: ${systemLabel}`;
-    message += `\n🔌 Aparte groep: ${separateGroup ? "Ja (+€250)" : "Nee"}`;
+    message += `\n🔌 Aparte groep: ${separateGroup ? `Ja (+€${(pricingSettings.electrical_group || 185).toFixed(0)})` : "Nee"}`;
     
     if (selectedAirco) {
       message += `\n\n❄️ Geselecteerde airco: ${selectedAirco.brand} ${selectedAirco.name}\n`;
@@ -465,7 +517,7 @@ const AircoCalculator = () => {
     if (rooms.length > 1) {
       doc.text(`Systeemtype: ${systemLabel}`, 25, yPos); yPos += 6;
     }
-    doc.text(`Aparte groep in meterkast: ${separateGroup ? 'Ja (+€250)' : 'Nee'}`, 25, yPos); yPos += 6;
+    doc.text(`Aparte groep in meterkast: ${separateGroup ? `Ja (+€${(pricingSettings.electrical_group || 185).toFixed(0)})` : 'Nee'}`, 25, yPos); yPos += 6;
     doc.text(`Kleur leidingen: ${pipeColors.find(c => c.id === selectedColor)?.label || selectedColor}`, 25, yPos); yPos += 6;
     if (pipeLength) {
       doc.text(`Geschatte leidinglengte: ${pipeLength}m`, 25, yPos); yPos += 6;
@@ -489,13 +541,22 @@ const AircoCalculator = () => {
       doc.text(`Capaciteit: ${selectedAirco.capacity} | Energielabel: ${selectedAirco.energyLabel}`, 25, yPos + 3);
       yPos += 15;
       
-      // Price breakdown
+      // Price breakdown - use dynamic pricing settings
       const basePrice = Number(selectedAirco.basePrice) || 0;
-      const baseInstallation = totalSize > 40 ? 450 : 350;
-      const roomMultiplier = rooms.length > 1 && systemType === "multisplit" ? rooms.length * 200 : 0;
-      const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * basePrice * 0.8 : 0;
-      const pipeLengthCost = parseFloat(pipeLength) > 5 ? (parseFloat(pipeLength) - 5) * 25 : 0;
-      const separateGroupCost = separateGroup ? 250 : 0;
+      const baseInstallation = totalSize > 40 
+        ? (globalSettings.base_installation_large || 450) 
+        : (globalSettings.base_installation_small || 350);
+      const multisplitPerRoom = globalSettings.multisplit_per_room || 200;
+      const extraUnitDiscount = globalSettings.extra_unit_discount || 0.8;
+      const pipePerMeter = pricingSettings.pipe_per_meter || 35;
+      const pipeIncluded = pricingSettings.pipe_included_meters || 3;
+      const electricalGroupPrice = pricingSettings.electrical_group || 185;
+      
+      const roomMultiplier = rooms.length > 1 && systemType === "multisplit" ? rooms.length * multisplitPerRoom : 0;
+      const singleUnitMultiplier = rooms.length > 1 && systemType === "single" ? (rooms.length - 1) * basePrice * extraUnitDiscount : 0;
+      const pipeLengthValue = parseFloat(pipeLength) || 0;
+      const pipeLengthCost = pipeLengthValue > pipeIncluded ? (pipeLengthValue - pipeIncluded) * pipePerMeter : 0;
+      const separateGroupCost = separateGroup ? electricalGroupPrice : 0;
       const totalPrice = calculateTotalPrice(selectedAirco);
       
       yPos += 10;
@@ -527,7 +588,8 @@ const AircoCalculator = () => {
       }
       
       if (pipeLengthCost > 0) {
-        doc.text(`Extra leidinglengte (${parseFloat(pipeLength) - 5}m)`, 25, yPos);
+        const extraPipeLength = pipeLengthValue - pipeIncluded;
+        doc.text(`Extra leidinglengte (${extraPipeLength.toFixed(1)}m)`, 25, yPos);
         doc.text(`€${pipeLengthCost.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
         yPos += 6;
       }
@@ -551,10 +613,11 @@ const AircoCalculator = () => {
       doc.text(`€${totalPrice.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
       yPos += 8;
       // Add incl. BTW line
-      const totalInclBTW = totalPrice * 1.21;
+      const vatRate = pricingSettings.vat_rate || 21;
+      const totalInclBTW = totalPrice * (1 + vatRate / 100);
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      doc.text('Incl. 21% BTW:', 25, yPos);
+      doc.text(`Incl. ${vatRate}% BTW:`, 25, yPos);
       doc.text(`€${totalInclBTW.toFixed(2).replace('.', ',')}`, pageWidth - 50, yPos);
     }
     
@@ -848,7 +911,7 @@ const AircoCalculator = () => {
                         : "border-border hover:border-accent/50"
                     }`}
                   >
-                    <span className="font-medium">Ja, graag (+€250)</span>
+                    <span className="font-medium">Ja, graag (+€{(pricingSettings.electrical_group || 185).toFixed(0)})</span>
                     {separateGroup && <Check className="w-4 h-4 text-accent" />}
                   </button>
                 </div>
