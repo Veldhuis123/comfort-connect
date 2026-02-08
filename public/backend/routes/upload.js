@@ -2,10 +2,20 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Rate limiting for public upload endpoint
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // max 10 uploads per IP per 15 min
+  message: { error: 'Te veel uploads. Probeer het later opnieuw.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Ensure uploads directory exists
 const uploadDir = process.env.UPLOAD_DIR || './uploads';
@@ -17,7 +27,9 @@ if (!fs.existsSync(uploadDir)) {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const category = req.body.category || 'general';
-    const dir = path.join(uploadDir, category);
+    // Sanitize category to prevent path traversal
+    const safeCategory = category.replace(/[^a-zA-Z0-9_-]/g, '');
+    const dir = path.join(uploadDir, safeCategory);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -25,7 +37,9 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    // Sanitize original filename extension
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, uniqueSuffix + ext);
   }
 });
 
@@ -46,8 +60,27 @@ const upload = multer({
   }
 });
 
-// Upload photos for quote request
-router.post('/quote/:quoteId', upload.array('photos', 10), async (req, res) => {
+// Upload photos for quote request (public but protected by rate limiting and quote verification)
+router.post('/quote/:quoteId', uploadLimiter, upload.array('photos', 10), async (req, res) => {
+  try {
+    const { quoteId } = req.params;
+    const { category } = req.body;
+    const files = req.files;
+
+    // Validate quoteId is a number
+    if (!/^\d+$/.test(quoteId)) {
+      return res.status(400).json({ error: 'Ongeldig offerte ID' });
+    }
+
+    // Verify the quote exists and was recently created (within last hour)
+    const [quotes] = await db.query(
+      'SELECT id, created_at FROM quote_requests WHERE id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
+      [quoteId]
+    );
+    
+    if (quotes.length === 0) {
+      return res.status(404).json({ error: 'Offerte niet gevonden of te oud voor uploads' });
+    }
   try {
     const { quoteId } = req.params;
     const { category } = req.body;

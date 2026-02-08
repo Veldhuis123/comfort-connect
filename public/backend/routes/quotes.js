@@ -68,15 +68,44 @@ router.post('/', async (req, res) => {
       additional_notes
     } = req.body;
 
+    // Input validation
+    if (customer_name && (typeof customer_name !== 'string' || customer_name.length > 100)) {
+      return res.status(400).json({ error: 'Naam mag maximaal 100 tekens bevatten' });
+    }
+    if (customer_email && (typeof customer_email !== 'string' || customer_email.length > 255)) {
+      return res.status(400).json({ error: 'E-mail mag maximaal 255 tekens bevatten' });
+    }
+    if (customer_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer_email)) {
+      return res.status(400).json({ error: 'Ongeldig e-mailadres' });
+    }
+    if (customer_phone && (typeof customer_phone !== 'string' || customer_phone.length > 20)) {
+      return res.status(400).json({ error: 'Telefoonnummer mag maximaal 20 tekens bevatten' });
+    }
+    if (additional_notes && (typeof additional_notes !== 'string' || additional_notes.length > 2000)) {
+      return res.status(400).json({ error: 'Opmerkingen mogen maximaal 2000 tekens bevatten' });
+    }
+    if (selected_airco_name && (typeof selected_airco_name !== 'string' || selected_airco_name.length > 200)) {
+      return res.status(400).json({ error: 'Productnaam te lang' });
+    }
+    if (pipe_color && (typeof pipe_color !== 'string' || pipe_color.length > 50)) {
+      return res.status(400).json({ error: 'Leidingkleur te lang' });
+    }
+    
+    // Sanitize inputs
+    const sanitizedName = customer_name ? customer_name.trim() : null;
+    const sanitizedEmail = customer_email ? customer_email.trim().toLowerCase() : null;
+    const sanitizedPhone = customer_phone ? customer_phone.trim() : null;
+    const sanitizedNotes = additional_notes ? additional_notes.trim() : null;
+
     const [result] = await db.query(
       `INSERT INTO quote_requests 
        (customer_name, customer_email, customer_phone, rooms, total_size, total_capacity, 
         selected_airco_id, selected_airco_name, selected_airco_brand, estimated_price, 
         pipe_color, pipe_length, additional_notes) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [customer_name, customer_email, customer_phone, JSON.stringify(rooms), 
+      [sanitizedName, sanitizedEmail, sanitizedPhone, JSON.stringify(rooms), 
        total_size, total_capacity, selected_airco_id, selected_airco_name, 
-       selected_airco_brand, estimated_price, pipe_color, pipe_length, additional_notes]
+       selected_airco_brand, estimated_price, pipe_color, pipe_length, sanitizedNotes]
     );
 
     // Send email notification (don't wait for it, don't fail if email fails)
