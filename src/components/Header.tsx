@@ -1,18 +1,39 @@
 import { Phone, Menu, X, LogIn } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo.png";
+import { getCalculatorSettings } from "@/pages/Calculators";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hasEnabledCalculators, setHasEnabledCalculators] = useState(true);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
+
+  useEffect(() => {
+    const checkCalculators = () => {
+      const settings = getCalculatorSettings();
+      const anyEnabled = Object.values(settings).some(calc => calc.enabled);
+      setHasEnabledCalculators(anyEnabled);
+    };
+    
+    checkCalculators();
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "calculatorSettings") {
+        checkCalculators();
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const navItems = [
     { label: "Home", href: isHomePage ? "#home" : "/" },
     { label: "Diensten", href: isHomePage ? "#diensten" : "/#diensten" },
-    { label: "Calculatoren", href: "/calculators", isLink: true },
+    ...(hasEnabledCalculators ? [{ label: "Calculatoren", href: "/calculators", isLink: true }] : []),
     { label: "Reviews", href: isHomePage ? "#reviews" : "/#reviews" },
     { label: "Over Mij", href: isHomePage ? "#over" : "/#over" },
     { label: "Contact", href: isHomePage ? "#contact" : "/#contact" },
