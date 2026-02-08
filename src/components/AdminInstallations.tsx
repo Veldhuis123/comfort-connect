@@ -476,12 +476,36 @@ const AdminInstallations = () => {
     }
   };
 
-  const handleAircoWizardComplete = async (data: CreateInstallation & { brl_checklist: any; commissioning_data?: CommissioningData }) => {
+  const handleAircoWizardComplete = async (data: CreateInstallation & { brl_checklist: any; commissioning_data?: CommissioningData; selected_cylinder_id?: number; cylinder_usage_kg?: number }) => {
     try {
-      const { brl_checklist, commissioning_data, ...installationData } = data;
+      const { brl_checklist, commissioning_data, selected_cylinder_id, cylinder_usage_kg, ...installationData } = data;
       // Store BRL checklist in notes for now
       const notes = `BRL 100 Checklist voltooid op ${new Date().toLocaleDateString('nl-NL')}`;
       const result = await installationsApi.createInstallation({ ...installationData, notes });
+      
+      // Update cylinder stock if refrigerant was added from a cylinder
+      if (selected_cylinder_id && cylinder_usage_kg && cylinder_usage_kg > 0) {
+        const cylinder = cylinders.find(c => c.id === selected_cylinder_id);
+        if (cylinder) {
+          const newWeight = cylinder.current_weight_kg - cylinder_usage_kg;
+          const availableKg = newWeight - cylinder.tare_weight_kg;
+          let newStatus = cylinder.status;
+          
+          // Determine new status based on remaining content
+          if (availableKg <= 0) {
+            newStatus = 'leeg';
+          } else if (availableKg < cylinder.cylinder_size_kg * 0.1) {
+            newStatus = 'bijna_leeg';
+          } else {
+            newStatus = 'in_gebruik';
+          }
+          
+          await installationsApi.updateCylinder(selected_cylinder_id, {
+            current_weight_kg: Math.max(cylinder.tare_weight_kg, newWeight),
+            status: newStatus,
+          });
+        }
+      }
       
       // Generate PDF with correct QR code now that we have the installation qr_code
       if (commissioning_data && result.qr_code) {
@@ -1981,9 +2005,11 @@ const AdminInstallations = () => {
             customers={customers}
             technicians={technicians}
             equipment={equipment}
+            cylinders={cylinders}
             onComplete={handleAircoWizardComplete}
             onCancel={() => setShowAircoWizard(false)}
             onCustomerCreated={fetchData}
+            onCylinderUpdated={fetchData}
           />
         </DialogContent>
       </Dialog>

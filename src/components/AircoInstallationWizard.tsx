@@ -22,6 +22,7 @@ import {
   Customer,
   Technician,
   Equipment,
+  RefrigerantCylinder,
   CreateInstallation,
   REFRIGERANT_GWP,
   REFRIGERANT_OPTIONS,
@@ -45,9 +46,11 @@ interface AircoInstallationWizardProps {
   customers: Customer[];
   technicians: Technician[];
   equipment: Equipment[];
-  onComplete: (data: CreateInstallation & { brl_checklist: BRLChecklist; commissioning_data: CommissioningData }) => void;
+  cylinders: RefrigerantCylinder[];
+  onComplete: (data: CreateInstallation & { brl_checklist: BRLChecklist; commissioning_data: CommissioningData; selected_cylinder_id?: number; cylinder_usage_kg?: number }) => void;
   onCancel: () => void;
   onCustomerCreated?: () => void;
+  onCylinderUpdated?: () => void;
 }
 
 const steps = [
@@ -73,15 +76,19 @@ export const AircoInstallationWizard = ({
   customers,
   technicians,
   equipment,
+  cylinders = [],
   onComplete,
   onCancel,
   onCustomerCreated,
+  onCylinderUpdated,
 }: AircoInstallationWizardProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [checklist, setChecklist] = useState<BRLChecklist>(defaultChecklist);
   const [commissioningData, setCommissioningData] = useState<CommissioningData>(defaultCommissioningData);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [generatedQrCode, setGeneratedQrCode] = useState<string | null>(null);
+  const [selectedCylinderId, setSelectedCylinderId] = useState<number | null>(null);
+  const [cylinderUsageKg, setCylinderUsageKg] = useState<number>(0);
   
   const [installationData, setInstallationData] = useState<CreateInstallation>({
     customer_id: 0,
@@ -195,7 +202,9 @@ export const AircoInstallationWizard = ({
     onComplete({ 
       ...installationData, 
       brl_checklist: checklist,
-      commissioning_data: commissioningData
+      commissioning_data: commissioningData,
+      selected_cylinder_id: selectedCylinderId || undefined,
+      cylinder_usage_kg: cylinderUsageKg > 0 ? cylinderUsageKg : undefined,
     });
   };
 
@@ -953,6 +962,9 @@ export const AircoInstallationWizard = ({
                           refrigerant_gwp: REFRIGERANT_GWP[v] || 0
                         });
                         updateCommissioning("refrigerant_type", v);
+                        // Reset cylinder selection when refrigerant type changes
+                        setSelectedCylinderId(null);
+                        setCylinderUsageKg(0);
                       }}
                     >
                       <SelectTrigger>
@@ -966,34 +978,163 @@ export const AircoInstallationWizard = ({
                     </Select>
                   </div>
                   <div>
-                    <Label>Standaard inhoud (kg)*</Label>
+                    <Label>Fabrieksvulling (kg)*</Label>
                     <Input
                       type="number"
                       step="0.001"
-                      value={commissioningData.standard_charge || installationData.refrigerant_charge_kg || ""}
+                      value={commissioningData.standard_charge || ""}
                       onChange={(e) => {
                         const val = parseFloat(e.target.value) || 0;
-                        setInstallationData({ ...installationData, refrigerant_charge_kg: val });
+                        const additional = parseFloat(commissioningData.additional_charge || "0") || 0;
+                        setInstallationData({ ...installationData, refrigerant_charge_kg: val + additional });
                         updateCommissioning("standard_charge", e.target.value);
                       }}
                       placeholder="0.85"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">Voorvulling in buitenunit</p>
                   </div>
                   <div>
-                    <Label>Bijvulling (kg)</Label>
+                    <Label>Bijgevuld uit cilinder (kg)</Label>
                     <Input
                       type="number"
                       step="0.001"
                       value={commissioningData.additional_charge}
-                      onChange={(e) => updateCommissioning("additional_charge", e.target.value)}
+                      onChange={(e) => {
+                        const additional = parseFloat(e.target.value) || 0;
+                        const standard = parseFloat(commissioningData.standard_charge || "0") || 0;
+                        setInstallationData({ ...installationData, refrigerant_charge_kg: standard + additional });
+                        updateCommissioning("additional_charge", e.target.value);
+                        setCylinderUsageKg(additional);
+                      }}
                       placeholder="0.00"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">Extra bijvulling voor leidinglengte</p>
                   </div>
                 </div>
+
+                {/* Cylinder Selection */}
+                {parseFloat(commissioningData.additional_charge || "0") > 0 && (
+                  <div className="p-4 border border-accent/30 rounded-lg bg-accent/5 space-y-3">
+                    <h5 className="font-medium flex items-center gap-2">
+                      <span className="w-2 h-2 bg-accent rounded-full" />
+                      Cilinder voor bijvulling (BRL 100)
+                    </h5>
+                    <p className="text-sm text-muted-foreground">
+                      Selecteer de cilinder waaruit het koudemiddel is bijgevuld voor traceerbaarheid.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Koudemiddelcilinder</Label>
+                        <Select
+                          value={selectedCylinderId ? String(selectedCylinderId) : ""}
+                          onValueChange={(v) => {
+                            const id = v ? Number(v) : null;
+                            setSelectedCylinderId(id);
+                            if (id) {
+                              const cylinder = cylinders.find(c => c.id === id);
+                              if (cylinder) {
+                                // Sync refrigerant type from cylinder
+                                setInstallationData(prev => ({
+                                  ...prev,
+                                  refrigerant_type: cylinder.refrigerant_type,
+                                  refrigerant_gwp: cylinder.refrigerant_gwp
+                                }));
+                                updateCommissioning("refrigerant_type", cylinder.refrigerant_type);
+                              }
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecteer cilinder..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {cylinders
+                              .filter(c => c.is_active && c.refrigerant_type === installationData.refrigerant_type && c.status !== 'leeg' && c.status !== 'retour')
+                              .map((c) => {
+                                const availableKg = c.current_weight_kg - c.tare_weight_kg;
+                                return (
+                                  <SelectItem key={c.id} value={String(c.id)}>
+                                    <div className="flex items-center gap-2">
+                                      <span>{c.refrigerant_type}</span>
+                                      <span className="text-muted-foreground">
+                                        ({availableKg.toFixed(2)} kg beschikbaar)
+                                      </span>
+                                      {c.batch_number && (
+                                        <span className="text-xs text-muted-foreground">
+                                          Batch: {c.batch_number}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
+                            {cylinders.filter(c => c.is_active && c.refrigerant_type === installationData.refrigerant_type && c.status !== 'leeg' && c.status !== 'retour').length === 0 && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                Geen cilinders met {installationData.refrigerant_type} beschikbaar
+                              </div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {selectedCylinderId && (() => {
+                        const cylinder = cylinders.find(c => c.id === selectedCylinderId);
+                        if (!cylinder) return null;
+                        const availableKg = cylinder.current_weight_kg - cylinder.tare_weight_kg;
+                        const usageKg = parseFloat(commissioningData.additional_charge || "0");
+                        const remainingKg = availableKg - usageKg;
+                        
+                        return (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-3 gap-2 text-sm">
+                              <div className="p-2 bg-background rounded border text-center">
+                                <p className="text-xs text-muted-foreground">Beschikbaar</p>
+                                <p className="font-medium">{availableKg.toFixed(3)} kg</p>
+                              </div>
+                              <div className="p-2 bg-background rounded border text-center">
+                                <p className="text-xs text-muted-foreground">Gebruikt</p>
+                                <p className="font-medium text-destructive">-{usageKg.toFixed(3)} kg</p>
+                              </div>
+                              <div className="p-2 bg-background rounded border text-center">
+                                <p className="text-xs text-muted-foreground">Resterend</p>
+                                <p className={`font-medium ${remainingKg < 0 ? 'text-destructive' : ''}`}>
+                                  {remainingKg.toFixed(3)} kg
+                                </p>
+                              </div>
+                            </div>
+                            {remainingKg < 0 && (
+                              <div className="flex items-center gap-2 p-2 bg-destructive/10 text-destructive rounded text-sm">
+                                <AlertTriangle className="w-4 h-4" />
+                                Onvoldoende koudemiddel in deze cilinder!
+                              </div>
+                            )}
+                            {cylinder.batch_number && (
+                              <p className="text-xs text-muted-foreground">
+                                Batchnummer: {cylinder.batch_number}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-4 pt-2">
                   <div className="p-3 bg-background rounded-lg border text-center">
-                    <p className="text-xs text-muted-foreground">Totale vulling</p>
+                    <p className="text-xs text-muted-foreground">Fabrieksvulling</p>
                     <p className="text-lg font-bold">
+                      {parseFloat(commissioningData.standard_charge || "0").toFixed(3)} kg
+                    </p>
+                  </div>
+                  <div className="p-3 bg-background rounded-lg border text-center">
+                    <p className="text-xs text-muted-foreground">Bijgevuld</p>
+                    <p className="text-lg font-bold">
+                      +{parseFloat(commissioningData.additional_charge || "0").toFixed(3)} kg
+                    </p>
+                  </div>
+                  <div className="p-3 bg-accent/10 rounded-lg border border-accent/30 text-center">
+                    <p className="text-xs text-muted-foreground">Totale vulling</p>
+                    <p className="text-lg font-bold text-accent">
                       {(parseFloat(commissioningData.standard_charge || "0") + parseFloat(commissioningData.additional_charge || "0")).toFixed(3)} kg
                     </p>
                   </div>

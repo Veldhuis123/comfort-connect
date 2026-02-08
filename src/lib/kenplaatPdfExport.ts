@@ -78,7 +78,7 @@ export const generateKenplaatPDF = async (
   doc.setFont("helvetica", "normal");
   let y = 24;
   
-  doc.text("Adres: Leverancieradres", 6, y);
+  doc.text("Adres: zie website", 6, y);
   y += 4;
   doc.text("E: info@rv-installatie.nl", 6, y);
   y += 4;
