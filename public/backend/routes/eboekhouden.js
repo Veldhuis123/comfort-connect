@@ -1141,6 +1141,125 @@ router.post('/sync/quote/:quoteId', authMiddleware, async (req, res) => {
 // LOKALE OFFERTES - CRUD
 // =============================================
 
+// Create new local quote (manual creation without quote request)
+router.post('/local-quotes', authMiddleware, async (req, res) => {
+  const db = require('../config/database');
+  try {
+    const { 
+      customer_name, 
+      customer_email, 
+      customer_phone, 
+      customer_address,
+      customer_note,
+      internal_note,
+      expiration_date,
+      items = []
+    } = req.body;
+
+    if (!customer_name || customer_name.trim().length === 0) {
+      return res.status(400).json({ error: 'Klantnaam is verplicht' });
+    }
+
+    // Calculate totals from items
+    let subtotalExcl = 0;
+    let vatAmount = 0;
+    
+    items.forEach(item => {
+      const lineTotal = (item.quantity || 1) * (item.price_per_unit || 0);
+      const lineVat = lineTotal * ((item.vat_percentage || 21) / 100);
+      subtotalExcl += lineTotal;
+      vatAmount += lineVat;
+    });
+    
+    const totalIncl = subtotalExcl + vatAmount;
+
+    // Calculate dates
+    const quoteDate = new Date().toISOString().split('T')[0];
+    let expirationDateValue = expiration_date;
+    if (!expirationDateValue) {
+      const expDate = new Date(quoteDate);
+      expDate.setDate(expDate.getDate() + 30);
+      expirationDateValue = expDate.toISOString().split('T')[0];
+    }
+
+    // Generate quote number
+    const year = new Date().getFullYear();
+    const [lastQuote] = await db.query(
+      `SELECT quote_number FROM local_quotes 
+       WHERE quote_number LIKE ? 
+       ORDER BY id DESC LIMIT 1`,
+      [`OFF-${year}-%`]
+    );
+    
+    let nextNum = 1;
+    if (lastQuote.length > 0 && lastQuote[0].quote_number) {
+      const match = lastQuote[0].quote_number.match(/OFF-\d{4}-(\d+)/);
+      if (match) nextNum = parseInt(match[1]) + 1;
+    }
+    const quoteNumber = `OFF-${year}-${String(nextNum).padStart(4, '0')}`;
+
+    // Insert quote
+    const [quoteResult] = await db.query(
+      `INSERT INTO local_quotes (
+        customer_name, customer_email, customer_phone, customer_address,
+        quote_number, quote_date, expiration_date,
+        subtotal_excl, vat_amount, total_incl,
+        customer_note, internal_note, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'concept')`,
+      [
+        customer_name.trim(),
+        customer_email || null,
+        customer_phone || null,
+        customer_address || null,
+        quoteNumber,
+        quoteDate,
+        expirationDateValue,
+        subtotalExcl.toFixed(2),
+        vatAmount.toFixed(2),
+        totalIncl.toFixed(2),
+        customer_note || null,
+        internal_note || null
+      ]
+    );
+
+    const quoteId = quoteResult.insertId;
+
+    // Insert quote items if provided
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      await db.query(
+        `INSERT INTO local_quote_items (
+          quote_id, description, product_code, quantity, unit, 
+          price_per_unit, vat_code, vat_percentage, sort_order
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          quoteId,
+          item.description || 'Product',
+          item.product_code || null,
+          item.quantity || 1,
+          item.unit || 'stuk',
+          item.price_per_unit || 0,
+          item.vat_code || 'HOOG_VERK_21',
+          item.vat_percentage || 21,
+          i
+        ]
+      );
+    }
+
+    console.log(`Manual quote ${quoteNumber} created (ID: ${quoteId})`);
+    
+    res.status(201).json({ 
+      success: true, 
+      id: quoteId,
+      quote_number: quoteNumber,
+      message: 'Offerte aangemaakt' 
+    });
+  } catch (error) {
+    console.error('Create local quote error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get all local quotes
 router.get('/local-quotes', authMiddleware, async (req, res) => {
   const db = require('../config/database');
