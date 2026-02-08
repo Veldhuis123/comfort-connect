@@ -51,9 +51,37 @@ router.post('/', async (req, res) => {
   try {
     const { name, email, phone, subject, message, recaptchaToken } = req.body;
 
+    // Required field validation
     if (!name || !email || !message) {
       return res.status(400).json({ error: 'Naam, email en bericht zijn verplicht' });
     }
+
+    // Type and length validation
+    if (typeof name !== 'string' || name.trim().length === 0 || name.length > 100) {
+      return res.status(400).json({ error: 'Naam moet tussen 1 en 100 tekens zijn' });
+    }
+    if (typeof email !== 'string' || email.length > 255) {
+      return res.status(400).json({ error: 'E-mail mag maximaal 255 tekens bevatten' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Ongeldig e-mailadres' });
+    }
+    if (typeof message !== 'string' || message.trim().length === 0 || message.length > 5000) {
+      return res.status(400).json({ error: 'Bericht moet tussen 1 en 5000 tekens zijn' });
+    }
+    if (phone && (typeof phone !== 'string' || phone.length > 20)) {
+      return res.status(400).json({ error: 'Telefoonnummer mag maximaal 20 tekens bevatten' });
+    }
+    if (subject && (typeof subject !== 'string' || subject.length > 200)) {
+      return res.status(400).json({ error: 'Onderwerp mag maximaal 200 tekens bevatten' });
+    }
+
+    // Sanitize inputs
+    const sanitizedName = name.trim();
+    const sanitizedEmail = email.trim().toLowerCase();
+    const sanitizedMessage = message.trim();
+    const sanitizedPhone = phone ? phone.trim() : null;
+    const sanitizedSubject = subject ? subject.trim() : null;
 
     // Verify reCAPTCHA v3 only if token is provided AND secret key is configured
     if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
@@ -94,11 +122,17 @@ router.post('/', async (req, res) => {
 
     const [result] = await db.query(
       'INSERT INTO contact_messages (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)',
-      [name, email, phone, subject, message]
+      [sanitizedName, sanitizedEmail, sanitizedPhone, sanitizedSubject, sanitizedMessage]
     );
 
     // Send email notification
-    sendContactNotification({ name, email, phone, subject, message }).catch(err => {
+    sendContactNotification({ 
+      name: sanitizedName, 
+      email: sanitizedEmail, 
+      phone: sanitizedPhone, 
+      subject: sanitizedSubject, 
+      message: sanitizedMessage 
+    }).catch(err => {
       console.error('Failed to send contact notification email:', err.message);
     });
 
