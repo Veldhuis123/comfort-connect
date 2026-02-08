@@ -264,10 +264,10 @@ export const generateKenplaatPDF = async (
   doc.setFontSize(6);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(150, 100, 0);
-  doc.text("LET OP: Bevat gefluoreerde broeikasgassen", rightX + 2, pageHeight - 8);
+  doc.text("Bevat broeikasgas vallend onder het Kyoto Protocol", rightX + 2, pageHeight - 8);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5);
-  doc.text("Onderhoud en buitengebruikstelling uitsluitend door gecertificeerde technici (F-gas)", rightX + 2, pageHeight - 5.5);
+  doc.text("Onderhoud en terugwinning uitsluitend door gecertificeerde technici", rightX + 2, pageHeight - 5.5);
   
   // Save
   const fileName = `Kenplaat-${installation.name || installation.qr_code?.substring(0, 8)}.pdf`;
