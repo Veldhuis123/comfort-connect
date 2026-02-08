@@ -618,6 +618,48 @@ router.post('/qr/:qrCode/fault', async (req, res) => {
   const { qrCode } = req.params;
   const { reporter_name, reporter_phone, reporter_email, fault_type, error_code, description, urgency } = req.body;
   
+  // Server-side input validation (BRL 100 / security compliance)
+  const validFaultTypes = ['niet_koelen', 'niet_verwarmen', 'geluid', 'lekkage', 'geur', 'foutcode', 'overig'];
+  const validUrgencies = ['laag', 'normaal', 'hoog', 'spoed'];
+  
+  // Required fields
+  if (!reporter_name || typeof reporter_name !== 'string' || reporter_name.trim().length === 0) {
+    return res.status(400).json({ error: 'Naam is verplicht' });
+  }
+  if (!description || typeof description !== 'string' || description.trim().length === 0) {
+    return res.status(400).json({ error: 'Omschrijving is verplicht' });
+  }
+  
+  // Length limits to prevent abuse
+  if (reporter_name.length > 100) {
+    return res.status(400).json({ error: 'Naam mag maximaal 100 tekens bevatten' });
+  }
+  if (description.length > 2000) {
+    return res.status(400).json({ error: 'Omschrijving mag maximaal 2000 tekens bevatten' });
+  }
+  if (reporter_phone && reporter_phone.length > 20) {
+    return res.status(400).json({ error: 'Telefoonnummer mag maximaal 20 tekens bevatten' });
+  }
+  if (reporter_email && reporter_email.length > 255) {
+    return res.status(400).json({ error: 'E-mailadres mag maximaal 255 tekens bevatten' });
+  }
+  if (error_code && error_code.length > 50) {
+    return res.status(400).json({ error: 'Foutcode mag maximaal 50 tekens bevatten' });
+  }
+  
+  // Validate enum values
+  if (!validFaultTypes.includes(fault_type)) {
+    return res.status(400).json({ error: 'Ongeldig type storing' });
+  }
+  if (urgency && !validUrgencies.includes(urgency)) {
+    return res.status(400).json({ error: 'Ongeldige urgentie' });
+  }
+  
+  // Basic email format validation (if provided)
+  if (reporter_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reporter_email)) {
+    return res.status(400).json({ error: 'Ongeldig e-mailadres' });
+  }
+  
   try {
     // Find installation by QR code with details
     const [installations] = await pool.query(
@@ -632,22 +674,41 @@ router.post('/qr/:qrCode/fault', async (req, res) => {
     
     const installation = installations[0];
     
+    // Sanitize inputs (trim whitespace)
+    const sanitizedName = reporter_name.trim();
+    const sanitizedDescription = description.trim();
+    const sanitizedPhone = reporter_phone ? reporter_phone.trim() : null;
+    const sanitizedEmail = reporter_email ? reporter_email.trim().toLowerCase() : null;
+    const sanitizedErrorCode = error_code ? error_code.trim() : null;
+    
     const [result] = await pool.query(
       `INSERT INTO fault_reports (
         installation_id, reporter_name, reporter_phone, reporter_email,
         fault_type, error_code, description, urgency
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [installation.id, reporter_name, reporter_phone, reporter_email,
-       fault_type, error_code, description, urgency]
+      [installation.id, sanitizedName, sanitizedPhone, sanitizedEmail,
+       fault_type, sanitizedErrorCode, sanitizedDescription, urgency || 'normaal']
     );
     
     // Send email notification (async, don't wait for result)
     const faultData = {
-      reporter_name, reporter_phone, reporter_email,
-      fault_type, error_code, description, urgency
+      reporter_name: sanitizedName, 
+      reporter_phone: sanitizedPhone, 
+      reporter_email: sanitizedEmail,
+      fault_type, 
+      error_code: sanitizedErrorCode, 
+      description: sanitizedDescription, 
+      urgency: urgency || 'normaal'
     };
     sendFaultNotification(faultData, installation).catch(err => {
       console.error('Failed to send fault notification email:', err.message);
+    });
+    
+    logger.audit('FAULT_REPORTED', {
+      installation_id: installation.id,
+      fault_type,
+      urgency: urgency || 'normaal',
+      reporter_name: sanitizedName
     });
     
     res.status(201).json({ id: result.insertId, message: 'Storingsmelding ontvangen' });
