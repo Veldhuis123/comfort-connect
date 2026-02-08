@@ -1,15 +1,52 @@
 import { Wind, Flame, Zap, Droplets, PipetteIcon, Wifi, Camera, Sun, Battery } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { getCalculatorSettings, CalculatorSettings } from "@/pages/Calculators";
 
 const Services = () => {
+  const [calculatorSettings, setCalculatorSettings] = useState<CalculatorSettings | null>(null);
+
+  useEffect(() => {
+    setCalculatorSettings(getCalculatorSettings());
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "calculatorSettings") {
+        setCalculatorSettings(getCalculatorSettings());
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  // Map calculator tabs to their settings keys
+  const getCalculatorLink = (tab: string): string | undefined => {
+    if (!calculatorSettings) return undefined;
+    
+    const tabToSettingsKey: Record<string, keyof CalculatorSettings> = {
+      airco: "airco",
+      pv: "pv",
+      battery: "battery",
+      unifi: "unifi",
+      charging: "charging",
+      schema: "schema",
+    };
+    
+    const settingsKey = tabToSettingsKey[tab];
+    if (settingsKey && calculatorSettings[settingsKey]?.enabled) {
+      return `/calculators?tab=${tab}`;
+    }
+    return undefined;
+  };
+
   const services = [
     {
       icon: Wind,
       title: "Airconditioning",
       description: "Installatie en onderhoud van airconditioningsystemen. Koel in de zomer, warm in de winter.",
       features: ["Split-unit airco's", "Multi-split systemen", "Onderhoud & reparatie"],
-      calculatorLink: "/calculators?tab=airco",
+      calculatorTab: "airco",
     },
     {
       icon: Flame,
@@ -40,28 +77,28 @@ const Services = () => {
       title: "UniFi Netwerken",
       description: "Professionele netwerk- en WiFi oplossingen voor thuis en bedrijf.",
       features: ["UniFi access points", "Netwerk switches", "Volledige dekking"],
-      calculatorLink: "/calculators?tab=unifi",
+      calculatorTab: "unifi",
     },
     {
       icon: Camera,
       title: "Camerabewaking",
       description: "Beveiligingscamera's en videobewakingssystemen voor optimale veiligheid.",
       features: ["UniFi Protect camera's", "Nachtzicht & 4K", "App bediening"],
-      calculatorLink: "/calculators?tab=unifi",
+      calculatorTab: "unifi",
     },
     {
       icon: Sun,
       title: "Zonnepanelen",
       description: "Duurzame energie met PV-systemen voor uw woning of bedrijf.",
       features: ["Zonnepanelen installatie", "Omvormers", "Monitoring systemen"],
-      calculatorLink: "/calculators?tab=pv",
+      calculatorTab: "pv",
     },
     {
       icon: Battery,
       title: "Thuisaccu's",
       description: "Sla uw zonne-energie op en gebruik deze wanneer u wilt.",
       features: ["Thuisbatterijen", "Noodstroom functie", "Smart energy management"],
-      calculatorLink: "/calculators?tab=battery",
+      calculatorTab: "battery",
     },
   ];
 
@@ -83,9 +120,11 @@ const Services = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((service) => {
-            const CardWrapper = service.calculatorLink 
+            const calculatorLink = service.calculatorTab ? getCalculatorLink(service.calculatorTab) : undefined;
+            
+            const CardWrapper = calculatorLink 
               ? ({ children }: { children: React.ReactNode }) => (
-                  <Link to={service.calculatorLink!} className="block">
+                  <Link to={calculatorLink} className="block" onClick={() => window.scrollTo(0, 0)}>
                     {children}
                   </Link>
                 )
@@ -95,7 +134,7 @@ const Services = () => {
               <CardWrapper key={service.title}>
                 <Card 
                   className={`group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-accent/30 bg-card h-full ${
-                    service.calculatorLink ? "cursor-pointer" : ""
+                    calculatorLink ? "cursor-pointer" : ""
                   }`}
                 >
                   <CardHeader>
@@ -116,7 +155,7 @@ const Services = () => {
                         </li>
                       ))}
                     </ul>
-                    {service.calculatorLink && (
+                    {calculatorLink && (
                       <p className="text-sm text-accent font-medium mt-4 group-hover:underline">
                         Bereken uw prijs →
                       </p>
