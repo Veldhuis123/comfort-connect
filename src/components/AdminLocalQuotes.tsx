@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { api, LocalQuote, LocalQuoteStats } from "@/lib/api";
+import { api, LocalQuote, LocalQuoteStats, CreateLocalQuote, CreateLocalQuoteItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { 
   FileText, Trash2, Eye, Download, Calendar, Mail, Phone, 
-  User, Euro, RefreshCw, CheckCircle, XCircle, Clock, Send
+  User, Euro, RefreshCw, CheckCircle, XCircle, Clock, Send, Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateLocalQuotePDF } from "@/lib/localQuotePdfExport";
@@ -43,6 +44,14 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
   overgenomen: { label: "Overgenomen", color: "bg-purple-500", icon: <CheckCircle className="w-3 h-3" /> },
 };
 
+const emptyQuoteItem: CreateLocalQuoteItem = {
+  description: "",
+  quantity: 1,
+  unit: "stuk",
+  price_per_unit: 0,
+  vat_percentage: 21,
+};
+
 const AdminLocalQuotes = () => {
   const { toast } = useToast();
   const [quotes, setQuotes] = useState<LocalQuote[]>([]);
@@ -54,6 +63,19 @@ const AdminLocalQuotes = () => {
   const [selectedQuote, setSelectedQuote] = useState<LocalQuote | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  
+  // New quote dialog
+  const [showNewQuoteDialog, setShowNewQuoteDialog] = useState(false);
+  const [newQuoteForm, setNewQuoteForm] = useState<CreateLocalQuote>({
+    customer_name: "",
+    customer_email: "",
+    customer_phone: "",
+    customer_address: "",
+    customer_note: "",
+    internal_note: "",
+    items: [{ ...emptyQuoteItem }],
+  });
+  const [creatingQuote, setCreatingQuote] = useState(false);
 
   const fetchQuotes = async () => {
     setLoading(true);
@@ -143,6 +165,73 @@ const AdminLocalQuotes = () => {
     });
   };
 
+  // New quote handlers
+  const handleOpenNewQuote = () => {
+    setNewQuoteForm({
+      customer_name: "",
+      customer_email: "",
+      customer_phone: "",
+      customer_address: "",
+      customer_note: "",
+      internal_note: "",
+      items: [{ ...emptyQuoteItem }],
+    });
+    setShowNewQuoteDialog(true);
+  };
+
+  const handleAddItem = () => {
+    setNewQuoteForm((prev) => ({
+      ...prev,
+      items: [...(prev.items || []), { ...emptyQuoteItem }],
+    }));
+  };
+
+  const handleRemoveItem = (index: number) => {
+    setNewQuoteForm((prev) => ({
+      ...prev,
+      items: (prev.items || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleItemChange = (index: number, field: keyof CreateLocalQuoteItem, value: string | number) => {
+    setNewQuoteForm((prev) => ({
+      ...prev,
+      items: (prev.items || []).map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      ),
+    }));
+  };
+
+  const calculateTotals = () => {
+    let subtotal = 0;
+    let vat = 0;
+    (newQuoteForm.items || []).forEach((item) => {
+      const lineTotal = (item.quantity || 1) * (item.price_per_unit || 0);
+      subtotal += lineTotal;
+      vat += lineTotal * ((item.vat_percentage || 21) / 100);
+    });
+    return { subtotal, vat, total: subtotal + vat };
+  };
+
+  const handleCreateQuote = async () => {
+    if (!newQuoteForm.customer_name?.trim()) {
+      toast({ title: "Fout", description: "Klantnaam is verplicht", variant: "destructive" });
+      return;
+    }
+    
+    setCreatingQuote(true);
+    try {
+      const result = await api.createLocalQuote(newQuoteForm);
+      toast({ title: "Succes", description: `Offerte ${result.quote_number} aangemaakt` });
+      setShowNewQuoteDialog(false);
+      fetchQuotes();
+    } catch (error) {
+      toast({ title: "Fout", description: "Kon offerte niet aanmaken", variant: "destructive" });
+    } finally {
+      setCreatingQuote(false);
+    }
+  };
+
   const formatDate = (date: string | null) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString("nl-NL");
@@ -189,6 +278,10 @@ const AdminLocalQuotes = () => {
               <CardDescription>Beheer je lokaal opgeslagen offertes</CardDescription>
             </div>
             <div className="flex gap-2">
+              <Button onClick={handleOpenNewQuote}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nieuwe offerte
+              </Button>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Filter status" />
@@ -486,6 +579,178 @@ const AdminLocalQuotes = () => {
               )}
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* New Quote Dialog */}
+      <Dialog open={showNewQuoteDialog} onOpenChange={setShowNewQuoteDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nieuwe Offerte Aanmaken</DialogTitle>
+            <DialogDescription>
+              Maak handmatig een nieuwe offerte aan
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Customer Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Klantnaam *</Label>
+                <Input
+                  value={newQuoteForm.customer_name}
+                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_name: e.target.value }))}
+                  placeholder="Naam van de klant"
+                />
+              </div>
+              <div>
+                <Label>E-mail</Label>
+                <Input
+                  type="email"
+                  value={newQuoteForm.customer_email || ""}
+                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_email: e.target.value }))}
+                  placeholder="klant@email.nl"
+                />
+              </div>
+              <div>
+                <Label>Telefoon</Label>
+                <Input
+                  value={newQuoteForm.customer_phone || ""}
+                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_phone: e.target.value }))}
+                  placeholder="06-12345678"
+                />
+              </div>
+              <div>
+                <Label>Adres</Label>
+                <Input
+                  value={newQuoteForm.customer_address || ""}
+                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_address: e.target.value }))}
+                  placeholder="Straat 1, 1234 AB Plaats"
+                />
+              </div>
+            </div>
+
+            {/* Line Items */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <Label className="text-base font-semibold">Productregels</Label>
+                <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
+                  <Plus className="w-4 h-4 mr-1" /> Regel toevoegen
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                {(newQuoteForm.items || []).map((item, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-2 items-end p-3 border rounded-lg">
+                    <div className="col-span-12 sm:col-span-5">
+                      <Label className="text-xs">Omschrijving</Label>
+                      <Input
+                        value={item.description}
+                        onChange={(e) => handleItemChange(index, "description", e.target.value)}
+                        placeholder="Product of dienst"
+                      />
+                    </div>
+                    <div className="col-span-4 sm:col-span-2">
+                      <Label className="text-xs">Aantal</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={item.quantity || 1}
+                        onChange={(e) => handleItemChange(index, "quantity", parseFloat(e.target.value) || 1)}
+                      />
+                    </div>
+                    <div className="col-span-4 sm:col-span-2">
+                      <Label className="text-xs">Prijs excl.</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.price_per_unit || 0}
+                        onChange={(e) => handleItemChange(index, "price_per_unit", parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div className="col-span-3 sm:col-span-2">
+                      <Label className="text-xs">BTW %</Label>
+                      <Select
+                        value={String(item.vat_percentage || 21)}
+                        onValueChange={(v) => handleItemChange(index, "vat_percentage", parseInt(v))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="21">21%</SelectItem>
+                          <SelectItem value="9">9%</SelectItem>
+                          <SelectItem value="0">0%</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveItem(index)}
+                        disabled={(newQuoteForm.items || []).length <= 1}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Totals */}
+              <div className="mt-4 p-4 bg-muted rounded-lg">
+                <div className="space-y-1 text-right">
+                  <div className="flex justify-end gap-8">
+                    <span className="text-muted-foreground">Subtotaal excl. BTW:</span>
+                    <span className="font-medium w-24">{formatCurrency(calculateTotals().subtotal)}</span>
+                  </div>
+                  <div className="flex justify-end gap-8">
+                    <span className="text-muted-foreground">BTW:</span>
+                    <span className="font-medium w-24">{formatCurrency(calculateTotals().vat)}</span>
+                  </div>
+                  <div className="flex justify-end gap-8 text-lg font-bold border-t pt-2 mt-2">
+                    <span>Totaal incl. BTW:</span>
+                    <span className="w-24">{formatCurrency(calculateTotals().total)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Notitie voor klant</Label>
+                <Textarea
+                  value={newQuoteForm.customer_note || ""}
+                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_note: e.target.value }))}
+                  placeholder="Wordt getoond op de offerte..."
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label>Interne notitie</Label>
+                <Textarea
+                  value={newQuoteForm.internal_note || ""}
+                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, internal_note: e.target.value }))}
+                  placeholder="Alleen zichtbaar voor admin..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowNewQuoteDialog(false)}>
+                Annuleren
+              </Button>
+              <Button onClick={handleCreateQuote} disabled={creatingQuote}>
+                {creatingQuote ? "Aanmaken..." : "Offerte aanmaken"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

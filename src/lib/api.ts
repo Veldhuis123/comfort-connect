@@ -168,6 +168,11 @@ export const api = {
     apiRequest<LocalQuotesResponse>(`/eboekhouden/local-quotes${status ? `?status=${status}` : ''}`),
   getLocalQuote: (id: number) =>
     apiRequest<LocalQuote>(`/eboekhouden/local-quotes/${id}`),
+  createLocalQuote: (data: CreateLocalQuote) =>
+    apiRequest<{ id: number; quote_number: string }>('/eboekhouden/local-quotes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   updateLocalQuoteStatus: (id: number, status: string) =>
     apiRequest(`/eboekhouden/local-quotes/${id}/status`, {
       method: 'PATCH',
@@ -415,6 +420,27 @@ export interface LocalQuote {
   updated_at: string;
   item_count?: number;
   items?: LocalQuoteItem[];
+}
+
+export interface CreateLocalQuote {
+  customer_name: string;
+  customer_email?: string;
+  customer_phone?: string;
+  customer_address?: string;
+  customer_note?: string;
+  internal_note?: string;
+  expiration_date?: string;
+  items?: CreateLocalQuoteItem[];
+}
+
+export interface CreateLocalQuoteItem {
+  description: string;
+  product_code?: string;
+  quantity?: number;
+  unit?: string;
+  price_per_unit?: number;
+  vat_code?: string;
+  vat_percentage?: number;
 }
 
 export interface LocalQuoteStats {
