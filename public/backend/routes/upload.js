@@ -81,10 +81,6 @@ router.post('/quote/:quoteId', uploadLimiter, upload.array('photos', 10), async 
     if (quotes.length === 0) {
       return res.status(404).json({ error: 'Offerte niet gevonden of te oud voor uploads' });
     }
-  try {
-    const { quoteId } = req.params;
-    const { category } = req.body;
-    const files = req.files;
 
     if (!files || files.length === 0) {
       return res.status(400).json({ error: 'Geen bestanden geüpload' });
