@@ -1,44 +1,46 @@
 
-# Plan: reCAPTCHA Optioneel Maken
 
 ## Probleem
-De frontend code importeert `react-google-recaptcha` maar deze module is niet geïnstalleerd op de server, waardoor de build faalt.
+
+De backend server crasht bij het opstarten door een **syntax fout in `upload.js`**. Bij de laatste beveiligingswijzigingen is er per ongeluk een dubbel `try` block ontstaan in de upload route (regel 64-113). De oude code bleef staan terwijl er nieuwe validatiecode bovenop werd geplakt.
+
+Omdat de server niet eens opstart, werkt **geen enkel API endpoint** meer - inclusief `/api/auth/login`.
 
 ## Oplossing
-De reCAPTCHA integratie optioneel maken met een "lazy load" approach. De code werkt dan zowel met als zonder de module.
 
-## Technische Aanpak
+### Stap 1: Fix `public/backend/routes/upload.js`
 
-### Bestand: `src/components/Contact.tsx`
+De upload route voor `/quote/:quoteId` bevat twee overlappende `try` blocks. De fix:
 
-1. **Verwijder de directe import** van `react-google-recaptcha`
-2. **Gebruik dynamic import** met React.lazy() en Suspense
-3. **Fallback gedrag** als de module niet beschikbaar is
+- Verwijder het dubbele `try` block (regels 84-87 zijn een herhaling van regels 64-68)
+- Combineer de quote-verificatie logica met de bestaande upload-logica tot een enkel, correct `try/catch` block
+- Behoud alle beveiligingsverbeteringen (rate limiting, quote verificatie, path traversal bescherming)
 
-```typescript
-// In plaats van:
-import ReCAPTCHA from "react-google-recaptcha";
+### Technisch detail
 
-// Gebruiken we:
-const ReCAPTCHA = React.lazy(() => 
-  import("react-google-recaptcha").catch(() => ({ 
-    default: () => null 
-  }))
-);
+Huidige (kapotte) structuur:
+```text
+router.post('/quote/:quoteId', ... async (req, res) => {
+  try {                          // <-- try block 1 (regel 65)
+    // quote verificatie code
+    // GEEN afsluitende } catch
+  try {                          // <-- try block 2 (regel 84) - FOUT
+    // originele upload code
+  } catch {
+  }
+});
 ```
 
-4. **Wrap de ReCAPTCHA component** in een Suspense boundary met fallback
+Correcte structuur:
+```text
+router.post('/quote/:quoteId', ... async (req, res) => {
+  try {
+    // quote verificatie
+    // file upload en database insert
+  } catch {
+  }
+});
+```
 
-### Voordelen
-- Formulier werkt altijd, ook zonder reCAPTCHA module
-- Als de module later wordt geïnstalleerd, werkt reCAPTCHA automatisch
-- Geen breaking changes voor de server deployment
-- Graceful degradation
+Na deze fix start de server weer normaal op en kun je weer inloggen.
 
-### Bestanden die worden aangepast
-- `src/components/Contact.tsx` - Dynamic import met fallback
-
-### Na implementatie
-1. Kopieer het nieuwe `Contact.tsx` bestand naar je server
-2. Herbouw de frontend: `npm run build`
-3. Herstart de services
