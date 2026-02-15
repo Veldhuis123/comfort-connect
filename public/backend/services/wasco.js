@@ -328,28 +328,46 @@ class WascoScraper {
       if (priceLabel.includes('netto') || priceLabel.includes('actieprijs') || priceLabel.includes('actie')) {
         // The displayed main price IS the netto/actie price (= inkoopprijs)
         nettoPrice = brutoPrice;
+        brutoPrice = null;
         
-        // Try to find bruto price from a secondary price element (often shown as doorgestreepte adviesprijs)
-        const allPrices = [];
+        // Try to extract bruto price from parent text like "Brutoprijs: €82,17"
         $('span.price').each((_, el) => {
-          const text = $(el).text().trim();
-          const match = text.match(/€\s*([\d.,]+)/);
-          if (match) {
-            const val = parseFloat(match[1].replace('.', '').replace(',', '.'));
-            if (val > 10) allPrices.push(val); // Filter out tiny irrelevant values
+          const parentText = $(el).parent().text().trim();
+          const brutoMatch = parentText.match(/Brutoprijs:\s*€\s*([\d.,]+)/i);
+          if (brutoMatch && !brutoPrice) {
+            brutoPrice = parseFloat(brutoMatch[1].replace('.', '').replace(',', '.'));
           }
         });
         
-        if (allPrices.length >= 2) {
-          // The highest price is likely the bruto/adviesprijs
-          brutoPrice = Math.max(...allPrices);
-          // The netto is our main price (already set)
-          if (brutoPrice === nettoPrice && allPrices.length > 1) {
-            // If max equals our netto, there's no separate bruto visible
-            brutoPrice = null;
+        // Also try to extract from "Korting: XX%" text if bruto not found
+        if (!brutoPrice) {
+          $('span.price').each((_, el) => {
+            const parentText = $(el).parent().text().trim();
+            const kortingMatch = parentText.match(/Korting:\s*([\d.,]+)%/i);
+            if (kortingMatch && nettoPrice) {
+              const kortingPct = parseFloat(kortingMatch[1].replace(',', '.'));
+              if (kortingPct > 0 && kortingPct < 100) {
+                brutoPrice = Math.round(nettoPrice / (1 - kortingPct / 100) * 100) / 100;
+              }
+            }
+          });
+        }
+        
+        // Fallback: look for secondary span.price elements
+        if (!brutoPrice) {
+          const allPrices = [];
+          $('span.price').each((_, el) => {
+            const text = $(el).text().trim();
+            const match = text.match(/€\s*([\d.,]+)/);
+            if (match) {
+              const val = parseFloat(match[1].replace('.', '').replace(',', '.'));
+              if (val > 10) allPrices.push(val);
+            }
+          });
+          if (allPrices.length >= 2) {
+            brutoPrice = Math.max(...allPrices);
+            if (brutoPrice === nettoPrice) brutoPrice = null;
           }
-        } else {
-          brutoPrice = null; // Only one price visible, it's the netto
         }
       } else {
         // Not logged in or bruto label - check for multiple prices
