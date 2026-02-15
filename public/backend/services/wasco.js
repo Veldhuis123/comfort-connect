@@ -309,31 +309,64 @@ class WascoScraper {
       }
 
       // Extract netto price (only visible when logged in)
-      // When logged in, Wasco shows "Jouw nettoprijs" instead of "Jouw brutoprijs"
+      // When logged in, Wasco shows "Jouw nettoprijs" or "Jouw actieprijs" instead of "Jouw brutoprijs"
       let nettoPrice = null;
       const priceLabel = $('small.jouw-price, small.size.jouw-price').text().trim().toLowerCase();
       
-      logger.info('WASCO', `Price label for ${articleNumber}: "${priceLabel}", price: "${priceSpan}"`);
-      
-      if (priceLabel.includes('netto')) {
-        // The displayed price IS the netto price
-        nettoPrice = brutoPrice;
-        brutoPrice = null; // We don't have bruto in this case
-      }
-      
-      // Check for a second price element (some pages show both)
-      const allPrices = [];
+      // Collect ALL price elements with their context for debugging
+      const allPriceElements = [];
       $('span.price').each((_, el) => {
         const text = $(el).text().trim();
-        const match = text.match(/€\s*([\d.,]+)/);
-        if (match) {
-          allPrices.push(parseFloat(match[1].replace('.', '').replace(',', '.')));
-        }
+        const parent = $(el).parent().text().trim().substring(0, 80);
+        allPriceElements.push({ text, parent });
       });
       
-      if (allPrices.length >= 2) {
-        brutoPrice = Math.max(...allPrices);
-        nettoPrice = Math.min(...allPrices);
+      logger.info('WASCO', `Price label for ${articleNumber}: "${priceLabel}", price: "${priceSpan}"`, {
+        allPriceElements: JSON.stringify(allPriceElements)
+      });
+      
+      if (priceLabel.includes('netto') || priceLabel.includes('actieprijs') || priceLabel.includes('actie')) {
+        // The displayed main price IS the netto/actie price (= inkoopprijs)
+        nettoPrice = brutoPrice;
+        
+        // Try to find bruto price from a secondary price element (often shown as doorgestreepte adviesprijs)
+        const allPrices = [];
+        $('span.price').each((_, el) => {
+          const text = $(el).text().trim();
+          const match = text.match(/€\s*([\d.,]+)/);
+          if (match) {
+            const val = parseFloat(match[1].replace('.', '').replace(',', '.'));
+            if (val > 10) allPrices.push(val); // Filter out tiny irrelevant values
+          }
+        });
+        
+        if (allPrices.length >= 2) {
+          // The highest price is likely the bruto/adviesprijs
+          brutoPrice = Math.max(...allPrices);
+          // The netto is our main price (already set)
+          if (brutoPrice === nettoPrice && allPrices.length > 1) {
+            // If max equals our netto, there's no separate bruto visible
+            brutoPrice = null;
+          }
+        } else {
+          brutoPrice = null; // Only one price visible, it's the netto
+        }
+      } else {
+        // Not logged in or bruto label - check for multiple prices
+        const allPrices = [];
+        $('span.price').each((_, el) => {
+          const text = $(el).text().trim();
+          const match = text.match(/€\s*([\d.,]+)/);
+          if (match) {
+            const val = parseFloat(match[1].replace('.', '').replace(',', '.'));
+            if (val > 10) allPrices.push(val);
+          }
+        });
+        
+        if (allPrices.length >= 2) {
+          brutoPrice = Math.max(...allPrices);
+          nettoPrice = Math.min(...allPrices);
+        }
       }
 
       // Extract specs from the kenmerken table
