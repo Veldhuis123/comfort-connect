@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
-const { sendQuoteNotification } = require('../services/email');
+const { sendQuoteNotification, sendQuoteConfirmation } = require('../services/email');
 
 const router = express.Router();
 
@@ -128,6 +128,11 @@ router.post('/', async (req, res) => {
     
     sendQuoteNotification(quoteData).catch(err => {
       console.error('Failed to send quote notification email:', err.message);
+    });
+
+    // Send confirmation email to customer
+    sendQuoteConfirmation(quoteData).catch(err => {
+      console.error('Failed to send quote confirmation email to customer:', err.message);
     });
 
     res.status(201).json({ 
