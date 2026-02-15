@@ -99,9 +99,16 @@ class WascoScraper {
         });
       });
 
-      // Step 2: Fill fields using click + select all + type (real keyboard events)
+      // Step 2: Fill fields using focus via evaluate + keyboard typing (avoids "not clickable" error)
       async function fillField(page, selector, value) {
-        await page.click(selector);
+        // Focus the element via JavaScript instead of page.click() to avoid clickability checks
+        await page.evaluate((sel) => {
+          const el = document.querySelector(sel);
+          if (el) {
+            el.scrollIntoView({ block: 'center' });
+            el.focus();
+          }
+        }, selector);
         await new Promise(r => setTimeout(r, 300));
         // Select all existing text and delete it
         await page.keyboard.down('Control');
@@ -110,7 +117,9 @@ class WascoScraper {
         await page.keyboard.press('Backspace');
         await new Promise(r => setTimeout(r, 200));
         // Type character by character with delay
-        await page.type(selector, value, { delay: 50 });
+        for (const char of value) {
+          await page.keyboard.type(char, { delay: 50 });
+        }
         await new Promise(r => setTimeout(r, 300));
       }
 
