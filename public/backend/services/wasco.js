@@ -67,12 +67,15 @@ class WascoScraper {
       const viewStateGenerator = $('input[name="__VIEWSTATEGENERATOR"]').val() || '';
       const eventValidation = $('input[name="__EVENTVALIDATION"]').val() || '';
       
-      // Find the actual form field names dynamically
-      const debInput = $('input[placeholder="debiteurnummer"]');
-      const codeInput = $('input[placeholder="code"]');
-      const passInput = $('input[placeholder="wachtwoord"]');
-      const loginBtn = $('a.btn.sec.Is_Default');
+      // Find form fields in the MAIN CONTENT login form (not the header mini-login)
+      // The main login form is inside #wt1_Wasco2014Layout_wt1_block_wtMainContent
+      const mainContent = $('#wt1_Wasco2014Layout_wt1_block_wtMainContent');
+      const debInput = mainContent.find('input[placeholder="debiteurnummer"]');
+      const codeInput = mainContent.find('input[placeholder="code"]');
+      const passInput = mainContent.find('input[placeholder="wachtwoord"]');
+      const loginBtn = mainContent.find('a.btn.sec.Is_Default');
       
+      // Use hardcoded MainContent field names as fallback (from the actual login page HTML)
       const debName = debInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_deb3';
       const codeName = codeInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_code2';
       const passName = passInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_pass3';
