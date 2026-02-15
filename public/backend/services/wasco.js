@@ -1,5 +1,6 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 const logger = require('./logger');
 
 // =============================================
@@ -56,7 +57,7 @@ class WascoScraper {
     }
   }
 
-  // Login to Wasco
+  // Login to Wasco using Puppeteer (headless browser)
   async login() {
     const debiteurNummer = process.env.WASCO_DEBITEURNUMMER;
     const code = process.env.WASCO_CODE;
@@ -66,157 +67,116 @@ class WascoScraper {
       throw new Error('WASCO_DEBITEURNUMMER, WASCO_CODE en WASCO_PASSWORD moeten in .env staan');
     }
 
+    let browser = null;
     try {
-      logger.info('WASCO', 'Logging in to Wasco.nl...');
+      logger.info('WASCO', 'Logging in to Wasco.nl via Puppeteer...');
 
-      // Step 1: Get login page for hidden form fields
-      const client = this.getClient();
-      const loginPageRes = await client.get('/inloggen');
-      this.extractCookies(loginPageRes);
-
-      const $ = cheerio.load(loginPageRes.data);
-      
-      // Extract ASP.NET hidden fields
-      const viewState = $('input[name="__VIEWSTATE"]').val() || '';
-      const viewStateGenerator = $('input[name="__VIEWSTATEGENERATOR"]').val() || '';
-      const eventValidation = $('input[name="__EVENTVALIDATION"]').val() || '';
-      
-      // Find form fields in the MAIN CONTENT login form (not the header mini-login)
-      // The main login form is inside #wt1_Wasco2014Layout_wt1_block_wtMainContent
-      const mainContent = $('#wt1_Wasco2014Layout_wt1_block_wtMainContent');
-      const debInput = mainContent.find('input[placeholder="debiteurnummer"]');
-      const codeInput = mainContent.find('input[placeholder="code"]');
-      const passInput = mainContent.find('input[placeholder="wachtwoord"]');
-      const loginBtn = mainContent.find('a.btn.sec.Is_Default');
-      
-      // Use hardcoded MainContent field names as fallback (from the actual login page HTML)
-      const debName = debInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_deb3';
-      const codeName = codeInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_code2';
-      const passName = passInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_pass3';
-      // ASP.NET __EVENTTARGET needs UniqueID format ($ separators), not HTML id (_ separators)
-      const loginBtnHtmlId = loginBtn.attr('id') || 'wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72';
-      const loginBtnUniqueId = loginBtnHtmlId.replace(/_/g, '$');
-
-      logger.info('WASCO', 'Found form fields', { 
-        debName, codeName, passName, loginBtnHtmlId, loginBtnUniqueId,
-        viewStateLength: viewState.length,
-        viewStateGeneratorLength: viewStateGenerator.length,
-        eventValidationLength: eventValidation.length,
+      browser = await puppeteer.launch({
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       });
 
-      // Step 2: Submit login form
-      // OutSystems uses __EVENTTARGET for postback - try both with and without AJAX headers
-      const formData = new URLSearchParams();
-      formData.append('__VIEWSTATE', viewState);
-      formData.append('__VIEWSTATEGENERATOR', viewStateGenerator);
-      formData.append('__EVENTVALIDATION', eventValidation);
-      formData.append('__EVENTTARGET', loginBtnUniqueId);
-      formData.append('__EVENTARGUMENT', '');
-      formData.append(debName, debiteurNummer);
-      formData.append(codeName, code);
-      formData.append(passName, password);
-      
-      // Include ALL hidden inputs from the form (OutSystems requires them)
-      $('input[type="hidden"]').each((_, el) => {
-        const name = $(el).attr('name');
-        const value = $(el).val() || '';
-        if (name && !formData.has(name)) {
-          formData.append(name, value);
-        }
-      });
-      
-      // Include the "remember me" checkbox
-      const rememberName = mainContent.find('input[type="checkbox"]').attr('name');
-      if (rememberName) {
-        formData.append(rememberName, 'on');
-      }
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      await page.setViewport({ width: 1920, height: 1080 });
 
-      // Log all form field names being submitted
-      const fieldNames = Array.from(formData.keys());
-      logger.info('WASCO', 'Submitting login form', {
-        debiteurnummer: debiteurNummer,
-        codeLength: code ? code.length : 0,
-        passwordLength: password ? password.length : 0,
-        fieldNames,
+      // Navigate to login page
+      await page.goto(`${this.baseUrl}/inloggen`, { waitUntil: 'networkidle2', timeout: 30000 });
+
+      // Wait for the main login form fields
+      await page.waitForSelector('input[placeholder="debiteurnummer"]', { timeout: 10000 });
+      
+      logger.info('WASCO', 'Login page loaded, filling form...');
+
+      // Fill in the login form
+      await page.type('input[placeholder="debiteurnummer"]', debiteurNummer);
+      await page.type('input[placeholder="code"]', code);
+      // Find password field by placeholder="wachtwoord" within main content
+      await page.type('input[placeholder="wachtwoord"]', password);
+
+      // Click the login button in main content
+      const loginBtnSelector = '#wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72';
+      await page.click(loginBtnSelector);
+
+      // Wait for navigation after login
+      await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {
+        // Some OutSystems pages don't navigate, they update in-place
+        logger.info('WASCO', 'No navigation after login click, page may have updated in-place');
       });
 
-      // POST with auto-redirect following (let axios handle it)
-      const loginRes = await axios.post(`${this.baseUrl}/inloggen`, formData.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': this.cookies,
-          'Referer': `${this.baseUrl}/inloggen`,
-          'Origin': this.baseUrl,
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'nl-NL,nl;q=0.9,en;q=0.8',
-        },
-        maxRedirects: 10,
-        validateStatus: (status) => status < 500,
+      // Wait a moment for any AJAX updates
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Extract all cookies from the browser
+      const browserCookies = await page.cookies();
+      this.cookies = browserCookies.map(c => `${c.name}=${c.value}`).join('; ');
+      
+      logger.info('WASCO', 'Browser cookies extracted', {
+        cookieCount: browserCookies.length,
+        cookieNames: browserCookies.map(c => c.name),
       });
 
-      this.extractCookies(loginRes);
-      
-      // Check what the login response contains
-      const loginHtml = loginRes.data || '';
-      const login$ = cheerio.load(loginHtml);
-      const stillHasLoginForm = loginHtml.includes('placeholder="debiteurnummer"');
-      const hasWelcome = loginHtml.includes('Welkom') || loginHtml.includes('welkom') || loginHtml.includes('Mijn account');
-      const hasLogout = loginHtml.includes('Uitloggen') || loginHtml.includes('uitloggen');
-      
-      // Log all set-cookie values (names only, not values for security)
-      const setCookieNames = (loginRes.headers['set-cookie'] || []).map(c => c.split('=')[0]);
-      
-      logger.info('WASCO', 'Login POST response', { 
-        status: loginRes.status,
-        setCookieNames,
-        responseLength: loginHtml.length,
-        stillHasLoginForm,
-        hasWelcome,
+      // Check the current page for login success indicators
+      const pageUrl = page.url();
+      const pageContent = await page.content();
+      const hasLogout = pageContent.includes('Uitloggen') || pageContent.includes('uitloggen');
+      const hasWelcome = pageContent.includes('Welkom') || pageContent.includes('welkom');
+      const stillOnLogin = pageUrl.includes('/inloggen');
+
+      logger.info('WASCO', 'Login page state after submit', {
+        pageUrl,
         hasLogout,
-        allCookieNames: this.cookies.split('; ').map(c => c.split('=')[0]),
-      });
-      // Verify login by checking a product page for netto pricing
-      const verifyRes = await this.getClient().get('/artikel/7817827');
-      this.extractCookies(verifyRes);
-      const verify$ = cheerio.load(verifyRes.data);
-      
-      // Extract what the page actually shows
-      const priceLabelText = verify$('small.jouw-price, small.size.jouw-price').text().trim();
-      const priceText = verify$('span.price').first().text().trim();
-      const hasLoginPrompt = verify$('span:contains("Log in voor jouw prijs")').length > 0 ||
-                             verify$('a:contains("Log in voor jouw prijs")').length > 0;
-      const hasNettoPrice = priceLabelText.toLowerCase().includes('netto');
-      
-      logger.info('WASCO', 'Login verification', {
-        priceLabelText,
-        priceText,
-        hasLoginPrompt,
-        hasNettoPrice,
-        cookies: this.cookies.substring(0, 100) + '...',
+        hasWelcome,
+        stillOnLogin,
       });
 
-      if (hasNettoPrice || !hasLoginPrompt) {
+      // Verify by navigating to a product page
+      await page.goto(`${this.baseUrl}/artikel/7817827`, { waitUntil: 'networkidle2', timeout: 15000 });
+      
+      const priceLabel = await page.evaluate(() => {
+        const el = document.querySelector('small.jouw-price, small.size.jouw-price');
+        return el ? el.textContent.trim() : '';
+      });
+      const priceText = await page.evaluate(() => {
+        const el = document.querySelector('span.price');
+        return el ? el.textContent.trim() : '';
+      });
+      const hasNettoPrice = priceLabel.toLowerCase().includes('netto');
+
+      // Re-extract cookies after verification (may have updated)
+      const finalCookies = await page.cookies();
+      this.cookies = finalCookies.map(c => `${c.name}=${c.value}`).join('; ');
+
+      logger.info('WASCO', 'Login verification', {
+        priceLabel,
+        priceText,
+        hasNettoPrice,
+        finalCookieCount: finalCookies.length,
+      });
+
+      await browser.close();
+      browser = null;
+
+      if (hasNettoPrice) {
         this.isLoggedIn = true;
         logger.info('WASCO', 'Successfully logged in to Wasco.nl (netto prices visible)');
         return true;
       }
 
-      // Login failed - do NOT set isLoggedIn to true so we retry next time
       this.isLoggedIn = false;
-      logger.error('WASCO', 'Login FAILED - netto prices not visible. Check WASCO_DEBITEURNUMMER, WASCO_CODE, WASCO_PASSWORD in .env', {
-        hasLoginPrompt,
+      logger.error('WASCO', 'Login FAILED - netto prices not visible after Puppeteer login', {
+        priceLabel,
         hasNettoPrice,
-        priceLabelText,
       });
       return false;
 
     } catch (error) {
-      logger.error('WASCO', 'Login failed', { error: error.message });
+      if (browser) {
+        try { await browser.close(); } catch (e) { /* ignore */ }
+      }
+      logger.error('WASCO', 'Login failed', { error: error.message, stack: error.stack });
       throw new Error(`Wasco login mislukt: ${error.message}`);
     }
-  }
-
   // Scrape a single product page by article number
   async scrapeProduct(articleNumber) {
     try {
