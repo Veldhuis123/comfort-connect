@@ -85,96 +85,86 @@ class WascoScraper {
       // Navigate to login page
       await page.goto(`${this.baseUrl}/inloggen`, { waitUntil: 'networkidle2', timeout: 30000 });
 
-      // Aggressively remove ALL overlays: cookie banners, iframes, fixed/absolute positioned elements
-      await page.evaluate(() => {
-        // Remove cookie-related elements
-        document.querySelectorAll('[id*="ookiebot"], [id*="cookie"], [id*="Cookie"], [class*="cookie"], [class*="Cookie"], [class*="consent"], [class*="Consent"]').forEach(el => el.remove());
-        // Remove VWO overlays
-        document.querySelectorAll('[id*="vwo"], [class*="vwo"]').forEach(el => el.remove());
-        // Remove any blocking iframes (often used for consent)
-        document.querySelectorAll('iframe[src*="cookie"], iframe[src*="consent"], iframe[style*="position: fixed"]').forEach(el => el.remove());
-        // Remove any full-screen overlays with high z-index
-        document.querySelectorAll('div[style*="position: fixed"], div[style*="position:fixed"]').forEach(el => {
-          const style = window.getComputedStyle(el);
-          if (parseInt(style.zIndex) > 100 || style.opacity === '0.5') {
-            el.remove();
-          }
-        });
-      });
+      // Wait for the login form to be present in DOM
+      await page.waitForSelector('input[placeholder="debiteurnummer"]', { timeout: 15000 });
+      logger.info('WASCO', 'Login page loaded, filling form via pure JS...');
+
+      // Do EVERYTHING inside page.evaluate - no Puppeteer interaction methods at all
+      // This completely avoids "not clickable" errors from overlays
+      const fillResult = await page.evaluate((deb, code, pass) => {
+        // Step 1: Remove ALL overlays first
+        document.querySelectorAll('[id*="ookiebot"], [id*="cookie"], [id*="Cookie"], [class*="cookie"], [class*="consent"], [id*="vwo"], [class*="vwo"]').forEach(el => el.remove());
+        document.querySelectorAll('iframe[style*="position: fixed"], iframe[style*="position:fixed"]').forEach(el => el.remove());
+
+        // Step 2: Find form fields
+        const debField = document.querySelector('input[placeholder="debiteurnummer"]');
+        const codeField = document.querySelector('input[placeholder="code"]');
+        const passField = document.querySelector('input[placeholder="wachtwoord"]');
+        
+        if (!debField || !codeField || !passField) {
+          return { error: 'Fields not found', deb: !!debField, code: !!codeField, pass: !!passField };
+        }
+
+        // Step 3: Set values using native setter + dispatch full event chain
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+        
+        function fillField(field, value) {
+          // Focus the field
+          field.focus();
+          field.click();
+          
+          // Set value via native setter
+          nativeSetter.call(field, value);
+          
+          // Dispatch complete event chain that OutSystems/React listens to
+          field.dispatchEvent(new Event('focus', { bubbles: true }));
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+          field.dispatchEvent(new Event('change', { bubbles: true }));
+          field.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'a' }));
+          field.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'a' }));
+          field.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, key: 'a' }));
+          field.dispatchEvent(new Event('blur', { bubbles: true }));
+        }
+        
+        fillField(debField, deb);
+        fillField(codeField, code);
+        fillField(passField, pass);
+        
+        return {
+          success: true,
+          debLen: debField.value.length,
+          codeLen: codeField.value.length,
+          passLen: passField.value.length,
+        };
+      }, debiteurNummer, code, password);
       
+      logger.info('WASCO', 'Field fill result', fillResult);
+      
+      if (fillResult.error) {
+        throw new Error(`Login velden niet gevonden: ${JSON.stringify(fillResult)}`);
+      }
+
       await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Wait for the login form
-      await page.waitForSelector('input[placeholder="debiteurnummer"]', { timeout: 10000 });
-      logger.info('WASCO', 'Login page loaded, filling form...');
-
-      // Use page.focus() + page.keyboard to avoid "not clickable" errors entirely
-      // This bypasses any overlay issues since it doesn't need to "click" the element
-      
-      // Fill debiteurnummer
-      await page.focus('input[placeholder="debiteurnummer"]');
-      await page.keyboard.down('Control');
-      await page.keyboard.press('a');
-      await page.keyboard.up('Control');
-      await page.keyboard.press('Backspace');
-      await page.keyboard.type(debiteurNummer, { delay: 30 });
-      
-      // Fill code
-      await page.focus('input[placeholder="code"]');
-      await page.keyboard.down('Control');
-      await page.keyboard.press('a');
-      await page.keyboard.up('Control');
-      await page.keyboard.press('Backspace');
-      await page.keyboard.type(code, { delay: 30 });
-      
-      // Fill password
-      await page.focus('input[placeholder="wachtwoord"]');
-      await page.keyboard.down('Control');
-      await page.keyboard.press('a');
-      await page.keyboard.up('Control');
-      await page.keyboard.press('Backspace');
-      await page.keyboard.type(password, { delay: 30 });
-
-      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Screenshot before submit
       try { await page.screenshot({ path: '/tmp/wasco-before-login.png' }); } catch (e) { /* ignore */ }
 
-      // Log field values to confirm they were filled
-      const fieldValues = await page.evaluate(() => {
-        const d = document.querySelector('input[placeholder="debiteurnummer"]');
-        const c = document.querySelector('input[placeholder="code"]');
-        const p = document.querySelector('input[placeholder="wachtwoord"]');
-        return {
-          debLen: d ? d.value.length : -1,
-          codeLen: c ? c.value.length : -1,
-          passLen: p ? p.value.length : -1,
-        };
-      });
-      logger.info('WASCO', 'Field values after typing', fieldValues);
-
-      // Submit: click button via JS evaluate (never fails with overlay issues)
+      // Submit via pure JS evaluate
       const submitted = await page.evaluate(() => {
-        // Try known ID
+        // Try known button ID
         let btn = document.getElementById('wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72');
-        // Fallback: find by text
+        // Fallback: find any button/link with "inlog" text
         if (!btn) {
-          const allBtns = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a.btn, .btn, [class*="Login"]')];
-          btn = allBtns.find(b => (b.textContent || b.value || '').toLowerCase().includes('inlog'));
-        }
-        if (!btn) {
-          btn = document.querySelector('form input[type="submit"], form button[type="submit"]');
+          const candidates = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a, div[onclick], span[onclick]')];
+          btn = candidates.find(b => (b.textContent || b.value || '').toLowerCase().includes('inlog'));
         }
         if (btn) {
           btn.click();
-          return { id: btn.id, tag: btn.tagName, text: (btn.textContent || '').substring(0, 50) };
+          return { id: btn.id || '', tag: btn.tagName, text: (btn.textContent || '').substring(0, 50) };
         }
-        // Last resort: submit the form directly  
+        // Absolute last resort: submit form
         const form = document.querySelector('form');
-        if (form) {
-          form.submit();
-          return { formSubmit: true };
-        }
+        if (form) { form.submit(); return { formSubmit: true }; }
         return null;
       });
       logger.info('WASCO', 'Login submit attempt', { submitted });
