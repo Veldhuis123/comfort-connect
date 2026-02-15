@@ -469,7 +469,26 @@ class WascoScraper {
       details: [],
     };
 
-  // Try login but don't fail if it doesn't work - we can still use bruto + discount
+    // First, scrape bruto prices WITHOUT login (public prices)
+    // Then login and scrape netto prices
+    const brutoPrices = {};
+    
+    for (const mapping of productMappings) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        const scraped = await this.scrapeProduct(mapping.wasco_article_number);
+        if (scraped.brutoPrice || scraped.nettoPrice) {
+          // Before login, the visible price is the bruto price
+          brutoPrices[mapping.wasco_article_number] = scraped.brutoPrice || scraped.nettoPrice;
+        }
+      } catch (err) {
+        logger.warn('WASCO', `Failed to get bruto price for ${mapping.wasco_article_number}`, { error: err.message });
+      }
+    }
+    
+    logger.info('WASCO', `Collected bruto prices for ${Object.keys(brutoPrices).length} products before login`);
+
+    // Now login for netto prices
     if (!this.isLoggedIn) {
       try {
         await this.login();
@@ -480,7 +499,6 @@ class WascoScraper {
 
     for (const mapping of productMappings) {
       try {
-        // Add a delay between requests to be respectful
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         const scraped = await this.scrapeProduct(mapping.wasco_article_number);
@@ -496,13 +514,12 @@ class WascoScraper {
           continue;
         }
 
-        // Determine the price to use:
-        // 1. If netto price scraped (logged in), use that
-        // 2. If discount_percent set on mapping, calculate from bruto
-        // 3. Otherwise use bruto as-is
-        
-        // If we have netto but no bruto, try to get bruto from the mapping's last known value
-        if (scraped.nettoPrice && !scraped.brutoPrice && mapping.last_bruto_price) {
+        // Use bruto price from pre-login scrape
+        if (!scraped.brutoPrice && brutoPrices[mapping.wasco_article_number]) {
+          scraped.brutoPrice = brutoPrices[mapping.wasco_article_number];
+        }
+        // Fallback to last known bruto price from database
+        if (!scraped.brutoPrice && mapping.last_bruto_price) {
           scraped.brutoPrice = parseFloat(mapping.last_bruto_price);
         }
         

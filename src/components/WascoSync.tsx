@@ -35,9 +35,7 @@ interface WascoMapping {
   product_name: string;
   product_brand: string;
   category: string;
-  purchase_price: number | null;
   base_price: number;
-  model_number: string | null;
   image_url: string | null;
 }
 
@@ -397,9 +395,6 @@ const WascoSync = () => {
                             <ExternalLink className="w-3 h-3" />
                             Wasco #{mapping.wasco_article_number}
                           </a>
-                          {mapping.model_number && (
-                            <span className="text-xs">Model: {mapping.model_number}</span>
-                          )}
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {formatDate(mapping.last_synced_at)}
@@ -412,9 +407,6 @@ const WascoSync = () => {
                           </span>
                           <span>
                             Netto: <strong className="text-emerald-600">{formatPrice(mapping.last_netto_price)}</strong>
-                          </span>
-                          <span>
-                            Inkoopprijs: <strong>{formatPrice(mapping.purchase_price)}</strong>
                           </span>
                           {discount !== null && (
                             <span className="text-emerald-600 font-medium">
