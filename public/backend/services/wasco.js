@@ -500,12 +500,24 @@ class WascoScraper {
         // 1. If netto price scraped (logged in), use that
         // 2. If discount_percent set on mapping, calculate from bruto
         // 3. Otherwise use bruto as-is
+        
+        // If we have netto but no bruto, try to get bruto from the mapping's last known value
+        if (scraped.nettoPrice && !scraped.brutoPrice && mapping.last_bruto_price) {
+          scraped.brutoPrice = parseFloat(mapping.last_bruto_price);
+        }
+        
         let purchasePrice = scraped.nettoPrice || scraped.brutoPrice;
         
         if (!scraped.nettoPrice && scraped.brutoPrice && mapping.discount_percent > 0) {
           purchasePrice = scraped.brutoPrice * (1 - mapping.discount_percent / 100);
           purchasePrice = Math.round(purchasePrice * 100) / 100;
           scraped.nettoPrice = purchasePrice; // Store calculated netto
+        }
+        
+        // Calculate actual discount percentage if we have both prices
+        let actualDiscount = null;
+        if (scraped.brutoPrice && scraped.nettoPrice && scraped.brutoPrice > 0) {
+          actualDiscount = Math.round((1 - scraped.nettoPrice / scraped.brutoPrice) * 10000) / 100;
         }
 
         if (!purchasePrice) {
@@ -546,6 +558,8 @@ class WascoScraper {
           brutoPrice: scraped.brutoPrice,
           nettoPrice: scraped.nettoPrice,
           purchasePrice,
+          actualDiscount,
+          imageUrl: scraped.imageUrl,
         });
 
       } catch (error) {
