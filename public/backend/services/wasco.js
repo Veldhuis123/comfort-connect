@@ -85,16 +85,36 @@ class WascoScraper {
       // Navigate to login page
       await page.goto(`${this.baseUrl}/inloggen`, { waitUntil: 'networkidle2', timeout: 30000 });
 
+      // Dismiss cookie consent popup if present
+      try {
+        const cookieBtn = await page.$('.cc-btn.cc-dismiss, .cc-allow, #CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll, button[data-cookie-accept], .cookie-accept, #accept-cookies');
+        if (cookieBtn) {
+          await cookieBtn.click();
+          logger.info('WASCO', 'Cookie consent dismissed');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (e) {
+        logger.info('WASCO', 'No cookie popup found or could not dismiss');
+      }
+
       // Wait for the main login form fields
       await page.waitForSelector('input[placeholder="debiteurnummer"]', { timeout: 10000 });
       
       logger.info('WASCO', 'Login page loaded, filling form...');
 
-      // Fill in the login form
+      // Clear fields first (in case they have default values)
+      await page.click('input[placeholder="debiteurnummer"]', { clickCount: 3 });
       await page.type('input[placeholder="debiteurnummer"]', debiteurNummer);
+      await page.click('input[placeholder="code"]', { clickCount: 3 });
       await page.type('input[placeholder="code"]', code);
-      // Find password field by placeholder="wachtwoord" within main content
+      await page.click('input[placeholder="wachtwoord"]', { clickCount: 3 });
       await page.type('input[placeholder="wachtwoord"]', password);
+
+      // Save screenshot before login click
+      try {
+        await page.screenshot({ path: '/tmp/wasco-before-login.png', fullPage: false });
+        logger.info('WASCO', 'Screenshot saved: /tmp/wasco-before-login.png');
+      } catch (e) { /* ignore */ }
 
       // Click the login button in main content
       const loginBtnSelector = '#wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72';
@@ -102,12 +122,30 @@ class WascoScraper {
 
       // Wait for navigation after login
       await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {
-        // Some OutSystems pages don't navigate, they update in-place
         logger.info('WASCO', 'No navigation after login click, page may have updated in-place');
       });
 
-      // Wait a moment for any AJAX updates
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait for AJAX updates
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Save screenshot after login attempt
+      try {
+        await page.screenshot({ path: '/tmp/wasco-after-login.png', fullPage: false });
+        logger.info('WASCO', 'Screenshot saved: /tmp/wasco-after-login.png');
+      } catch (e) { /* ignore */ }
+
+      // Check for error messages on login page
+      const errorMsg = await page.evaluate(() => {
+        const errorEl = document.querySelector('.Feedback_Message_Error, .feedback-error, .Form_Error, .error-message, [class*="Error"]');
+        return errorEl ? errorEl.textContent.trim() : null;
+      });
+      if (errorMsg) {
+        logger.error('WASCO', 'Login form error detected', { errorMsg });
+      }
+
+      // Check current URL
+      const currentUrl = page.url();
+      logger.info('WASCO', 'Page after login attempt', { currentUrl, hasError: !!errorMsg });
 
       // Extract all cookies from the browser
       const browserCookies = await page.cookies();
