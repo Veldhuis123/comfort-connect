@@ -146,76 +146,52 @@ class WascoScraper {
         await new Promise(r => setTimeout(r, 500));
       }
 
-      await fillField(page, 'input[placeholder="debiteurnummer"]', debiteurNummer);
-      await fillField(page, 'input[placeholder="code"]', code);
-      await fillField(page, 'input[placeholder="wachtwoord"]', password);
+      // Use the VISIBLE MainContent fields (not the hidden header ones!)
+      const mainContentPrefix = '#wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_';
+      await fillField(page, `${mainContentPrefix}wtfc_deb3`, debiteurNummer);
+      await fillField(page, `${mainContentPrefix}wtfc_code2`, code);
+      await fillField(page, `${mainContentPrefix}wtfc_pass3`, password);
 
-      // Verify fields are filled
-      const fieldValues = await page.evaluate(() => {
-        const d = document.querySelector('input[placeholder="debiteurnummer"]');
-        const c = document.querySelector('input[placeholder="code"]');
-        const p = document.querySelector('input[placeholder="wachtwoord"]');
+      // Verify fields are filled (check the MainContent fields)
+      const fieldValues = await page.evaluate((prefix) => {
+        const d = document.querySelector(`${prefix}wtfc_deb3`);
+        const c = document.querySelector(`${prefix}wtfc_code2`);
+        const p = document.querySelector(`${prefix}wtfc_pass3`);
         return { 
           debLen: d?.value.length || 0, debVal: d?.value?.substring(0, 3) || '',
           codeLen: c?.value.length || 0,
           passLen: p?.value.length || 0
         };
-      });
-      logger.info('WASCO', 'Field values after filling', fieldValues);
+      }, mainContentPrefix);
+      logger.info('WASCO', 'Field values after filling (MainContent)', fieldValues);
 
       await new Promise(r => setTimeout(r, 500));
 
       // Screenshot before submit
       try { await page.screenshot({ path: '/tmp/wasco-before-login.png' }); } catch (e) { /* ignore */ }
 
-      // Step 3: Find and click the FORM submit button (not the header nav link!)
-      // The form submit is inside the login form, look for button/input[type=submit] inside a form,
-      // or an anchor/button that is NOT in the header
+      // Step 3: Click the MainContent submit button (not the header nav link!)
       const submitResult = await page.evaluate(() => {
-        // First try: find a form and its submit button
-        const forms = document.querySelectorAll('form');
-        for (const form of forms) {
-          // Check if this form contains our login fields
-          if (form.querySelector('input[placeholder="debiteurnummer"]') || 
-              form.querySelector('input[placeholder="wachtwoord"]')) {
-            // Found the login form - look for submit button inside it
-            const submit = form.querySelector('input[type="submit"], button[type="submit"], button:not([type])');
-            if (submit) {
-              submit.click();
-              return { clicked: true, method: 'form-submit-button', tag: submit.tagName, text: submit.textContent?.trim() || submit.value };
+        // Find the MainContent container
+        const mainContent = document.querySelector('[id*="wtMainContent"]');
+        if (mainContent) {
+          // Look for Inloggen link/button inside MainContent
+          const links = mainContent.querySelectorAll('a, button, input[type="submit"]');
+          for (const link of links) {
+            const text = (link.textContent?.trim() || link.value || '').toLowerCase();
+            if (text.includes('inloggen') || text.includes('login')) {
+              link.click();
+              return { clicked: true, method: 'mainContent-button', tag: link.tagName, id: link.id, text: link.textContent?.trim() };
             }
-            // Try any link/button with "Inloggen" text inside this form
-            const btns = form.querySelectorAll('a, button');
-            for (const btn of btns) {
-              if (btn.textContent.trim() === 'Inloggen') {
-                btn.click();
-                return { clicked: true, method: 'form-inloggen-link', tag: btn.tagName, id: btn.id };
-              }
-            }
-            // Last resort: submit the form
+          }
+          // Fallback: submit the form containing MainContent fields
+          const form = mainContent.closest('form') || document.querySelector('form');
+          if (form) {
             form.submit();
             return { clicked: true, method: 'form.submit()' };
           }
         }
-        
-        // Fallback: find Inloggen button/link that is NOT in the header
-        const allBtns = document.querySelectorAll('a, button, input[type="submit"]');
-        const candidates = [];
-        for (const btn of allBtns) {
-          const text = btn.textContent?.trim() || btn.value || '';
-          if (text === 'Inloggen' || text === 'Login') {
-            const isInHeader = btn.closest('header, [class*="header"], [id*="header"], [class*="Header"], [id*="Header"]');
-            candidates.push({ el: btn, inHeader: !!isInHeader, tag: btn.tagName, id: btn.id, text });
-          }
-        }
-        // Prefer non-header buttons
-        const best = candidates.find(c => !c.inHeader) || candidates[0];
-        if (best) {
-          best.el.click();
-          return { clicked: true, method: 'fallback', tag: best.tag, id: best.id, inHeader: best.inHeader, totalCandidates: candidates.length };
-        }
-        
-        return { clicked: false, candidates: candidates.length };
+        return { clicked: false, error: 'No MainContent submit button found' };
       });
       logger.info('WASCO', 'Login submit attempt', submitResult);
 
