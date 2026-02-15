@@ -237,9 +237,11 @@ const WascoSync = () => {
     p => !mappings.find(m => m.product_id === p.id)
   );
 
-  const formatPrice = (price: number | null) => {
+  const formatPrice = (price: number | string | null) => {
     if (price === null || price === undefined) return "-";
-    return `€${price.toFixed(2)}`;
+    const num = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(num)) return "-";
+    return `€${num.toFixed(2)}`;
   };
 
   const formatDate = (dateStr: string | null) => {
