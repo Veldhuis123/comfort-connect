@@ -518,6 +518,91 @@ BRL 100 Compliance: Zorg dat alle meetgereedschap tijdig wordt gekalibreerd.
 Gegenereerd op: ${new Date().toLocaleString('nl-NL')}
       `
     };
+  },
+
+  quoteConfirmationToCustomer: (quote) => {
+    return {
+      subject: `Uw offerteaanvraag is ontvangen - R. Veldhuis Installatie`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #1e3a5f; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+            .section { margin-bottom: 20px; }
+            .section-title { font-weight: bold; color: #1e3a5f; margin-bottom: 10px; border-bottom: 2px solid #3b82f6; padding-bottom: 5px; }
+            .info-row { margin-bottom: 8px; }
+            .info-label { font-weight: bold; color: #666; }
+            .highlight { background: #e0f2fe; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0; }
+            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>✅ Offerteaanvraag Ontvangen</h1>
+              <p>Referentienummer: #${quote.id}</p>
+            </div>
+            
+            <div class="content">
+              <p>Beste ${quote.customer_name || 'klant'},</p>
+              
+              <p>Bedankt voor uw offerteaanvraag! Wij hebben deze in goede orde ontvangen en zullen zo spoedig mogelijk contact met u opnemen.</p>
+              
+              <div class="highlight">
+                <strong>Wat kunt u verwachten?</strong><br>
+                Wij nemen binnen 1-2 werkdagen contact met u op om uw aanvraag te bespreken en een afspraak in te plannen voor een eventuele inspectie ter plaatse.
+              </div>
+              
+              ${quote.selected_airco_name ? `
+              <div class="section">
+                <div class="section-title">Uw aanvraag</div>
+                <div class="info-row"><span class="info-label">Product:</span> ${quote.selected_airco_brand || ''} ${quote.selected_airco_name}</div>
+                ${quote.estimated_price ? `<div class="info-row"><span class="info-label">Indicatieprijs:</span> €${parseFloat(quote.estimated_price).toLocaleString('nl-NL')},-</div>` : ''}
+                ${quote.total_size ? `<div class="info-row"><span class="info-label">Oppervlakte:</span> ${quote.total_size} m²</div>` : ''}
+              </div>
+              ` : ''}
+              
+              <p>Heeft u in de tussentijd vragen? Neem gerust contact met ons op:</p>
+              <ul>
+                <li>📧 E-mail: <a href="mailto:info@rv-installatie.nl">info@rv-installatie.nl</a></li>
+                <li>📞 Telefoon: <a href="tel:+31612345678">06-12345678</a></li>
+              </ul>
+              
+              <p>Met vriendelijke groet,<br><strong>R. Veldhuis Installatie</strong></p>
+            </div>
+            
+            <div class="footer">
+              <p>R. Veldhuis Installatie - Airconditioning & Klimaattechniek</p>
+              <p>Dit is een automatisch gegenereerde e-mail. U hoeft niet te antwoorden.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Beste ${quote.customer_name || 'klant'},
+
+Bedankt voor uw offerteaanvraag! Wij hebben deze in goede orde ontvangen (referentienummer: #${quote.id}).
+
+Wij nemen binnen 1-2 werkdagen contact met u op om uw aanvraag te bespreken.
+
+${quote.selected_airco_name ? `Uw aanvraag:
+Product: ${quote.selected_airco_brand || ''} ${quote.selected_airco_name}
+${quote.estimated_price ? `Indicatieprijs: €${parseFloat(quote.estimated_price).toLocaleString('nl-NL')},-` : ''}
+` : ''}
+
+Heeft u vragen? Neem contact met ons op:
+E-mail: info@rv-installatie.nl
+Telefoon: 06-12345678
+
+Met vriendelijke groet,
+R. Veldhuis Installatie
+      `
+    };
   }
 };
 
@@ -526,6 +611,15 @@ const sendQuoteNotification = async (quote) => {
   const to = process.env.EMAIL_TO || 'info@rv-installatie.nl';
   const template = templates.newQuoteNotification(quote);
   return sendEmail({ to, ...template });
+};
+
+// Send confirmation email to customer
+const sendQuoteConfirmation = async (quote) => {
+  if (!quote.customer_email) {
+    return { success: false, error: 'No customer email' };
+  }
+  const template = templates.quoteConfirmationToCustomer(quote);
+  return sendEmail({ to: quote.customer_email, ...template });
 };
 
 // Send notification for new contact message
@@ -562,6 +656,7 @@ const sendEquipmentExpiringNotification = async (expiringEquipment) => {
 module.exports = {
   sendEmail,
   sendQuoteNotification,
+  sendQuoteConfirmation,
   sendContactNotification,
   sendReviewNotification,
   sendFaultNotification,

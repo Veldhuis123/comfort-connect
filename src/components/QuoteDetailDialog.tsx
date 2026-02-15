@@ -305,17 +305,18 @@ const QuoteDetailDialog = ({
   };
 
   const getPhotoUrl = (photo: QuotePhoto) => {
-    // Determine the backend base URL
-    // In development via Vite proxy, API_URL is '/api' so we use the same origin
-    // In production, API_URL might be a full URL
-    const baseUrl = API_URL.startsWith('http') 
-      ? API_URL.replace('/api', '') 
-      : window.location.origin;
-    
     // Clean up the file path - remove leading ./ if present
     const cleanPath = photo.file_path.replace(/^\.\//, '');
     
-    return `${baseUrl}/${cleanPath}`;
+    // In development: Vite proxy forwards /uploads to backend
+    // In production: API_URL points to backend origin
+    if (API_URL.startsWith('http')) {
+      const baseUrl = API_URL.replace('/api', '');
+      return `${baseUrl}/${cleanPath}`;
+    }
+    
+    // Using Vite proxy - just use relative path
+    return `/${cleanPath}`;
   };
 
   if (!quote) return null;
