@@ -71,8 +71,10 @@ class WascoScraper {
     try {
       logger.info('WASCO', 'Logging in to Wasco.nl via Puppeteer...');
 
+      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
       browser = await puppeteer.launch({
         headless: 'new',
+        executablePath,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       });
 
