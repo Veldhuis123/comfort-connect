@@ -89,100 +89,105 @@ class WascoScraper {
       await page.waitForSelector('input[placeholder="debiteurnummer"]', { timeout: 15000 });
       logger.info('WASCO', 'Login page loaded, filling form via pure JS...');
 
-      // Step 1: Remove ALL overlays via evaluate (no clickability issues)
-      await page.evaluate(() => {
+      // Step 1: Remove ALL overlays and fill form entirely via page.evaluate
+      // This is the ONLY reliable method - pure DOM manipulation with nativeSetter
+      const fillSuccess = await page.evaluate((deb, cod, pass) => {
+        // Remove overlays first
         document.querySelectorAll('[id*="ookiebot"], [id*="cookie"], [id*="Cookie"], [class*="cookie"], [class*="consent"], [id*="vwo"], [class*="vwo"]').forEach(el => el.remove());
         document.querySelectorAll('iframe[style*="position: fixed"], iframe[style*="position:fixed"]').forEach(el => el.remove());
-        // Remove any fixed/absolute overlays with high z-index
         document.querySelectorAll('div[style*="z-index"]').forEach(el => {
           const z = parseInt(window.getComputedStyle(el).zIndex);
           if (z > 1000) el.remove();
         });
-      });
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+        // Get the native value setter to bypass OutSystems getters/setters
+        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
 
-      // Step 2: Fill fields using Puppeteer's native focus + keyboard
-      // page.focus() sets CDP keyboard target (unlike page.evaluate focus)
-      async function fillFieldViaKeyboard(page, selector, value) {
-        try {
-          // Use Puppeteer's focus which properly sets keyboard target via CDP
-          await page.focus(selector);
-          await new Promise(resolve => setTimeout(resolve, 200));
+        function fillField(selector, value) {
+          const field = document.querySelector(selector);
+          if (!field) return 0;
           
-          // Triple-click to select all text, then delete
-          await page.click(selector, { clickCount: 3 });
-          await page.keyboard.press('Backspace');
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Use native setter
+          nativeSetter.call(field, value);
           
-          // Type the value character by character (real keyboard events)
-          await page.keyboard.type(value, { delay: 50 });
-          await new Promise(resolve => setTimeout(resolve, 200));
+          // Fire comprehensive event chain for OutSystems reactive framework
+          field.dispatchEvent(new Event('focus', { bubbles: true }));
+          field.dispatchEvent(new Event('input', { bubbles: true }));
+          field.dispatchEvent(new InputEvent('input', { bubbles: true, data: value, inputType: 'insertText' }));
+          field.dispatchEvent(new Event('change', { bubbles: true }));
+          field.dispatchEvent(new Event('blur', { bubbles: true }));
           
-          // Tab away to trigger blur/change events
-          await page.keyboard.press('Tab');
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (err) {
-          // Fallback: if click/focus fails, try via evaluate + CDP keyboard
-          logger.warn('WASCO', `Puppeteer focus failed for ${selector}, trying fallback`, { error: err.message });
-          await page.evaluate((sel) => {
-            const field = document.querySelector(sel);
-            if (field) {
-              field.scrollIntoView({ block: 'center' });
-              field.focus();
-              field.value = '';
-            }
-          }, selector);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          // Use CDP to send key events directly
-          const client = await page.target().createCDPSession();
+          // Also try triggering keyup on each char (OutSystems sometimes listens to this)
           for (const char of value) {
-            await client.send('Input.dispatchKeyEvent', { type: 'keyDown', text: char });
-            await client.send('Input.dispatchKeyEvent', { type: 'keyUp', text: char });
-            await new Promise(resolve => setTimeout(resolve, 50));
+            field.dispatchEvent(new KeyboardEvent('keydown', { key: char, bubbles: true }));
+            field.dispatchEvent(new KeyboardEvent('keypress', { key: char, bubbles: true }));
+            field.dispatchEvent(new KeyboardEvent('keyup', { key: char, bubbles: true }));
           }
-          await page.evaluate((sel) => {
-            const field = document.querySelector(sel);
-            if (field) {
-              field.dispatchEvent(new Event('input', { bubbles: true }));
-              field.dispatchEvent(new Event('change', { bubbles: true }));
-              field.dispatchEvent(new Event('blur', { bubbles: true }));
-            }
-          }, selector);
+          
+          return field.value.length;
         }
+
+        const debLen = fillField('input[placeholder="debiteurnummer"]', deb);
+        const codeLen = fillField('input[placeholder="code"]', cod);
+        const passLen = fillField('input[placeholder="wachtwoord"]', pass);
+
+        return { success: true, debLen, codeLen, passLen };
+      }, debiteurNummer, code, password);
+      logger.info('WASCO', 'Field fill result', fillSuccess);
+
+      // If nativeSetter didn't work, try CDP Input.insertText as last resort
+      if (fillSuccess.debLen === 0) {
+        logger.warn('WASCO', 'NativeSetter failed, trying CDP insertText...');
+        const client = await page.target().createCDPSession();
+        
+        // Focus and insert via CDP for each field
+        for (const [selector, value] of [
+          ['input[placeholder="debiteurnummer"]', debiteurNummer],
+          ['input[placeholder="code"]', code],
+          ['input[placeholder="wachtwoord"]', password],
+        ]) {
+          await page.evaluate((sel) => {
+            const el = document.querySelector(sel);
+            if (el) { el.focus(); el.value = ''; }
+          }, selector);
+          await new Promise(resolve => setTimeout(resolve, 200));
+          await client.send('Input.insertText', { text: value });
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        // Re-check values
+        const cdpResult = await page.evaluate(() => {
+          const d = document.querySelector('input[placeholder="debiteurnummer"]');
+          const c = document.querySelector('input[placeholder="code"]');
+          const p = document.querySelector('input[placeholder="wachtwoord"]');
+          return { debLen: d?.value.length || 0, codeLen: c?.value.length || 0, passLen: p?.value.length || 0 };
+        });
+        logger.info('WASCO', 'CDP insertText result', cdpResult);
       }
-
-      await fillFieldViaKeyboard(page, 'input[placeholder="debiteurnummer"]', debiteurNummer);
-      await new Promise(resolve => setTimeout(resolve, 300));
-      await fillFieldViaKeyboard(page, 'input[placeholder="code"]', code);
-      await new Promise(resolve => setTimeout(resolve, 300));
-      await fillFieldViaKeyboard(page, 'input[placeholder="wachtwoord"]', password);
-
-      // Verify field values
-      const fillResult = await page.evaluate(() => {
-        const d = document.querySelector('input[placeholder="debiteurnummer"]');
-        const c = document.querySelector('input[placeholder="code"]');
-        const p = document.querySelector('input[placeholder="wachtwoord"]');
-        return {
-          success: true,
-          debLen: d ? d.value.length : -1,
-          codeLen: c ? c.value.length : -1,
-          passLen: p ? p.value.length : -1,
-        };
-      });
-      logger.info('WASCO', 'Field fill result', fillResult);
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Screenshot before submit
       try { await page.screenshot({ path: '/tmp/wasco-before-login.png' }); } catch (e) { /* ignore */ }
 
-      // Step 3: Submit - focus password field and press Enter (most natural for OutSystems)
-      await page.evaluate(() => {
-        const passField = document.querySelector('input[placeholder="wachtwoord"]');
-        if (passField) passField.focus();
+      // Step 3: Submit via evaluate - click the login button directly
+      const submitResult = await page.evaluate(() => {
+        // Find the Inloggen button/link
+        const buttons = Array.from(document.querySelectorAll('a, button, input[type="submit"]'));
+        const loginBtn = buttons.find(b => b.textContent.trim() === 'Inloggen' || b.value === 'Inloggen');
+        if (loginBtn) {
+          loginBtn.click();
+          return { clicked: true, tag: loginBtn.tagName, id: loginBtn.id };
+        }
+        // Fallback: submit the form directly
+        const form = document.querySelector('form');
+        if (form) {
+          form.submit();
+          return { clicked: true, method: 'form.submit' };
+        }
+        return { clicked: false };
       });
-      await page.keyboard.press('Enter');
+      logger.info('WASCO', 'Login submit attempt', submitResult);
 
       // Wait for navigation
       await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {
