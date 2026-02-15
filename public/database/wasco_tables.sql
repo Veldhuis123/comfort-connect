@@ -2,7 +2,11 @@
 -- Wasco Price Scraping Tables
 -- =============================================
 
--- Mapping between local products and Wasco article numbers
+-- Drop bestaande tabellen eerst (in juiste volgorde)
+DROP TABLE IF EXISTS wasco_price_log;
+DROP TABLE IF EXISTS wasco_mappings;
+
+
 CREATE TABLE IF NOT EXISTS wasco_mappings (
   id INT AUTO_INCREMENT PRIMARY KEY,
   product_id VARCHAR(100) NOT NULL UNIQUE,
