@@ -430,9 +430,13 @@ class WascoScraper {
       details: [],
     };
 
-    // Login first
+  // Try login but don't fail if it doesn't work - we can still use bruto + discount
     if (!this.isLoggedIn) {
-      await this.login();
+      try {
+        await this.login();
+      } catch (err) {
+        logger.warn('WASCO', 'Login failed, continuing with bruto prices + discount percentages', { error: err.message });
+      }
     }
 
     for (const mapping of productMappings) {
@@ -453,8 +457,17 @@ class WascoScraper {
           continue;
         }
 
-        // Determine the price to use (netto if available, otherwise bruto)
-        const purchasePrice = scraped.nettoPrice || scraped.brutoPrice;
+        // Determine the price to use:
+        // 1. If netto price scraped (logged in), use that
+        // 2. If discount_percent set on mapping, calculate from bruto
+        // 3. Otherwise use bruto as-is
+        let purchasePrice = scraped.nettoPrice || scraped.brutoPrice;
+        
+        if (!scraped.nettoPrice && scraped.brutoPrice && mapping.discount_percent > 0) {
+          purchasePrice = scraped.brutoPrice * (1 - mapping.discount_percent / 100);
+          purchasePrice = Math.round(purchasePrice * 100) / 100;
+          scraped.nettoPrice = purchasePrice; // Store calculated netto
+        }
 
         if (!purchasePrice) {
           results.skipped++;
