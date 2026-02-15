@@ -177,6 +177,8 @@ class WascoScraper {
       logger.error('WASCO', 'Login failed', { error: error.message, stack: error.stack });
       throw new Error(`Wasco login mislukt: ${error.message}`);
     }
+  }
+
   // Scrape a single product page by article number
   async scrapeProduct(articleNumber) {
     try {
