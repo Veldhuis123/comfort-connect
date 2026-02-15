@@ -29,16 +29,30 @@ class WascoScraper {
     });
   }
 
-  // Extract cookies from response headers
+  // Extract and deduplicate cookies from response headers
   extractCookies(response) {
     const setCookies = response.headers['set-cookie'];
     if (setCookies) {
-      const newCookies = setCookies.map(c => c.split(';')[0]).join('; ');
+      // Parse existing cookies into a map for deduplication
+      const cookieMap = {};
       if (this.cookies) {
-        this.cookies = this.cookies + '; ' + newCookies;
-      } else {
-        this.cookies = newCookies;
+        this.cookies.split('; ').forEach(c => {
+          const eqIdx = c.indexOf('=');
+          if (eqIdx > 0) {
+            cookieMap[c.substring(0, eqIdx)] = c.substring(eqIdx + 1);
+          }
+        });
       }
+      // Add/overwrite with new cookies
+      setCookies.forEach(c => {
+        const cookiePart = c.split(';')[0];
+        const eqIdx = cookiePart.indexOf('=');
+        if (eqIdx > 0) {
+          cookieMap[cookiePart.substring(0, eqIdx)] = cookiePart.substring(eqIdx + 1);
+        }
+      });
+      // Rebuild cookie string
+      this.cookies = Object.entries(cookieMap).map(([k, v]) => `${k}=${v}`).join('; ');
     }
   }
 
@@ -91,6 +105,7 @@ class WascoScraper {
       });
 
       // Step 2: Submit login form using OutSystems ASP.NET postback
+      // Also include ALL other form inputs (hidden fields, checkboxes) from the page
       const formData = new URLSearchParams();
       formData.append('__VIEWSTATE', viewState);
       formData.append('__VIEWSTATEGENERATOR', viewStateGenerator);
@@ -100,45 +115,80 @@ class WascoScraper {
       formData.append(debName, debiteurNummer);
       formData.append(codeName, code);
       formData.append(passName, password);
+      
+      // Include ALL hidden inputs and other form fields from the entire page
+      // OutSystems requires all form fields to be submitted
+      $('input[type="hidden"]').each((_, el) => {
+        const name = $(el).attr('name');
+        const value = $(el).val() || '';
+        if (name && !formData.has(name)) {
+          formData.append(name, value);
+        }
+      });
+      
+      // Include the "remember me" checkbox
+      const rememberName = mainContent.find('input[type="checkbox"]').attr('name');
+      if (rememberName) {
+        formData.append(rememberName, 'on');
+      }
 
       logger.info('WASCO', 'Submitting login form', {
         debiteurnummer: debiteurNummer,
         codeLength: code ? code.length : 0,
         passwordLength: password ? password.length : 0,
         formFieldCount: Array.from(formData.keys()).length,
+        viewStateLength: viewState.length,
       });
 
-      const loginRes = await this.getClient().post('/inloggen', formData.toString(), {
+      // Step 2a: POST without following redirects so we capture all Set-Cookie headers
+      const loginRes = await axios.post(`${this.baseUrl}/inloggen`, formData.toString(), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Cookie': this.cookies,
+          'Referer': `${this.baseUrl}/inloggen`,
+          'Origin': this.baseUrl,
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         },
-        maxRedirects: 5,
+        maxRedirects: 0,
         validateStatus: (status) => status < 500,
       });
 
       this.extractCookies(loginRes);
-
-      // Extract a snippet of the response to debug login issues
-      const responseSnippet = loginRes.data ? loginRes.data.substring(0, 500) : '';
-      const hasErrorMessage = loginRes.data ? 
-        loginRes.data.includes('Ongeldige') || 
-        loginRes.data.includes('foutmelding') || 
-        loginRes.data.includes('incorrect') ||
-        loginRes.data.includes('mislukt') : false;
-      // Check if we got redirected to a different page (successful login)
-      const finalUrl = loginRes.request && loginRes.request.res ? loginRes.request.res.responseUrl : 'unknown';
-
+      
       logger.info('WASCO', 'Login POST response', { 
         status: loginRes.status, 
-        finalUrl,
         hasSetCookie: !!loginRes.headers['set-cookie'],
+        setCookieCount: loginRes.headers['set-cookie'] ? loginRes.headers['set-cookie'].length : 0,
+        location: loginRes.headers['location'] || 'none',
         responseLength: loginRes.data ? loginRes.data.length : 0,
-        hasErrorMessage,
-        // Show if the response still contains the login form (meaning login failed)
-        stillHasLoginForm: loginRes.data ? loginRes.data.includes('placeholder="debiteurnummer"') : false,
-        responseSnippet: responseSnippet.substring(0, 200),
       });
+
+      // Step 2b: If we got a redirect (302/301), follow it manually to capture cookies at each hop
+      if (loginRes.status >= 300 && loginRes.status < 400 && loginRes.headers['location']) {
+        let redirectUrl = loginRes.headers['location'];
+        if (!redirectUrl.startsWith('http')) {
+          redirectUrl = `${this.baseUrl}${redirectUrl.startsWith('/') ? '' : '/'}${redirectUrl}`;
+        }
+        
+        logger.info('WASCO', 'Following login redirect', { redirectUrl });
+        
+        const redirectRes = await axios.get(redirectUrl, {
+          headers: {
+            'Cookie': this.cookies,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': `${this.baseUrl}/inloggen`,
+          },
+          maxRedirects: 5,
+          validateStatus: (status) => status < 500,
+        });
+        this.extractCookies(redirectRes);
+        
+        logger.info('WASCO', 'Redirect response', {
+          status: redirectRes.status,
+          hasSetCookie: !!redirectRes.headers['set-cookie'],
+          responseLength: redirectRes.data ? redirectRes.data.length : 0,
+        });
+      }
 
       // Verify login by checking a product page for netto pricing
       const verifyRes = await this.getClient().get('/artikel/7817827');
