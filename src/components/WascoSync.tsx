@@ -28,6 +28,7 @@ interface WascoMapping {
   id: number;
   product_id: string;
   wasco_article_number: string;
+  discount_percent: number;
   last_synced_at: string | null;
   last_bruto_price: number | null;
   last_netto_price: number | null;
@@ -36,6 +37,8 @@ interface WascoMapping {
   category: string;
   purchase_price: number | null;
   base_price: number;
+  model_number: string | null;
+  image_url: string | null;
 }
 
 interface WascoPreview {
@@ -351,57 +354,99 @@ const WascoSync = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {mappings.map((mapping) => (
-                <div key={mapping.id} className="border border-border rounded-lg p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium truncate">{mapping.product_name}</span>
-                        <Badge variant="secondary" className="text-xs">{mapping.product_brand}</Badge>
-                        <Badge variant="outline" className="text-xs">{mapping.category}</Badge>
+              {mappings.map((mapping) => {
+                const discount = mapping.last_bruto_price && mapping.last_netto_price && mapping.last_bruto_price > 0
+                  ? Math.round((1 - Number(mapping.last_netto_price) / Number(mapping.last_bruto_price)) * 100)
+                  : null;
+                const wascoImageUrl = `https://imagescdn.wasco.nl/5/001/943/695/${mapping.wasco_article_number}_Onbekend_Haier_Hoofdafbeelding_01.jpg`;
+                
+                return (
+                  <div key={mapping.id} className="border border-border rounded-lg p-4">
+                    <div className="flex items-start gap-4">
+                      {/* Product Image */}
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted/30 flex-shrink-0">
+                        <img 
+                          src={mapping.image_url || wascoImageUrl}
+                          alt={mapping.product_name}
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
                       </div>
-                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <ExternalLink className="w-3 h-3" />
-                          Wasco #{mapping.wasco_article_number}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDate(mapping.last_synced_at)}
-                        </span>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-medium truncate">{mapping.product_name}</span>
+                          <Badge variant="secondary" className="text-xs">{mapping.product_brand}</Badge>
+                          <Badge variant="outline" className="text-xs">{mapping.category}</Badge>
+                          {discount !== null && (
+                            <Badge className="text-xs bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                              -{discount}%
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          <a 
+                            href={`https://www.wasco.nl/artikel/${mapping.wasco_article_number}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 hover:text-foreground transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Wasco #{mapping.wasco_article_number}
+                          </a>
+                          {mapping.model_number && (
+                            <span className="text-xs">Model: {mapping.model_number}</span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatDate(mapping.last_synced_at)}
+                          </span>
+                        </div>
+                        
+                        <div className="flex gap-4 mt-2 text-sm flex-wrap">
+                          <span>
+                            Bruto: <strong>{formatPrice(mapping.last_bruto_price)}</strong>
+                          </span>
+                          <span>
+                            Netto: <strong className="text-emerald-600">{formatPrice(mapping.last_netto_price)}</strong>
+                          </span>
+                          <span>
+                            Inkoopprijs: <strong>{formatPrice(mapping.purchase_price)}</strong>
+                          </span>
+                          {discount !== null && (
+                            <span className="text-emerald-600 font-medium">
+                              Korting: {discount}%
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex gap-4 mt-2 text-sm">
-                        <span>
-                          Bruto: <strong>{formatPrice(mapping.last_bruto_price)}</strong>
-                        </span>
-                        <span>
-                          Netto: <strong className="text-green-600">{formatPrice(mapping.last_netto_price)}</strong>
-                        </span>
-                        <span>
-                          Inkoopprijs: <strong>{formatPrice(mapping.purchase_price)}</strong>
-                        </span>
+                      
+                      <div className="flex gap-2 ml-2 flex-shrink-0">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSyncSingle(mapping.product_id)}
+                          title="Prijs ophalen"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteMapping(mapping.id)}
+                          className="text-destructive"
+                          title="Koppeling verwijderen"
+                        >
+                          <Unlink className="w-3 h-3" />
+                        </Button>
                       </div>
-                    </div>
-                    <div className="flex gap-2 ml-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSyncSingle(mapping.product_id)}
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteMapping(mapping.id)}
-                        className="text-destructive"
-                      >
-                        <Unlink className="w-3 h-3" />
-                      </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
