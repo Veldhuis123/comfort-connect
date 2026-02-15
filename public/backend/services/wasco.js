@@ -83,7 +83,12 @@ class WascoScraper {
       const loginBtnHtmlId = loginBtn.attr('id') || 'wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72';
       const loginBtnUniqueId = loginBtnHtmlId.replace(/_/g, '$');
 
-      logger.info('WASCO', 'Found form fields', { debName, codeName, passName, loginBtnHtmlId, loginBtnUniqueId });
+      logger.info('WASCO', 'Found form fields', { 
+        debName, codeName, passName, loginBtnHtmlId, loginBtnUniqueId,
+        viewStateLength: viewState.length,
+        viewStateGeneratorLength: viewStateGenerator.length,
+        eventValidationLength: eventValidation.length,
+      });
 
       // Step 2: Submit login form using OutSystems ASP.NET postback
       const formData = new URLSearchParams();
@@ -96,6 +101,13 @@ class WascoScraper {
       formData.append(codeName, code);
       formData.append(passName, password);
 
+      logger.info('WASCO', 'Submitting login form', {
+        debiteurnummer: debiteurNummer,
+        codeLength: code ? code.length : 0,
+        passwordLength: password ? password.length : 0,
+        formFieldCount: Array.from(formData.keys()).length,
+      });
+
       const loginRes = await this.getClient().post('/inloggen', formData.toString(), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -107,13 +119,25 @@ class WascoScraper {
 
       this.extractCookies(loginRes);
 
+      // Extract a snippet of the response to debug login issues
+      const responseSnippet = loginRes.data ? loginRes.data.substring(0, 500) : '';
+      const hasErrorMessage = loginRes.data ? 
+        loginRes.data.includes('Ongeldige') || 
+        loginRes.data.includes('foutmelding') || 
+        loginRes.data.includes('incorrect') ||
+        loginRes.data.includes('mislukt') : false;
+      // Check if we got redirected to a different page (successful login)
+      const finalUrl = loginRes.request && loginRes.request.res ? loginRes.request.res.responseUrl : 'unknown';
+
       logger.info('WASCO', 'Login POST response', { 
         status: loginRes.status, 
-        headers: Object.keys(loginRes.headers),
+        finalUrl,
         hasSetCookie: !!loginRes.headers['set-cookie'],
         responseLength: loginRes.data ? loginRes.data.length : 0,
-        // Check if the response HTML contains error messages
-        containsError: loginRes.data ? loginRes.data.includes('Ongeldige inloggegevens') || loginRes.data.includes('foutmelding') : false,
+        hasErrorMessage,
+        // Show if the response still contains the login form (meaning login failed)
+        stillHasLoginForm: loginRes.data ? loginRes.data.includes('placeholder="debiteurnummer"') : false,
+        responseSnippet: responseSnippet.substring(0, 200),
       });
 
       // Verify login by checking a product page for netto pricing
