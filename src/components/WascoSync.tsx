@@ -79,6 +79,7 @@ const WascoSync = () => {
   const [articleNumber, setArticleNumber] = useState("");
   const [preview, setPreview] = useState<WascoPreview | null>(null);
   const [previewing, setPreviewing] = useState(false);
+  const [importing, setImporting] = useState(false);
   
   // Sync results
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
@@ -201,6 +202,33 @@ const WascoSync = () => {
       toast.error(`Artikel ophalen mislukt: ${err.message}`);
     } finally {
       setPreviewing(false);
+    }
+  };
+
+  const handleImportFromWasco = async () => {
+    if (!articleNumber.trim()) {
+      toast.error("Vul een Wasco artikelnummer in");
+      return;
+    }
+    setImporting(true);
+    try {
+      const result = await apiRequest<{ message: string; product: any }>('/wasco/import', {
+        method: 'POST',
+        body: JSON.stringify({
+          wasco_article_number: articleNumber.trim(),
+          category: 'airco',
+        }),
+      });
+      toast.success(`Product "${result.product.name}" geïmporteerd!`);
+      setShowAddDialog(false);
+      setArticleNumber("");
+      setPreview(null);
+      setSelectedProduct("");
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -377,32 +405,16 @@ const WascoSync = () => {
         </CardContent>
       </Card>
 
-      {/* Add Mapping Dialog */}
+      {/* Add Mapping / Import Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Product Koppelen aan Wasco</DialogTitle>
+            <DialogTitle>Product Koppelen of Importeren</DialogTitle>
             <DialogDescription>
-              Selecteer een product en voer het Wasco artikelnummer in
+              Koppel een bestaand product of importeer een nieuw product vanuit Wasco
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Product</label>
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecteer een product..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {unmappedProducts.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.brand} {p.name} ({p.category})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div>
               <label className="text-sm font-medium mb-1 block">Wasco Artikelnummer</label>
               <div className="flex gap-2">
@@ -437,9 +449,52 @@ const WascoSync = () => {
               </div>
             )}
 
-            <Button onClick={handleAddMapping} className="w-full">
-              Koppeling Opslaan
-            </Button>
+            {/* Import as new product */}
+            <div className="border-t pt-4">
+              <Button 
+                onClick={handleImportFromWasco} 
+                className="w-full"
+                disabled={importing || !articleNumber.trim()}
+              >
+                {importing ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Download className="w-4 h-4 mr-2" />
+                )}
+                Importeer als Nieuw Product
+              </Button>
+              <p className="text-xs text-muted-foreground mt-1 text-center">
+                Maakt een nieuw product aan met de prijzen van Wasco
+              </p>
+            </div>
+
+            {/* Or link to existing */}
+            {unmappedProducts.length > 0 && (
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium mb-2">Of koppel aan bestaand product:</p>
+                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecteer een product..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unmappedProducts.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.brand} {p.name} ({p.category})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  onClick={handleAddMapping} 
+                  variant="outline" 
+                  className="w-full mt-2"
+                  disabled={!selectedProduct || !articleNumber.trim()}
+                >
+                  <Link2 className="w-4 h-4 mr-2" />
+                  Koppeling Opslaan
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
