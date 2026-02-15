@@ -18,10 +18,11 @@ import {
 import { 
   LogOut, Star, MessageSquare, FileText, Settings, Plus, 
   Trash2, Eye, EyeOff, Check, X, Mail, Phone, Calendar,
-  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen, Package, Thermometer, Receipt, ChevronDown, Euro
+  BarChart3, RefreshCw, Calculator, Wind, Sun, Wifi, Battery, Car, Cable, BookOpen, Package, Thermometer, Receipt, ChevronDown, Euro, Download
 } from "lucide-react";
 import EBoekhoudenSync from "@/components/EBoekhoudenSync";
 import AdminProducts from "@/components/AdminProducts";
+import WascoSync from "@/components/WascoSync";
 import AdminInstallations from "@/components/AdminInstallations";
 import AdminLocalQuotes from "@/components/AdminLocalQuotes";
 import AdminPricing from "@/components/AdminPricing";
@@ -349,6 +350,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="pricing" className="text-xs sm:text-sm">
               <Euro className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Prijsbeheer</span>
+            </TabsTrigger>
+            <TabsTrigger value="wasco" className="text-xs sm:text-sm">
+              <Download className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Wasco Sync</span>
             </TabsTrigger>
           </TabsList>
 
@@ -875,6 +880,11 @@ const AdminDashboard = () => {
           {/* Prijsbeheer Tab */}
           <TabsContent value="pricing">
             <AdminPricing />
+          </TabsContent>
+
+          {/* Wasco Sync Tab */}
+          <TabsContent value="wasco">
+            <WascoSync />
           </TabsContent>
         </Tabs>
       </main>
