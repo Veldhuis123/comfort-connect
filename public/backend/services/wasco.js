@@ -89,91 +89,80 @@ class WascoScraper {
       await page.waitForSelector('input[placeholder="debiteurnummer"]', { timeout: 15000 });
       logger.info('WASCO', 'Login page loaded, filling form via pure JS...');
 
-      // Do EVERYTHING inside page.evaluate - no Puppeteer interaction methods at all
-      // This completely avoids "not clickable" errors from overlays
-      const fillResult = await page.evaluate((deb, code, pass) => {
-        // Step 1: Remove ALL overlays first
+      // Step 1: Remove ALL overlays via evaluate (no clickability issues)
+      await page.evaluate(() => {
         document.querySelectorAll('[id*="ookiebot"], [id*="cookie"], [id*="Cookie"], [class*="cookie"], [class*="consent"], [id*="vwo"], [class*="vwo"]').forEach(el => el.remove());
         document.querySelectorAll('iframe[style*="position: fixed"], iframe[style*="position:fixed"]').forEach(el => el.remove());
+        // Remove any fixed/absolute overlays with high z-index
+        document.querySelectorAll('div[style*="z-index"]').forEach(el => {
+          const z = parseInt(window.getComputedStyle(el).zIndex);
+          if (z > 1000) el.remove();
+        });
+      });
 
-        // Step 2: Find form fields
-        const debField = document.querySelector('input[placeholder="debiteurnummer"]');
-        const codeField = document.querySelector('input[placeholder="code"]');
-        const passField = document.querySelector('input[placeholder="wachtwoord"]');
-        
-        if (!debField || !codeField || !passField) {
-          return { error: 'Fields not found', deb: !!debField, code: !!codeField, pass: !!passField };
-        }
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Step 3: Set values using native setter + dispatch full event chain
-        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      // Step 2: Fill fields using evaluate to focus + keyboard to type (real key events)
+      // This ensures OutSystems picks up the input as real user interaction
+      async function fillFieldViaKeyboard(page, selector, value) {
+        // Focus the field via evaluate (bypasses clickability checks)
+        await page.evaluate((sel) => {
+          const field = document.querySelector(sel);
+          if (field) {
+            field.focus();
+            field.value = ''; // Clear existing value
+            field.dispatchEvent(new Event('focus', { bubbles: true }));
+          }
+        }, selector);
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        function fillField(field, value) {
-          // Focus the field
-          field.focus();
-          field.click();
-          
-          // Set value via native setter
-          nativeSetter.call(field, value);
-          
-          // Dispatch complete event chain that OutSystems/React listens to
-          field.dispatchEvent(new Event('focus', { bubbles: true }));
-          field.dispatchEvent(new Event('input', { bubbles: true }));
-          field.dispatchEvent(new Event('change', { bubbles: true }));
-          field.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'a' }));
-          field.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'a' }));
-          field.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, key: 'a' }));
-          field.dispatchEvent(new Event('blur', { bubbles: true }));
-        }
+        // Select all and delete (in case clearing didn't work)
+        await page.keyboard.down('Control');
+        await page.keyboard.press('a');
+        await page.keyboard.up('Control');
+        await page.keyboard.press('Backspace');
+        await new Promise(resolve => setTimeout(resolve, 100));
         
-        fillField(debField, deb);
-        fillField(codeField, code);
-        fillField(passField, pass);
+        // Type the value character by character (real keyboard events)
+        await page.keyboard.type(value, { delay: 50 });
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        return {
-          success: true,
-          debLen: debField.value.length,
-          codeLen: codeField.value.length,
-          passLen: passField.value.length,
-        };
-      }, debiteurNummer, code, password);
-      
-      logger.info('WASCO', 'Field fill result', fillResult);
-      
-      if (fillResult.error) {
-        throw new Error(`Login velden niet gevonden: ${JSON.stringify(fillResult)}`);
+        // Trigger blur to finalize
+        await page.evaluate((sel) => {
+          const field = document.querySelector(sel);
+          if (field) field.dispatchEvent(new Event('blur', { bubbles: true }));
+        }, selector);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await fillFieldViaKeyboard(page, 'input[placeholder="debiteurnummer"]', debiteurNummer);
+      await fillFieldViaKeyboard(page, 'input[placeholder="code"]', code);
+      await fillFieldViaKeyboard(page, 'input[placeholder="wachtwoord"]', password);
+
+      // Verify field values
+      const fillResult = await page.evaluate(() => {
+        const d = document.querySelector('input[placeholder="debiteurnummer"]');
+        const c = document.querySelector('input[placeholder="code"]');
+        const p = document.querySelector('input[placeholder="wachtwoord"]');
+        return {
+          success: true,
+          debLen: d ? d.value.length : -1,
+          codeLen: c ? c.value.length : -1,
+          passLen: p ? p.value.length : -1,
+        };
+      });
+      logger.info('WASCO', 'Field fill result', fillResult);
+
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Screenshot before submit
       try { await page.screenshot({ path: '/tmp/wasco-before-login.png' }); } catch (e) { /* ignore */ }
 
-      // Submit via pure JS evaluate
-      const submitted = await page.evaluate(() => {
-        // Try known button ID
-        let btn = document.getElementById('wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72');
-        // Fallback: find any button/link with "inlog" text
-        if (!btn) {
-          const candidates = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a, div[onclick], span[onclick]')];
-          btn = candidates.find(b => (b.textContent || b.value || '').toLowerCase().includes('inlog'));
-        }
-        if (btn) {
-          btn.click();
-          return { id: btn.id || '', tag: btn.tagName, text: (btn.textContent || '').substring(0, 50) };
-        }
-        // Absolute last resort: submit form
-        const form = document.querySelector('form');
-        if (form) { form.submit(); return { formSubmit: true }; }
-        return null;
+      // Step 3: Submit - focus password field and press Enter (most natural for OutSystems)
+      await page.evaluate(() => {
+        const passField = document.querySelector('input[placeholder="wachtwoord"]');
+        if (passField) passField.focus();
       });
-      logger.info('WASCO', 'Login submit attempt', { submitted });
-
-      // If no button/form found, press Enter
-      if (!submitted) {
-        logger.info('WASCO', 'Fallback: pressing Enter');
-        await page.keyboard.press('Enter');
-      }
+      await page.keyboard.press('Enter');
 
       // Wait for navigation
       await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {
