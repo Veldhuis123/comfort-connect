@@ -99,28 +99,20 @@ class WascoScraper {
         });
       });
 
-      // Step 2: Fill fields using focus via evaluate + keyboard typing (avoids "not clickable" error)
+      // Step 2: Fill fields by setting value directly + dispatching events (OutSystems compatible)
       async function fillField(page, selector, value) {
-        // Focus the element via JavaScript instead of page.click() to avoid clickability checks
-        await page.evaluate((sel) => {
+        await page.evaluate((sel, val) => {
           const el = document.querySelector(sel);
-          if (el) {
-            el.scrollIntoView({ block: 'center' });
-            el.focus();
-          }
-        }, selector);
-        await new Promise(r => setTimeout(r, 300));
-        // Select all existing text and delete it
-        await page.keyboard.down('Control');
-        await page.keyboard.press('a');
-        await page.keyboard.up('Control');
-        await page.keyboard.press('Backspace');
-        await new Promise(r => setTimeout(r, 200));
-        // Type character by character with delay
-        for (const char of value) {
-          await page.keyboard.type(char, { delay: 50 });
-        }
-        await new Promise(r => setTimeout(r, 300));
+          if (!el) throw new Error(`Element not found: ${sel}`);
+          // Use native setter to bypass React/OutSystems value trapping
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+          nativeInputValueSetter.call(el, val);
+          // Dispatch all relevant events so the framework picks up the change
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.dispatchEvent(new Event('blur', { bubbles: true }));
+        }, selector, value);
+        await new Promise(r => setTimeout(r, 500));
       }
 
       await fillField(page, 'input[placeholder="debiteurnummer"]', debiteurNummer);
