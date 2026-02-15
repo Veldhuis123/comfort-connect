@@ -44,11 +44,12 @@ class WascoScraper {
 
   // Login to Wasco
   async login() {
-    const username = process.env.WASCO_USERNAME;
+    const debiteurNummer = process.env.WASCO_DEBITEURNUMMER;
+    const code = process.env.WASCO_CODE;
     const password = process.env.WASCO_PASSWORD;
 
-    if (!username || !password) {
-      throw new Error('WASCO_USERNAME en WASCO_PASSWORD moeten in .env staan');
+    if (!debiteurNummer || !code || !password) {
+      throw new Error('WASCO_DEBITEURNUMMER, WASCO_CODE en WASCO_PASSWORD moeten in .env staan');
     }
 
     try {
@@ -56,7 +57,7 @@ class WascoScraper {
 
       // Step 1: Get login page for CSRF tokens/viewstate
       const client = this.getClient();
-      const loginPageRes = await client.get('/Wasco2014/inloggen');
+      const loginPageRes = await client.get('/inloggen');
       this.extractCookies(loginPageRes);
 
       const $ = cheerio.load(loginPageRes.data);
@@ -66,17 +67,18 @@ class WascoScraper {
       const viewStateGenerator = $('input[name="__VIEWSTATEGENERATOR"]').val() || '';
       const eventValidation = $('input[name="__EVENTVALIDATION"]').val() || '';
 
-      // Step 2: Submit login form
+      // Step 2: Submit login form with debiteurnummer, code, and wachtwoord
       const formData = new URLSearchParams();
       formData.append('__VIEWSTATE', viewState);
       formData.append('__VIEWSTATEGENERATOR', viewStateGenerator);
       formData.append('__EVENTVALIDATION', eventValidation);
-      // Common ASP.NET login field names - adjust if needed
-      formData.append('ctl00$ContentPlaceHolder1$txtUsername', username);
-      formData.append('ctl00$ContentPlaceHolder1$txtPassword', password);
-      formData.append('ctl00$ContentPlaceHolder1$btnLogin', 'Inloggen');
+      // Map to actual Wasco form fields - find the correct field names
+      formData.append('ctl00$ContentPlaceHolder1$txtDebiteurnummer', debiteurNummer);
+      formData.append('ctl00$ContentPlaceHolder1$txtCode', code);
+      formData.append('ctl00$ContentPlaceHolder1$txtWachtwoord', password);
+      formData.append('ctl00$ContentPlaceHolder1$btnInloggen', 'Inloggen');
 
-      const loginRes = await this.getClient().post('/Wasco2014/inloggen', formData.toString(), {
+      const loginRes = await this.getClient().post('/inloggen', formData.toString(), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Cookie': this.cookies,
