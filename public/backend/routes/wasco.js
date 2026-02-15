@@ -18,6 +18,7 @@ router.get('/mappings', authMiddleware, async (req, res) => {
         wm.id,
         wm.product_id,
         wm.wasco_article_number,
+        wm.discount_percent,
         wm.last_synced_at,
         wm.last_bruto_price,
         wm.last_netto_price,
@@ -40,7 +41,7 @@ router.get('/mappings', authMiddleware, async (req, res) => {
 // Add a product-wasco mapping
 router.post('/mappings', authMiddleware, async (req, res) => {
   try {
-    const { product_id, wasco_article_number } = req.body;
+    const { product_id, wasco_article_number, discount_percent } = req.body;
 
     if (!product_id || !wasco_article_number) {
       return res.status(400).json({ error: 'product_id en wasco_article_number zijn verplicht' });
@@ -61,15 +62,15 @@ router.post('/mappings', authMiddleware, async (req, res) => {
     if (existing.length > 0) {
       // Update existing mapping
       await db.query(
-        'UPDATE wasco_mappings SET wasco_article_number = ? WHERE product_id = ?',
-        [wasco_article_number, product_id]
+        'UPDATE wasco_mappings SET wasco_article_number = ?, discount_percent = ? WHERE product_id = ?',
+        [wasco_article_number, discount_percent || 0, product_id]
       );
       res.json({ message: 'Mapping bijgewerkt' });
     } else {
       // Create new mapping
       await db.query(
-        'INSERT INTO wasco_mappings (product_id, wasco_article_number) VALUES (?, ?)',
-        [product_id, wasco_article_number]
+        'INSERT INTO wasco_mappings (product_id, wasco_article_number, discount_percent) VALUES (?, ?, ?)',
+        [product_id, wasco_article_number, discount_percent || 0]
       );
       res.status(201).json({ message: 'Mapping aangemaakt' });
     }
@@ -132,7 +133,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
   try {
     // Get all mappings
     const [mappings] = await db.query(
-      'SELECT product_id, wasco_article_number FROM wasco_mappings'
+      'SELECT product_id, wasco_article_number, discount_percent FROM wasco_mappings'
     );
 
     if (mappings.length === 0) {
@@ -169,7 +170,7 @@ router.post('/sync/:productId', authMiddleware, async (req, res) => {
     const { productId } = req.params;
 
     const [mappings] = await db.query(
-      'SELECT product_id, wasco_article_number FROM wasco_mappings WHERE product_id = ?',
+      'SELECT product_id, wasco_article_number, discount_percent FROM wasco_mappings WHERE product_id = ?',
       [productId]
     );
 
