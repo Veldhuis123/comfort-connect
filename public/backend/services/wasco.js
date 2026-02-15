@@ -104,8 +104,8 @@ class WascoScraper {
         eventValidationLength: eventValidation.length,
       });
 
-      // Step 2: Submit login form using OutSystems ASP.NET postback
-      // Also include ALL other form inputs (hidden fields, checkboxes) from the page
+      // Step 2: Submit login form
+      // OutSystems uses __EVENTTARGET for postback - try both with and without AJAX headers
       const formData = new URLSearchParams();
       formData.append('__VIEWSTATE', viewState);
       formData.append('__VIEWSTATEGENERATOR', viewStateGenerator);
@@ -116,8 +116,7 @@ class WascoScraper {
       formData.append(codeName, code);
       formData.append(passName, password);
       
-      // Include ALL hidden inputs and other form fields from the entire page
-      // OutSystems requires all form fields to be submitted
+      // Include ALL hidden inputs from the form (OutSystems requires them)
       $('input[type="hidden"]').each((_, el) => {
         const name = $(el).attr('name');
         const value = $(el).val() || '';
@@ -132,15 +131,16 @@ class WascoScraper {
         formData.append(rememberName, 'on');
       }
 
+      // Log all form field names being submitted
+      const fieldNames = Array.from(formData.keys());
       logger.info('WASCO', 'Submitting login form', {
         debiteurnummer: debiteurNummer,
         codeLength: code ? code.length : 0,
         passwordLength: password ? password.length : 0,
-        formFieldCount: Array.from(formData.keys()).length,
-        viewStateLength: viewState.length,
+        fieldNames,
       });
 
-      // Step 2a: POST without following redirects so we capture all Set-Cookie headers
+      // POST with auto-redirect following (let axios handle it)
       const loginRes = await axios.post(`${this.baseUrl}/inloggen`, formData.toString(), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -148,48 +148,34 @@ class WascoScraper {
           'Referer': `${this.baseUrl}/inloggen`,
           'Origin': this.baseUrl,
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'nl-NL,nl;q=0.9,en;q=0.8',
         },
-        maxRedirects: 0,
+        maxRedirects: 10,
         validateStatus: (status) => status < 500,
       });
 
       this.extractCookies(loginRes);
       
+      // Check what the login response contains
+      const loginHtml = loginRes.data || '';
+      const login$ = cheerio.load(loginHtml);
+      const stillHasLoginForm = loginHtml.includes('placeholder="debiteurnummer"');
+      const hasWelcome = loginHtml.includes('Welkom') || loginHtml.includes('welkom') || loginHtml.includes('Mijn account');
+      const hasLogout = loginHtml.includes('Uitloggen') || loginHtml.includes('uitloggen');
+      
+      // Log all set-cookie values (names only, not values for security)
+      const setCookieNames = (loginRes.headers['set-cookie'] || []).map(c => c.split('=')[0]);
+      
       logger.info('WASCO', 'Login POST response', { 
-        status: loginRes.status, 
-        hasSetCookie: !!loginRes.headers['set-cookie'],
-        setCookieCount: loginRes.headers['set-cookie'] ? loginRes.headers['set-cookie'].length : 0,
-        location: loginRes.headers['location'] || 'none',
-        responseLength: loginRes.data ? loginRes.data.length : 0,
+        status: loginRes.status,
+        setCookieNames,
+        responseLength: loginHtml.length,
+        stillHasLoginForm,
+        hasWelcome,
+        hasLogout,
+        allCookieNames: this.cookies.split('; ').map(c => c.split('=')[0]),
       });
-
-      // Step 2b: If we got a redirect (302/301), follow it manually to capture cookies at each hop
-      if (loginRes.status >= 300 && loginRes.status < 400 && loginRes.headers['location']) {
-        let redirectUrl = loginRes.headers['location'];
-        if (!redirectUrl.startsWith('http')) {
-          redirectUrl = `${this.baseUrl}${redirectUrl.startsWith('/') ? '' : '/'}${redirectUrl}`;
-        }
-        
-        logger.info('WASCO', 'Following login redirect', { redirectUrl });
-        
-        const redirectRes = await axios.get(redirectUrl, {
-          headers: {
-            'Cookie': this.cookies,
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': `${this.baseUrl}/inloggen`,
-          },
-          maxRedirects: 5,
-          validateStatus: (status) => status < 500,
-        });
-        this.extractCookies(redirectRes);
-        
-        logger.info('WASCO', 'Redirect response', {
-          status: redirectRes.status,
-          hasSetCookie: !!redirectRes.headers['set-cookie'],
-          responseLength: redirectRes.data ? redirectRes.data.length : 0,
-        });
-      }
-
       // Verify login by checking a product page for netto pricing
       const verifyRes = await this.getClient().get('/artikel/7817827');
       this.extractCookies(verifyRes);
