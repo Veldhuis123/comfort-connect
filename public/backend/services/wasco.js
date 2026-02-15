@@ -85,84 +85,81 @@ class WascoScraper {
       // Navigate to login page
       await page.goto(`${this.baseUrl}/inloggen`, { waitUntil: 'networkidle2', timeout: 30000 });
 
-      // Remove any cookie consent overlays via JavaScript (avoid click issues)
+      // Remove any cookie consent overlays
       await page.evaluate(() => {
-        // Remove Cookiebot
-        const cookiebot = document.getElementById('CybotCookiebotDialog');
-        if (cookiebot) cookiebot.remove();
-        const cookiebotWidget = document.getElementById('CookiebotWidget');
-        if (cookiebotWidget) cookiebotWidget.remove();
-        // Remove any overlay/backdrop
-        document.querySelectorAll('[class*="cookie"], [id*="cookie"], [class*="consent"]').forEach(el => el.remove());
+        document.querySelectorAll('[id*="ookiebot"], [id*="cookie"], [class*="cookie"], [class*="consent"]').forEach(el => el.remove());
       });
-      
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Wait for the main login form fields
+      // Wait for the login form
       await page.waitForSelector('input[placeholder="debiteurnummer"]', { timeout: 10000 });
-      
       logger.info('WASCO', 'Login page loaded, filling form...');
 
-      // Use JavaScript to set field values directly (more reliable than type())
-      await page.evaluate((deb, code, pass) => {
-        const debField = document.querySelector('input[placeholder="debiteurnummer"]');
-        const codeField = document.querySelector('input[placeholder="code"]');
-        const passField = document.querySelector('input[placeholder="wachtwoord"]');
-        
-        // Set values using native setter to trigger OutSystems change detection
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-        
-        nativeInputValueSetter.call(debField, deb);
-        debField.dispatchEvent(new Event('input', { bubbles: true }));
-        debField.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        nativeInputValueSetter.call(codeField, code);
-        codeField.dispatchEvent(new Event('input', { bubbles: true }));
-        codeField.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        nativeInputValueSetter.call(passField, pass);
-        passField.dispatchEvent(new Event('input', { bubbles: true }));
-        passField.dispatchEvent(new Event('change', { bubbles: true }));
-      }, debiteurNummer, code, password);
+      // Use real keyboard input - OutSystems listens to keydown/keyup events
+      // Clear and type into each field using Puppeteer's built-in type()
+      const debField = await page.$('input[placeholder="debiteurnummer"]');
+      await debField.click({ clickCount: 3 }); // select all
+      await debField.press('Backspace');
+      await debField.type(debiteurNummer, { delay: 50 });
+
+      const codeField = await page.$('input[placeholder="code"]');
+      await codeField.click({ clickCount: 3 });
+      await codeField.press('Backspace');
+      await codeField.type(code, { delay: 50 });
+
+      const passField = await page.$('input[placeholder="wachtwoord"]');
+      await passField.click({ clickCount: 3 });
+      await passField.press('Backspace');
+      await passField.type(password, { delay: 50 });
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Save screenshot before login click
-      try {
-        await page.screenshot({ path: '/tmp/wasco-before-login.png', fullPage: false });
-      } catch (e) { /* ignore */ }
+      // Screenshot before submit
+      try { await page.screenshot({ path: '/tmp/wasco-before-login.png' }); } catch (e) { /* ignore */ }
 
-      // Click the login button via JavaScript (avoids "not clickable" errors)
-      await page.evaluate(() => {
-        const btn = document.getElementById('wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72');
-        if (btn) btn.click();
+      // Try multiple ways to submit the form
+      // 1. Find the login button by text content or type=submit
+      const submitted = await page.evaluate(() => {
+        // Try by known ID first
+        let btn = document.getElementById('wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72');
+        // Fallback: find button/input with "Inloggen" text
+        if (!btn) {
+          const allBtns = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a.btn, .btn')];
+          btn = allBtns.find(b => (b.textContent || b.value || '').toLowerCase().includes('inlog'));
+        }
+        // Fallback: any submit button in the form
+        if (!btn) {
+          btn = document.querySelector('form input[type="submit"], form button[type="submit"]');
+        }
+        if (btn) {
+          btn.click();
+          return btn.id || btn.textContent || 'found';
+        }
+        return null;
       });
+      logger.info('WASCO', 'Login button clicked', { submitted });
 
-      // Wait for navigation or in-place update
+      // If button click didn't work, try pressing Enter on password field
+      if (!submitted) {
+        logger.info('WASCO', 'No button found, pressing Enter on password field');
+        await passField.press('Enter');
+      }
+
+      // Wait for navigation
       await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {
         logger.info('WASCO', 'No navigation after login submit');
       });
 
-      // Wait for AJAX updates
+      // Wait for any AJAX
       await new Promise(resolve => setTimeout(resolve, 3000));
 
-      // Save screenshot after login attempt
-      try {
-        await page.screenshot({ path: '/tmp/wasco-after-login.png', fullPage: false });
-      } catch (e) { /* ignore */ }
+      // Screenshot after submit
+      try { await page.screenshot({ path: '/tmp/wasco-after-login.png' }); } catch (e) { /* ignore */ }
 
-      // Check for error messages
-      const errorMsg = await page.evaluate(() => {
-        const errorEl = document.querySelector('.Feedback_Message_Error, .feedback-error, .Form_Error, [class*="Error"], .Feedback_Message');
-        return errorEl ? errorEl.textContent.trim() : null;
-      });
-      if (errorMsg) {
-        logger.error('WASCO', 'Login form error detected', { errorMsg });
-      }
-
+      // Log page state
       const currentUrl = page.url();
       const pageTitle = await page.title();
-      logger.info('WASCO', 'Page after login attempt', { currentUrl, pageTitle, hasError: !!errorMsg, errorMsg });
+      logger.info('WASCO', 'Page after login attempt', { currentUrl, pageTitle });
 
       // Extract all cookies from the browser
       const browserCookies = await page.cookies();
