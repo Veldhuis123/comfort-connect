@@ -107,7 +107,14 @@ class WascoScraper {
 
       this.extractCookies(loginRes);
 
-      logger.info('WASCO', 'Login POST response', { status: loginRes.status, headers: Object.keys(loginRes.headers) });
+      logger.info('WASCO', 'Login POST response', { 
+        status: loginRes.status, 
+        headers: Object.keys(loginRes.headers),
+        hasSetCookie: !!loginRes.headers['set-cookie'],
+        responseLength: loginRes.data ? loginRes.data.length : 0,
+        // Check if the response HTML contains error messages
+        containsError: loginRes.data ? loginRes.data.includes('Ongeldige inloggegevens') || loginRes.data.includes('foutmelding') : false,
+      });
 
       // Verify login by checking a product page for netto pricing
       const verifyRes = await this.getClient().get('/artikel/7817827');
@@ -135,14 +142,14 @@ class WascoScraper {
         return true;
       }
 
-      // Still proceed but warn
-      this.isLoggedIn = true;
-      logger.warn('WASCO', 'Login submitted but netto prices not visible - check credentials', {
+      // Login failed - do NOT set isLoggedIn to true so we retry next time
+      this.isLoggedIn = false;
+      logger.error('WASCO', 'Login FAILED - netto prices not visible. Check WASCO_DEBITEURNUMMER, WASCO_CODE, WASCO_PASSWORD in .env', {
         hasLoginPrompt,
         hasNettoPrice,
         priceLabelText,
       });
-      return true;
+      return false;
 
     } catch (error) {
       logger.error('WASCO', 'Login failed', { error: error.message });
