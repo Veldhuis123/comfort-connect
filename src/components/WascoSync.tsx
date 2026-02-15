@@ -38,10 +38,13 @@ interface WascoMapping {
   base_price: number;
 }
 
-interface WascoSearchResult {
+interface WascoPreview {
   articleNumber: string;
   name: string;
-  url: string;
+  brand: string | null;
+  brutoPrice: number | null;
+  nettoPrice: number | null;
+  imageUrl: string | null;
 }
 
 interface SyncResult {
@@ -74,9 +77,8 @@ const WascoSync = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [articleNumber, setArticleNumber] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<WascoSearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [preview, setPreview] = useState<WascoPreview | null>(null);
+  const [previewing, setPreviewing] = useState(false);
   
   // Sync results
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
@@ -188,16 +190,17 @@ const WascoSync = () => {
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    setSearching(true);
+  const handlePreview = async () => {
+    if (!articleNumber.trim()) return;
+    setPreviewing(true);
+    setPreview(null);
     try {
-      const results = await apiRequest<WascoSearchResult[]>(`/wasco/search?q=${encodeURIComponent(searchQuery)}`);
-      setSearchResults(results);
+      const result = await apiRequest<WascoPreview>(`/wasco/scrape/${encodeURIComponent(articleNumber.trim())}`);
+      setPreview(result);
     } catch (err: any) {
-      toast.error(`Zoeken mislukt: ${err.message}`);
+      toast.error(`Artikel ophalen mislukt: ${err.message}`);
     } finally {
-      setSearching(false);
+      setPreviewing(false);
     }
   };
 
@@ -407,45 +410,32 @@ const WascoSync = () => {
                   placeholder="bijv. 7817827"
                   value={articleNumber}
                   onChange={(e) => setArticleNumber(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePreview()}
                 />
+                <Button variant="outline" onClick={handlePreview} disabled={previewing || !articleNumber.trim()}>
+                  {previewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Vind het artikelnummer op wasco.nl/artikel/NUMMER
+                Vind het artikelnummer op{" "}
+                <a href="https://www.wasco.nl" target="_blank" rel="noopener noreferrer" className="underline">
+                  wasco.nl
+                </a>
+                {" "}→ zoek het product → kopieer het nummer uit de URL (wasco.nl/artikel/<strong>NUMMER</strong>)
               </p>
             </div>
 
-            {/* Wasco Search */}
-            <div className="border-t pt-4">
-              <label className="text-sm font-medium mb-1 block">Zoek op Wasco.nl</label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Zoek bijv. 'Haier Serene 2.5kW'"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
-                <Button variant="outline" onClick={handleSearch} disabled={searching}>
-                  {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                </Button>
-              </div>
-              {searchResults.length > 0 && (
-                <div className="mt-2 max-h-40 overflow-y-auto border rounded-lg">
-                  {searchResults.map((result) => (
-                    <button
-                      key={result.articleNumber}
-                      className="w-full text-left px-3 py-2 hover:bg-muted/50 text-sm border-b last:border-b-0"
-                      onClick={() => {
-                        setArticleNumber(result.articleNumber);
-                        setSearchResults([]);
-                      }}
-                    >
-                      <span className="font-medium">#{result.articleNumber}</span>
-                      <span className="ml-2 text-muted-foreground">{result.name}</span>
-                    </button>
-                  ))}
+            {/* Article Preview */}
+            {preview && (
+              <div className="border rounded-lg p-3 bg-muted/30">
+                <p className="font-medium text-sm">{preview.name}</p>
+                {preview.brand && <p className="text-xs text-muted-foreground">Merk: {preview.brand}</p>}
+                <div className="flex gap-4 mt-1 text-sm">
+                  {preview.brutoPrice && <span>Bruto: <strong>€{preview.brutoPrice.toFixed(2)}</strong></span>}
+                  {preview.nettoPrice && <span>Netto: <strong className="text-green-600">€{preview.nettoPrice.toFixed(2)}</strong></span>}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <Button onClick={handleAddMapping} className="w-full">
               Koppeling Opslaan
