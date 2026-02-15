@@ -76,16 +76,18 @@ class WascoScraper {
       const debName = debInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_deb3';
       const codeName = codeInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_code2';
       const passName = passInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_pass3';
-      const loginBtnId = loginBtn.attr('id') || 'wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72';
+      // ASP.NET __EVENTTARGET needs UniqueID format ($ separators), not HTML id (_ separators)
+      const loginBtnHtmlId = loginBtn.attr('id') || 'wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72';
+      const loginBtnUniqueId = loginBtnHtmlId.replace(/_/g, '$');
 
-      logger.info('WASCO', 'Found form fields', { debName, codeName, passName, loginBtnId });
+      logger.info('WASCO', 'Found form fields', { debName, codeName, passName, loginBtnHtmlId, loginBtnUniqueId });
 
-      // Step 2: Submit login form using OutSystems AJAX pattern
+      // Step 2: Submit login form using OutSystems ASP.NET postback
       const formData = new URLSearchParams();
       formData.append('__VIEWSTATE', viewState);
       formData.append('__VIEWSTATEGENERATOR', viewStateGenerator);
       formData.append('__EVENTVALIDATION', eventValidation);
-      formData.append('__EVENTTARGET', loginBtnId);
+      formData.append('__EVENTTARGET', loginBtnUniqueId);
       formData.append('__EVENTARGUMENT', '');
       formData.append(debName, debiteurNummer);
       formData.append(codeName, code);
@@ -102,15 +104,28 @@ class WascoScraper {
 
       this.extractCookies(loginRes);
 
+      logger.info('WASCO', 'Login POST response', { status: loginRes.status, headers: Object.keys(loginRes.headers) });
+
       // Verify login by checking a product page for netto pricing
       const verifyRes = await this.getClient().get('/artikel/7817827');
       this.extractCookies(verifyRes);
       const verify$ = cheerio.load(verifyRes.data);
       
-      // If logged in, we should see "nettoprijs" instead of "brutoprijs" and no "Log in voor jouw prijs"
-      const hasLoginPrompt = verify$('a:contains("Log in voor jouw prijs")').length > 0;
-      const hasNettoPrice = verify$('small:contains("netto")').length > 0;
+      // Extract what the page actually shows
+      const priceLabelText = verify$('small.jouw-price, small.size.jouw-price').text().trim();
+      const priceText = verify$('span.price').first().text().trim();
+      const hasLoginPrompt = verify$('span:contains("Log in voor jouw prijs")').length > 0 ||
+                             verify$('a:contains("Log in voor jouw prijs")').length > 0;
+      const hasNettoPrice = priceLabelText.toLowerCase().includes('netto');
       
+      logger.info('WASCO', 'Login verification', {
+        priceLabelText,
+        priceText,
+        hasLoginPrompt,
+        hasNettoPrice,
+        cookies: this.cookies.substring(0, 100) + '...',
+      });
+
       if (hasNettoPrice || !hasLoginPrompt) {
         this.isLoggedIn = true;
         logger.info('WASCO', 'Successfully logged in to Wasco.nl (netto prices visible)');
@@ -122,6 +137,7 @@ class WascoScraper {
       logger.warn('WASCO', 'Login submitted but netto prices not visible - check credentials', {
         hasLoginPrompt,
         hasNettoPrice,
+        priceLabelText,
       });
       return true;
 
@@ -161,7 +177,9 @@ class WascoScraper {
       // Extract netto price (only visible when logged in)
       // When logged in, Wasco shows "Jouw nettoprijs" instead of "Jouw brutoprijs"
       let nettoPrice = null;
-      const priceLabel = $('small.jouw-price, small.size').text().toLowerCase();
+      const priceLabel = $('small.jouw-price, small.size.jouw-price').text().trim().toLowerCase();
+      
+      logger.info('WASCO', `Price label for ${articleNumber}: "${priceLabel}", price: "${priceSpan}"`);
       
       if (priceLabel.includes('netto')) {
         // The displayed price IS the netto price
