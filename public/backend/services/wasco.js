@@ -87,105 +87,99 @@ class WascoScraper {
 
       // Wait for the login form to be present in DOM
       await page.waitForSelector('input[placeholder="debiteurnummer"]', { timeout: 15000 });
-      logger.info('WASCO', 'Login page loaded, filling form via pure JS...');
+      logger.info('WASCO', 'Login page loaded, filling form via keyboard typing...');
 
-      // Step 1: Remove ALL overlays and fill form entirely via page.evaluate
-      // This is the ONLY reliable method - pure DOM manipulation with nativeSetter
-      const fillSuccess = await page.evaluate((deb, cod, pass) => {
-        // Remove overlays first
+      // Step 1: Remove cookie/overlay elements
+      await page.evaluate(() => {
         document.querySelectorAll('[id*="ookiebot"], [id*="cookie"], [id*="Cookie"], [class*="cookie"], [class*="consent"], [id*="vwo"], [class*="vwo"]').forEach(el => el.remove());
         document.querySelectorAll('iframe[style*="position: fixed"], iframe[style*="position:fixed"]').forEach(el => el.remove());
         document.querySelectorAll('div[style*="z-index"]').forEach(el => {
           const z = parseInt(window.getComputedStyle(el).zIndex);
           if (z > 1000) el.remove();
         });
+      });
 
-        // Get the native value setter to bypass OutSystems getters/setters
-        const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-
-        function fillField(selector, value) {
-          const field = document.querySelector(selector);
-          if (!field) return 0;
-          
-          // Use native setter
-          nativeSetter.call(field, value);
-          
-          // Fire comprehensive event chain for OutSystems reactive framework
-          field.dispatchEvent(new Event('focus', { bubbles: true }));
-          field.dispatchEvent(new Event('input', { bubbles: true }));
-          field.dispatchEvent(new InputEvent('input', { bubbles: true, data: value, inputType: 'insertText' }));
-          field.dispatchEvent(new Event('change', { bubbles: true }));
-          field.dispatchEvent(new Event('blur', { bubbles: true }));
-          
-          // Also try triggering keyup on each char (OutSystems sometimes listens to this)
-          for (const char of value) {
-            field.dispatchEvent(new KeyboardEvent('keydown', { key: char, bubbles: true }));
-            field.dispatchEvent(new KeyboardEvent('keypress', { key: char, bubbles: true }));
-            field.dispatchEvent(new KeyboardEvent('keyup', { key: char, bubbles: true }));
-          }
-          
-          return field.value.length;
-        }
-
-        const debLen = fillField('input[placeholder="debiteurnummer"]', deb);
-        const codeLen = fillField('input[placeholder="code"]', cod);
-        const passLen = fillField('input[placeholder="wachtwoord"]', pass);
-
-        return { success: true, debLen, codeLen, passLen };
-      }, debiteurNummer, code, password);
-      logger.info('WASCO', 'Field fill result', fillSuccess);
-
-      // If nativeSetter didn't work, try CDP Input.insertText as last resort
-      if (fillSuccess.debLen === 0) {
-        logger.warn('WASCO', 'NativeSetter failed, trying CDP insertText...');
-        const client = await page.target().createCDPSession();
-        
-        // Focus and insert via CDP for each field
-        for (const [selector, value] of [
-          ['input[placeholder="debiteurnummer"]', debiteurNummer],
-          ['input[placeholder="code"]', code],
-          ['input[placeholder="wachtwoord"]', password],
-        ]) {
-          await page.evaluate((sel) => {
-            const el = document.querySelector(sel);
-            if (el) { el.focus(); el.value = ''; }
-          }, selector);
-          await new Promise(resolve => setTimeout(resolve, 200));
-          await client.send('Input.insertText', { text: value });
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-        
-        // Re-check values
-        const cdpResult = await page.evaluate(() => {
-          const d = document.querySelector('input[placeholder="debiteurnummer"]');
-          const c = document.querySelector('input[placeholder="code"]');
-          const p = document.querySelector('input[placeholder="wachtwoord"]');
-          return { debLen: d?.value.length || 0, codeLen: c?.value.length || 0, passLen: p?.value.length || 0 };
-        });
-        logger.info('WASCO', 'CDP insertText result', cdpResult);
+      // Step 2: Fill fields using click + select all + type (real keyboard events)
+      async function fillField(page, selector, value) {
+        await page.click(selector);
+        await new Promise(r => setTimeout(r, 300));
+        // Select all existing text and delete it
+        await page.keyboard.down('Control');
+        await page.keyboard.press('a');
+        await page.keyboard.up('Control');
+        await page.keyboard.press('Backspace');
+        await new Promise(r => setTimeout(r, 200));
+        // Type character by character with delay
+        await page.type(selector, value, { delay: 50 });
+        await new Promise(r => setTimeout(r, 300));
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await fillField(page, 'input[placeholder="debiteurnummer"]', debiteurNummer);
+      await fillField(page, 'input[placeholder="code"]', code);
+      await fillField(page, 'input[placeholder="wachtwoord"]', password);
+
+      // Verify fields are filled
+      const fieldValues = await page.evaluate(() => {
+        const d = document.querySelector('input[placeholder="debiteurnummer"]');
+        const c = document.querySelector('input[placeholder="code"]');
+        const p = document.querySelector('input[placeholder="wachtwoord"]');
+        return { debLen: d?.value.length || 0, codeLen: c?.value.length || 0, passLen: p?.value.length || 0 };
+      });
+      logger.info('WASCO', 'Field values after typing', fieldValues);
+
+      await new Promise(r => setTimeout(r, 500));
 
       // Screenshot before submit
       try { await page.screenshot({ path: '/tmp/wasco-before-login.png' }); } catch (e) { /* ignore */ }
 
-      // Step 3: Submit via evaluate - click the login button directly
+      // Step 3: Find and click the FORM submit button (not the header nav link!)
+      // The form submit is inside the login form, look for button/input[type=submit] inside a form,
+      // or an anchor/button that is NOT in the header
       const submitResult = await page.evaluate(() => {
-        // Find the Inloggen button/link
-        const buttons = Array.from(document.querySelectorAll('a, button, input[type="submit"]'));
-        const loginBtn = buttons.find(b => b.textContent.trim() === 'Inloggen' || b.value === 'Inloggen');
-        if (loginBtn) {
-          loginBtn.click();
-          return { clicked: true, tag: loginBtn.tagName, id: loginBtn.id };
+        // First try: find a form and its submit button
+        const forms = document.querySelectorAll('form');
+        for (const form of forms) {
+          // Check if this form contains our login fields
+          if (form.querySelector('input[placeholder="debiteurnummer"]') || 
+              form.querySelector('input[placeholder="wachtwoord"]')) {
+            // Found the login form - look for submit button inside it
+            const submit = form.querySelector('input[type="submit"], button[type="submit"], button:not([type])');
+            if (submit) {
+              submit.click();
+              return { clicked: true, method: 'form-submit-button', tag: submit.tagName, text: submit.textContent?.trim() || submit.value };
+            }
+            // Try any link/button with "Inloggen" text inside this form
+            const btns = form.querySelectorAll('a, button');
+            for (const btn of btns) {
+              if (btn.textContent.trim() === 'Inloggen') {
+                btn.click();
+                return { clicked: true, method: 'form-inloggen-link', tag: btn.tagName, id: btn.id };
+              }
+            }
+            // Last resort: submit the form
+            form.submit();
+            return { clicked: true, method: 'form.submit()' };
+          }
         }
-        // Fallback: submit the form directly
-        const form = document.querySelector('form');
-        if (form) {
-          form.submit();
-          return { clicked: true, method: 'form.submit' };
+        
+        // Fallback: find Inloggen button/link that is NOT in the header
+        const allBtns = document.querySelectorAll('a, button, input[type="submit"]');
+        const candidates = [];
+        for (const btn of allBtns) {
+          const text = btn.textContent?.trim() || btn.value || '';
+          if (text === 'Inloggen' || text === 'Login') {
+            const isInHeader = btn.closest('header, [class*="header"], [id*="header"], [class*="Header"], [id*="Header"]');
+            candidates.push({ el: btn, inHeader: !!isInHeader, tag: btn.tagName, id: btn.id, text });
+          }
         }
-        return { clicked: false };
+        // Prefer non-header buttons
+        const best = candidates.find(c => !c.inHeader) || candidates[0];
+        if (best) {
+          best.el.click();
+          return { clicked: true, method: 'fallback', tag: best.tag, id: best.id, inHeader: best.inHeader, totalCandidates: candidates.length };
+        }
+        
+        return { clicked: false, candidates: candidates.length };
       });
       logger.info('WASCO', 'Login submit attempt', submitResult);
 
