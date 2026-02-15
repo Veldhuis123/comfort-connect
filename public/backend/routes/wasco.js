@@ -251,31 +251,44 @@ router.post('/import', authMiddleware, async (req, res) => {
 
     // Check if product already exists
     const [existing] = await db.query('SELECT id FROM products WHERE id = ?', [productId]);
+    
     if (existing.length > 0) {
-      return res.status(409).json({ error: 'Dit product is al geïmporteerd', productId });
+      // Product exists - update price and ensure mapping exists
+      await db.query(
+        `UPDATE products SET purchase_price = ?, base_price = ?, updated_at = NOW() WHERE id = ?`,
+        [purchasePrice, purchasePrice, productId]
+      );
+
+      // Upsert the wasco mapping
+      const [existingMapping] = await db.query(
+        'SELECT id FROM wasco_mappings WHERE product_id = ?', [productId]
+      );
+      if (existingMapping.length > 0) {
+        await db.query(
+          `UPDATE wasco_mappings SET wasco_article_number = ?, last_synced_at = NOW(), last_bruto_price = ?, last_netto_price = ? WHERE product_id = ?`,
+          [wasco_article_number, scraped.brutoPrice, scraped.nettoPrice, productId]
+        );
+      } else {
+        await db.query(
+          `INSERT INTO wasco_mappings (product_id, wasco_article_number, last_synced_at, last_bruto_price, last_netto_price) VALUES (?, ?, NOW(), ?, ?)`,
+          [productId, wasco_article_number, scraped.brutoPrice, scraped.nettoPrice]
+        );
+      }
+    } else {
+      // Create new product
+      await db.query(
+        `INSERT INTO products (id, name, brand, category, purchase_price, base_price, model_number, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
+        [productId, scraped.name.substring(0, 200), brand, category, purchasePrice, purchasePrice, scraped.leverancierscode || wasco_article_number]
+      );
+
+      // Create the wasco mapping
+      await db.query(
+        `INSERT INTO wasco_mappings (product_id, wasco_article_number, last_synced_at, last_bruto_price, last_netto_price)
+         VALUES (?, ?, NOW(), ?, ?)`,
+        [productId, wasco_article_number, scraped.brutoPrice, scraped.nettoPrice]
+      );
     }
-
-    // Create the product
-    await db.query(
-      `INSERT INTO products (id, name, brand, category, purchase_price, base_price, model_number, is_active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
-      [
-        productId,
-        scraped.name.substring(0, 200),
-        brand,
-        category,
-        purchasePrice,
-        purchasePrice, // base_price = purchase price initially
-        scraped.leverancierscode || wasco_article_number,
-      ]
-    );
-
-    // Create the wasco mapping
-    await db.query(
-      `INSERT INTO wasco_mappings (product_id, wasco_article_number, last_synced_at, last_bruto_price, last_netto_price)
-       VALUES (?, ?, NOW(), ?, ?)`,
-      [productId, wasco_article_number, scraped.brutoPrice, scraped.nettoPrice]
-    );
 
     // Log the price
     await db.query(
