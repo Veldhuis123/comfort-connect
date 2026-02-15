@@ -387,25 +387,50 @@ class WascoScraper {
         }
       }
 
-      // Extract specs from the kenmerken table
+      // Extract specs from ALL kenmerken/spec tables
       const specs = {};
-      $('table.specs').each((_, table) => {
+      $('table.specs, table.kenmerken, .product-specs table, .specifications table').each((_, table) => {
         $(table).find('tr').each((_, row) => {
-          const key = $(row).find('td.th').text().trim();
-          const value = $(row).find('td:not(.th)').text().trim();
+          const key = $(row).find('td.th, th').text().trim();
+          const value = $(row).find('td:not(.th)').last().text().trim();
+          if (key && value && key !== value) {
+            specs[key] = value;
+          }
+        });
+      });
+      
+      // Also try dl/dt/dd pattern for specs
+      $('dl').each((_, dl) => {
+        $(dl).find('dt').each((i, dt) => {
+          const key = $(dt).text().trim();
+          const dd = $(dl).find('dd').eq(i);
+          const value = dd ? dd.text().trim() : '';
           if (key && value) {
             specs[key] = value;
           }
         });
       });
 
+      // Extract product description
+      const descriptionParts = [];
+      $('.product-description, .product-info-description, [class*="description"]').each((_, el) => {
+        const text = $(el).text().trim();
+        if (text && text.length > 10) descriptionParts.push(text);
+      });
+      // Also get bullet point features
+      const featuresList = [];
+      $('.product-features li, .product-usp li, .product-info li, ul.kenmerken li').each((_, el) => {
+        const text = $(el).text().trim();
+        if (text) featuresList.push(text);
+      });
+
       // Extract image
       const imageUrl = $('img[src*="imagescdn.wasco.nl"]').first().attr('src') || null;
 
       // Extract EAN code
-      const ean = specs['EAN-Code'] || null;
-      const leverancierscode = specs['Leverancierscode'] || null;
-      const brand = specs['Merk'] || null;
+      const ean = specs['EAN-Code'] || specs['EAN'] || null;
+      const leverancierscode = specs['Leverancierscode'] || specs['Artikelnummer leverancier'] || null;
+      const brand = specs['Merk'] || specs['Brand'] || null;
 
       const result = {
         articleNumber,
@@ -417,6 +442,8 @@ class WascoScraper {
         ean,
         imageUrl,
         specs,
+        description: descriptionParts.join('\n').substring(0, 1000),
+        featuresList,
         scrapedAt: new Date().toISOString(),
       };
 

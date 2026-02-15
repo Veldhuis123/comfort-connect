@@ -246,7 +246,35 @@ router.post('/import', authMiddleware, async (req, res) => {
     // Determine price
     const purchasePrice = scraped.nettoPrice || scraped.brutoPrice || 0;
     const brand = scraped.brand || 'Onbekend';
+    const truncatedName = (scraped.name || '').substring(0, 100);
+    const imageUrl = scraped.imageUrl || null;
+    const specs = scraped.specs || {};
+    const description = scraped.description || scraped.name || '';
     
+    // Build features array from scraped features + specs
+    const features = [...(scraped.featuresList || [])];
+    const specFeatures = {
+      'Koelmiddel': 'Koelmiddel',
+      'Koelcapaciteit (kW)': 'Koelvermogen',
+      'Verwarmingscapaciteit (kW)': 'Verwarmingsvermogen',
+      'Energielabel koelen': 'Energielabel koelen',
+      'Energielabel verwarmen': 'Energielabel verwarmen',
+      'Geluidsniveau binnen (dB(A))': 'Geluid binnen',
+      'Geluidsniveau buiten (dB(A))': 'Geluid buiten',
+      'Wifi': 'Wifi',
+      'Afmetingen binnenunit (hxbxd)': 'Binnenunit',
+      'Afmetingen buitenunit (hxbxd)': 'Buitenunit',
+      'Geschikt voor ruimtes van (m²)': 'Geschikt voor',
+      'Geschikt voor ruimtes tot (m²)': 'Tot m²',
+      'SCOP verwarmen': 'SCOP',
+      'SEER koelen': 'SEER',
+    };
+    for (const [specKey, label] of Object.entries(specFeatures)) {
+      if (specs[specKey] && !features.some(f => f.includes(label))) {
+        features.push(`${label}: ${specs[specKey]}`);
+      }
+    }
+
     // Generate a unique product ID
     const productId = `wasco-${wasco_article_number}`;
 
@@ -254,10 +282,16 @@ router.post('/import', authMiddleware, async (req, res) => {
     const [existing] = await db.query('SELECT id FROM products WHERE id = ?', [productId]);
     
     if (existing.length > 0) {
-      // Product exists - update price and ensure mapping exists
+      // Product exists - update all info
       await db.query(
-        `UPDATE products SET base_price = ?, updated_at = NOW() WHERE id = ?`,
-        [purchasePrice, productId]
+        `UPDATE products SET 
+          name = ?, brand = ?, base_price = ?, image_url = ?,
+          specs = ?, features = ?, description = ?,
+          updated_at = NOW() 
+        WHERE id = ?`,
+        [truncatedName, brand, purchasePrice, imageUrl,
+         JSON.stringify(specs), JSON.stringify(features), description,
+         productId]
       );
 
       // Upsert the wasco mapping
@@ -276,11 +310,11 @@ router.post('/import', authMiddleware, async (req, res) => {
         );
       }
     } else {
-      const truncatedName = scraped.name.substring(0, 100);
       await db.query(
-        `INSERT INTO products (id, name, brand, category, base_price, is_active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW())`,
-        [productId, truncatedName, brand, category, purchasePrice]
+        `INSERT INTO products (id, name, brand, category, base_price, image_url, specs, features, description, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
+        [productId, truncatedName, brand, category, purchasePrice, imageUrl,
+         JSON.stringify(specs), JSON.stringify(features), description]
       );
 
       // Create the wasco mapping
