@@ -55,63 +55,74 @@ class WascoScraper {
     try {
       logger.info('WASCO', 'Logging in to Wasco.nl...');
 
-      // Step 1: Get login page for CSRF tokens/viewstate
+      // Step 1: Get login page for hidden form fields
       const client = this.getClient();
       const loginPageRes = await client.get('/inloggen');
       this.extractCookies(loginPageRes);
 
       const $ = cheerio.load(loginPageRes.data);
       
-      // Extract ASP.NET form fields
+      // Extract ASP.NET hidden fields
       const viewState = $('input[name="__VIEWSTATE"]').val() || '';
       const viewStateGenerator = $('input[name="__VIEWSTATEGENERATOR"]').val() || '';
       const eventValidation = $('input[name="__EVENTVALIDATION"]').val() || '';
+      
+      // Find the actual form field names dynamically
+      const debInput = $('input[placeholder="debiteurnummer"]');
+      const codeInput = $('input[placeholder="code"]');
+      const passInput = $('input[placeholder="wachtwoord"]');
+      const loginBtn = $('a.btn.sec.Is_Default');
+      
+      const debName = debInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_deb3';
+      const codeName = codeInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_code2';
+      const passName = passInput.attr('name') || 'wt1$Wasco2014Layout_wt1$block$wtMainContent$wtMainContent$wtfc_pass3';
+      const loginBtnId = loginBtn.attr('id') || 'wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72';
 
-      // Step 2: Submit login form with debiteurnummer, code, and wachtwoord
+      logger.info('WASCO', 'Found form fields', { debName, codeName, passName, loginBtnId });
+
+      // Step 2: Submit login form using OutSystems AJAX pattern
       const formData = new URLSearchParams();
       formData.append('__VIEWSTATE', viewState);
       formData.append('__VIEWSTATEGENERATOR', viewStateGenerator);
       formData.append('__EVENTVALIDATION', eventValidation);
-      // Map to actual Wasco form fields - find the correct field names
-      formData.append('ctl00$ContentPlaceHolder1$txtDebiteurnummer', debiteurNummer);
-      formData.append('ctl00$ContentPlaceHolder1$txtCode', code);
-      formData.append('ctl00$ContentPlaceHolder1$txtWachtwoord', password);
-      formData.append('ctl00$ContentPlaceHolder1$btnInloggen', 'Inloggen');
+      formData.append('__EVENTTARGET', loginBtnId);
+      formData.append('__EVENTARGUMENT', '');
+      formData.append(debName, debiteurNummer);
+      formData.append(codeName, code);
+      formData.append(passName, password);
 
       const loginRes = await this.getClient().post('/inloggen', formData.toString(), {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Cookie': this.cookies,
         },
-        maxRedirects: 0,
-        validateStatus: (status) => status < 400 || status === 302,
+        maxRedirects: 5,
+        validateStatus: (status) => status < 500,
       });
 
       this.extractCookies(loginRes);
 
-      // Follow redirect if needed
-      if (loginRes.status === 302 && loginRes.headers.location) {
-        const redirectRes = await this.getClient().get(loginRes.headers.location);
-        this.extractCookies(redirectRes);
-      }
-
-      // Verify login by checking a known page
-      const verifyRes = await this.getClient().get('/');
+      // Verify login by checking a product page for netto pricing
+      const verifyRes = await this.getClient().get('/artikel/7817827');
       this.extractCookies(verifyRes);
       const verify$ = cheerio.load(verifyRes.data);
       
-      // Check if we see "Uitloggen" or "Mijn Wasco" indicating we're logged in
-      const loggedInIndicator = verify$('a:contains("Uitloggen"), a:contains("Mijn account"), a:contains("Mijn Wasco")').length > 0;
+      // If logged in, we should see "nettoprijs" instead of "brutoprijs" and no "Log in voor jouw prijs"
+      const hasLoginPrompt = verify$('a:contains("Log in voor jouw prijs")').length > 0;
+      const hasNettoPrice = verify$('small:contains("netto")').length > 0;
       
-      if (loggedInIndicator) {
+      if (hasNettoPrice || !hasLoginPrompt) {
         this.isLoggedIn = true;
-        logger.info('WASCO', 'Successfully logged in to Wasco.nl');
+        logger.info('WASCO', 'Successfully logged in to Wasco.nl (netto prices visible)');
         return true;
       }
 
-      // Even if we can't verify, proceed - the netto price check will confirm
+      // Still proceed but warn
       this.isLoggedIn = true;
-      logger.warn('WASCO', 'Login submitted but could not verify - proceeding anyway');
+      logger.warn('WASCO', 'Login submitted but netto prices not visible - check credentials', {
+        hasLoginPrompt,
+        hasNettoPrice,
+      });
       return true;
 
     } catch (error) {
@@ -132,48 +143,55 @@ class WascoScraper {
 
       const $ = cheerio.load(response.data);
 
-      // Extract product info
-      const name = $('h1').first().text().trim() || 
+      // Extract product info from breadcrumb or h1
+      const name = $('ol li:last-child a').text().trim() || 
+                   $('h1').first().text().trim() || 
                    $('title').text().split(' - ')[0].trim();
       
-      // Extract bruto price
-      const brutoText = $('*:contains("brutoprijs")').closest('div, span, td').text() ||
-                        $('*:contains("Bruto prijs")').closest('div, span, td').text() || '';
-      const brutoMatch = brutoText.match(/€\s*([\d.,]+)/);
-      const brutoPrice = brutoMatch ? parseFloat(brutoMatch[1].replace('.', '').replace(',', '.')) : null;
-
-      // Extract netto price (only visible when logged in)
-      let nettoPrice = null;
-      const nettoText = $('*:contains("nettoprijs"), *:contains("Netto prijs"), *:contains("Jouw prijs")').text() || '';
-      const nettoMatch = nettoText.match(/€\s*([\d.,]+)/);
-      if (nettoMatch) {
-        nettoPrice = parseFloat(nettoMatch[1].replace('.', '').replace(',', '.'));
+      // Extract bruto price from the price span (e.g., "€3.475,00")
+      let brutoPrice = null;
+      const priceSpan = $('span.price').first().text().trim();
+      if (priceSpan) {
+        const priceMatch = priceSpan.match(/€\s*([\d.,]+)/);
+        if (priceMatch) {
+          brutoPrice = parseFloat(priceMatch[1].replace('.', '').replace(',', '.'));
+        }
       }
 
-      // Try alternative price selectors
-      if (!nettoPrice) {
-        // Look for price elements with specific classes
-        const priceElements = $('.price-net, .netto-price, .your-price, [class*="netto"], [class*="net-price"]');
-        priceElements.each((_, el) => {
-          const text = $(el).text();
-          const match = text.match(/€\s*([\d.,]+)/);
-          if (match && !nettoPrice) {
-            nettoPrice = parseFloat(match[1].replace('.', '').replace(',', '.'));
-          }
-        });
+      // Extract netto price (only visible when logged in)
+      // When logged in, Wasco shows "Jouw nettoprijs" instead of "Jouw brutoprijs"
+      let nettoPrice = null;
+      const priceLabel = $('small.jouw-price, small.size').text().toLowerCase();
+      
+      if (priceLabel.includes('netto')) {
+        // The displayed price IS the netto price
+        nettoPrice = brutoPrice;
+        brutoPrice = null; // We don't have bruto in this case
+      }
+      
+      // Check for a second price element (some pages show both)
+      const allPrices = [];
+      $('span.price').each((_, el) => {
+        const text = $(el).text().trim();
+        const match = text.match(/€\s*([\d.,]+)/);
+        if (match) {
+          allPrices.push(parseFloat(match[1].replace('.', '').replace(',', '.')));
+        }
+      });
+      
+      if (allPrices.length >= 2) {
+        brutoPrice = Math.max(...allPrices);
+        nettoPrice = Math.min(...allPrices);
       }
 
       // Extract specs from the kenmerken table
       const specs = {};
-      $('table').each((_, table) => {
+      $('table.specs').each((_, table) => {
         $(table).find('tr').each((_, row) => {
-          const cells = $(row).find('td');
-          if (cells.length >= 2) {
-            const key = $(cells[0]).text().trim();
-            const value = $(cells[1]).text().trim();
-            if (key && value) {
-              specs[key] = value;
-            }
+          const key = $(row).find('td.th').text().trim();
+          const value = $(row).find('td:not(.th)').text().trim();
+          if (key && value) {
+            specs[key] = value;
           }
         });
       });
