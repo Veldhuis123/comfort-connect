@@ -25,8 +25,8 @@ router.get('/mappings', authMiddleware, async (req, res) => {
         p.name as product_name,
         p.brand as product_brand,
         p.category,
-        p.purchase_price,
-        p.base_price
+        p.base_price,
+        p.image_url
       FROM wasco_mappings wm
       LEFT JOIN products p ON p.id COLLATE utf8mb4_unicode_ci = wm.product_id COLLATE utf8mb4_unicode_ci
       ORDER BY p.category, p.name
