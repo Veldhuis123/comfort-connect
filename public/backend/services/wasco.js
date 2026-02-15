@@ -99,19 +99,50 @@ class WascoScraper {
         });
       });
 
-      // Step 2: Fill fields by setting value directly + dispatching events (OutSystems compatible)
+      // Debug: dump all input elements on the page
+      const inputDebug = await page.evaluate(() => {
+        const inputs = Array.from(document.querySelectorAll('input'));
+        return inputs.map(el => ({
+          type: el.type,
+          placeholder: el.placeholder,
+          id: el.id,
+          name: el.name,
+          className: el.className.substring(0, 80),
+          tagName: el.tagName,
+          visible: el.offsetParent !== null,
+          rect: el.getBoundingClientRect().toJSON()
+        }));
+      });
+      logger.info('WASCO', 'All input elements on login page', { count: inputDebug.length, inputs: JSON.stringify(inputDebug) });
+
+      // Step 2: Fill fields using multiple strategies
       async function fillField(page, selector, value) {
-        await page.evaluate((sel, val) => {
+        const result = await page.evaluate((sel, val) => {
           const el = document.querySelector(sel);
-          if (!el) throw new Error(`Element not found: ${sel}`);
-          // Use native setter to bypass React/OutSystems value trapping
-          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-          nativeInputValueSetter.call(el, val);
-          // Dispatch all relevant events so the framework picks up the change
+          if (!el) return { found: false, selector: sel };
+          
+          // Strategy 1: Direct value assignment
+          el.value = val;
+          
+          // Strategy 2: Native setter
+          try {
+            const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            setter.call(el, val);
+          } catch (e) {}
+          
+          // Strategy 3: setAttribute
+          el.setAttribute('value', val);
+          
+          // Dispatch comprehensive events
+          el.dispatchEvent(new Event('focus', { bubbles: true }));
           el.dispatchEvent(new Event('input', { bubbles: true }));
           el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'a' }));
           el.dispatchEvent(new Event('blur', { bubbles: true }));
+          
+          return { found: true, valueAfter: el.value, selector: sel };
         }, selector, value);
+        logger.info('WASCO', 'fillField result', result);
         await new Promise(r => setTimeout(r, 500));
       }
 
@@ -124,9 +155,13 @@ class WascoScraper {
         const d = document.querySelector('input[placeholder="debiteurnummer"]');
         const c = document.querySelector('input[placeholder="code"]');
         const p = document.querySelector('input[placeholder="wachtwoord"]');
-        return { debLen: d?.value.length || 0, codeLen: c?.value.length || 0, passLen: p?.value.length || 0 };
+        return { 
+          debLen: d?.value.length || 0, debVal: d?.value?.substring(0, 3) || '',
+          codeLen: c?.value.length || 0,
+          passLen: p?.value.length || 0
+        };
       });
-      logger.info('WASCO', 'Field values after typing', fieldValues);
+      logger.info('WASCO', 'Field values after filling', fieldValues);
 
       await new Promise(r => setTimeout(r, 500));
 
