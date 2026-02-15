@@ -5,7 +5,7 @@
 -- Mapping between local products and Wasco article numbers
 CREATE TABLE IF NOT EXISTS wasco_mappings (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  product_id VARCHAR(100) NOT NULL UNIQUE,
+  product_id INT NOT NULL UNIQUE,
   wasco_article_number VARCHAR(50) NOT NULL,
   last_synced_at DATETIME DEFAULT NULL,
   last_bruto_price DECIMAL(10,2) DEFAULT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS wasco_mappings (
 -- Price history log
 CREATE TABLE IF NOT EXISTS wasco_price_log (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  product_id VARCHAR(100) NOT NULL,
+  product_id INT NOT NULL,
   wasco_article_number VARCHAR(50) NOT NULL,
   bruto_price DECIMAL(10,2) DEFAULT NULL,
   netto_price DECIMAL(10,2) DEFAULT NULL,
