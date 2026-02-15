@@ -221,7 +221,7 @@ class WascoScraper {
   async searchProducts(query) {
     try {
       const client = this.getClient();
-      const response = await client.get(`/zoekresultaten?q=${encodeURIComponent(query)}`);
+      const response = await client.get(`/zoeken?SearchText=${encodeURIComponent(query)}`);
       this.extractCookies(response);
 
       const $ = cheerio.load(response.data);
