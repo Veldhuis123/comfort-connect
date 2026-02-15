@@ -19,6 +19,7 @@ const eboekhoudenRoutes = require('./routes/eboekhouden');
 const productsRoutes = require('./routes/products');
 const installationsRoutes = require('./routes/installations');
 const pricingRoutes = require('./routes/pricing');
+const wascoRoutes = require('./routes/wasco');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -68,6 +69,7 @@ app.use('/api/eboekhouden', eboekhoudenRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/installations', installationsRoutes);
 app.use('/api/pricing', pricingRoutes);
+app.use('/api/wasco', wascoRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
