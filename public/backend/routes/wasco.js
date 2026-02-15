@@ -256,8 +256,8 @@ router.post('/import', authMiddleware, async (req, res) => {
     if (existing.length > 0) {
       // Product exists - update price and ensure mapping exists
       await db.query(
-        `UPDATE products SET purchase_price = ?, base_price = ?, updated_at = NOW() WHERE id = ?`,
-        [purchasePrice, purchasePrice, productId]
+        `UPDATE products SET base_price = ?, updated_at = NOW() WHERE id = ?`,
+        [purchasePrice, productId]
       );
 
       // Upsert the wasco mapping
@@ -277,11 +277,10 @@ router.post('/import', authMiddleware, async (req, res) => {
       }
     } else {
       const truncatedName = scraped.name.substring(0, 100);
-      const modelNumber = (scraped.leverancierscode || wasco_article_number).substring(0, 50);
       await db.query(
-        `INSERT INTO products (id, name, brand, category, purchase_price, base_price, model_number, is_active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
-        [productId, truncatedName, brand, category, purchasePrice, purchasePrice, modelNumber]
+        `INSERT INTO products (id, name, brand, category, base_price, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 1, NOW(), NOW())`,
+        [productId, truncatedName, brand, category, purchasePrice]
       );
 
       // Create the wasco mapping
