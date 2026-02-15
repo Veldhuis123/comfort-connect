@@ -102,40 +102,60 @@ class WascoScraper {
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Step 2: Fill fields using evaluate to focus + keyboard to type (real key events)
-      // This ensures OutSystems picks up the input as real user interaction
+      // Step 2: Fill fields using Puppeteer's native focus + keyboard
+      // page.focus() sets CDP keyboard target (unlike page.evaluate focus)
       async function fillFieldViaKeyboard(page, selector, value) {
-        // Focus the field via evaluate (bypasses clickability checks)
-        await page.evaluate((sel) => {
-          const field = document.querySelector(sel);
-          if (field) {
-            field.focus();
-            field.value = ''; // Clear existing value
-            field.dispatchEvent(new Event('focus', { bubbles: true }));
+        try {
+          // Use Puppeteer's focus which properly sets keyboard target via CDP
+          await page.focus(selector);
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          // Triple-click to select all text, then delete
+          await page.click(selector, { clickCount: 3 });
+          await page.keyboard.press('Backspace');
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Type the value character by character (real keyboard events)
+          await page.keyboard.type(value, { delay: 50 });
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          // Tab away to trigger blur/change events
+          await page.keyboard.press('Tab');
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (err) {
+          // Fallback: if click/focus fails, try via evaluate + CDP keyboard
+          logger.warn('WASCO', `Puppeteer focus failed for ${selector}, trying fallback`, { error: err.message });
+          await page.evaluate((sel) => {
+            const field = document.querySelector(sel);
+            if (field) {
+              field.scrollIntoView({ block: 'center' });
+              field.focus();
+              field.value = '';
+            }
+          }, selector);
+          await new Promise(resolve => setTimeout(resolve, 300));
+          // Use CDP to send key events directly
+          const client = await page.target().createCDPSession();
+          for (const char of value) {
+            await client.send('Input.dispatchKeyEvent', { type: 'keyDown', text: char });
+            await client.send('Input.dispatchKeyEvent', { type: 'keyUp', text: char });
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
-        }, selector);
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Select all and delete (in case clearing didn't work)
-        await page.keyboard.down('Control');
-        await page.keyboard.press('a');
-        await page.keyboard.up('Control');
-        await page.keyboard.press('Backspace');
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Type the value character by character (real keyboard events)
-        await page.keyboard.type(value, { delay: 50 });
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Trigger blur to finalize
-        await page.evaluate((sel) => {
-          const field = document.querySelector(sel);
-          if (field) field.dispatchEvent(new Event('blur', { bubbles: true }));
-        }, selector);
+          await page.evaluate((sel) => {
+            const field = document.querySelector(sel);
+            if (field) {
+              field.dispatchEvent(new Event('input', { bubbles: true }));
+              field.dispatchEvent(new Event('change', { bubbles: true }));
+              field.dispatchEvent(new Event('blur', { bubbles: true }));
+            }
+          }, selector);
+        }
       }
 
       await fillFieldViaKeyboard(page, 'input[placeholder="debiteurnummer"]', debiteurNummer);
+      await new Promise(resolve => setTimeout(resolve, 300));
       await fillFieldViaKeyboard(page, 'input[placeholder="code"]', code);
+      await new Promise(resolve => setTimeout(resolve, 300));
       await fillFieldViaKeyboard(page, 'input[placeholder="wachtwoord"]', password);
 
       // Verify field values
