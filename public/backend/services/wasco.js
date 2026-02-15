@@ -85,13 +85,34 @@ class WascoScraper {
       // Navigate to login page
       await page.goto(`${this.baseUrl}/inloggen`, { waitUntil: 'networkidle2', timeout: 30000 });
 
-      // Dismiss cookie consent popup if present
+      // Dismiss cookie consent popup if present (Cookiebot / generic)
       try {
-        const cookieBtn = await page.$('.cc-btn.cc-dismiss, .cc-allow, #CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll, button[data-cookie-accept], .cookie-accept, #accept-cookies');
-        if (cookieBtn) {
-          await cookieBtn.click();
-          logger.info('WASCO', 'Cookie consent dismissed');
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait a moment for cookie popup to appear
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Try multiple cookie consent selectors
+        const cookieSelectors = [
+          '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
+          '#CybotCookiebotDialogBodyButtonAccept', 
+          '.coi-banner__accept',
+          '#onetrust-accept-btn-handler',
+          '.cc-btn.cc-dismiss',
+          '.cc-allow',
+          'button[data-cookie-accept]',
+          '.cookie-accept',
+          '#accept-cookies',
+          // Cookiebot widget (the round icon at bottom-left)
+          '#CookiebotWidget .CookiebotWidget-body button',
+        ];
+        
+        for (const selector of cookieSelectors) {
+          const btn = await page.$(selector);
+          if (btn) {
+            await btn.click();
+            logger.info('WASCO', `Cookie consent dismissed via: ${selector}`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            break;
+          }
         }
       } catch (e) {
         logger.info('WASCO', 'No cookie popup found or could not dismiss');
@@ -102,7 +123,7 @@ class WascoScraper {
       
       logger.info('WASCO', 'Login page loaded, filling form...');
 
-      // Clear fields first (in case they have default values)
+      // Clear fields first then type
       await page.click('input[placeholder="debiteurnummer"]', { clickCount: 3 });
       await page.type('input[placeholder="debiteurnummer"]', debiteurNummer);
       await page.click('input[placeholder="code"]', { clickCount: 3 });
@@ -116,13 +137,14 @@ class WascoScraper {
         logger.info('WASCO', 'Screenshot saved: /tmp/wasco-before-login.png');
       } catch (e) { /* ignore */ }
 
-      // Click the login button in main content
-      const loginBtnSelector = '#wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72';
-      await page.click(loginBtnSelector);
+      // Try pressing Enter on the password field instead of clicking the button
+      // (more reliable on OutSystems forms)
+      await page.focus('input[placeholder="wachtwoord"]');
+      await page.keyboard.press('Enter');
 
-      // Wait for navigation after login
+      // Wait for navigation or in-place update
       await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }).catch(() => {
-        logger.info('WASCO', 'No navigation after login click, page may have updated in-place');
+        logger.info('WASCO', 'No navigation after login submit, page may have updated in-place');
       });
 
       // Wait for AJAX updates
@@ -136,16 +158,17 @@ class WascoScraper {
 
       // Check for error messages on login page
       const errorMsg = await page.evaluate(() => {
-        const errorEl = document.querySelector('.Feedback_Message_Error, .feedback-error, .Form_Error, .error-message, [class*="Error"]');
+        const errorEl = document.querySelector('.Feedback_Message_Error, .feedback-error, .Form_Error, .error-message, [class*="Error"], .Feedback_Message');
         return errorEl ? errorEl.textContent.trim() : null;
       });
       if (errorMsg) {
         logger.error('WASCO', 'Login form error detected', { errorMsg });
       }
 
-      // Check current URL
+      // Check current URL and page content
       const currentUrl = page.url();
-      logger.info('WASCO', 'Page after login attempt', { currentUrl, hasError: !!errorMsg });
+      const pageTitle = await page.title();
+      logger.info('WASCO', 'Page after login attempt', { currentUrl, pageTitle, hasError: !!errorMsg, errorMsg });
 
       // Extract all cookies from the browser
       const browserCookies = await page.cookies();
