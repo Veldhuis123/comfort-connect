@@ -275,11 +275,12 @@ router.post('/import', authMiddleware, async (req, res) => {
         );
       }
     } else {
-      // Create new product
+      const truncatedName = scraped.name.substring(0, 100);
+      const modelNumber = (scraped.leverancierscode || wasco_article_number).substring(0, 50);
       await db.query(
         `INSERT INTO products (id, name, brand, category, purchase_price, base_price, model_number, is_active, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
-        [productId, scraped.name.substring(0, 200), brand, category, purchasePrice, purchasePrice, scraped.leverancierscode || wasco_article_number]
+        [productId, truncatedName, brand, category, purchasePrice, purchasePrice, modelNumber]
       );
 
       // Create the wasco mapping
