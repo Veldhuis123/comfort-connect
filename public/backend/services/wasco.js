@@ -85,64 +85,104 @@ class WascoScraper {
       // Navigate to login page
       await page.goto(`${this.baseUrl}/inloggen`, { waitUntil: 'networkidle2', timeout: 30000 });
 
-      // Remove any cookie consent overlays
+      // Aggressively remove ALL overlays: cookie banners, iframes, fixed/absolute positioned elements
       await page.evaluate(() => {
-        document.querySelectorAll('[id*="ookiebot"], [id*="cookie"], [class*="cookie"], [class*="consent"]').forEach(el => el.remove());
+        // Remove cookie-related elements
+        document.querySelectorAll('[id*="ookiebot"], [id*="cookie"], [id*="Cookie"], [class*="cookie"], [class*="Cookie"], [class*="consent"], [class*="Consent"]').forEach(el => el.remove());
+        // Remove VWO overlays
+        document.querySelectorAll('[id*="vwo"], [class*="vwo"]').forEach(el => el.remove());
+        // Remove any blocking iframes (often used for consent)
+        document.querySelectorAll('iframe[src*="cookie"], iframe[src*="consent"], iframe[style*="position: fixed"]').forEach(el => el.remove());
+        // Remove any full-screen overlays with high z-index
+        document.querySelectorAll('div[style*="position: fixed"], div[style*="position:fixed"]').forEach(el => {
+          const style = window.getComputedStyle(el);
+          if (parseInt(style.zIndex) > 100 || style.opacity === '0.5') {
+            el.remove();
+          }
+        });
       });
-      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Wait for the login form
       await page.waitForSelector('input[placeholder="debiteurnummer"]', { timeout: 10000 });
       logger.info('WASCO', 'Login page loaded, filling form...');
 
-      // Use real keyboard input - OutSystems listens to keydown/keyup events
-      // Clear and type into each field using Puppeteer's built-in type()
-      const debField = await page.$('input[placeholder="debiteurnummer"]');
-      await debField.click({ clickCount: 3 }); // select all
-      await debField.press('Backspace');
-      await debField.type(debiteurNummer, { delay: 50 });
-
-      const codeField = await page.$('input[placeholder="code"]');
-      await codeField.click({ clickCount: 3 });
-      await codeField.press('Backspace');
-      await codeField.type(code, { delay: 50 });
-
-      const passField = await page.$('input[placeholder="wachtwoord"]');
-      await passField.click({ clickCount: 3 });
-      await passField.press('Backspace');
-      await passField.type(password, { delay: 50 });
+      // Use page.focus() + page.keyboard to avoid "not clickable" errors entirely
+      // This bypasses any overlay issues since it doesn't need to "click" the element
+      
+      // Fill debiteurnummer
+      await page.focus('input[placeholder="debiteurnummer"]');
+      await page.keyboard.down('Control');
+      await page.keyboard.press('a');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      await page.keyboard.type(debiteurNummer, { delay: 30 });
+      
+      // Fill code
+      await page.focus('input[placeholder="code"]');
+      await page.keyboard.down('Control');
+      await page.keyboard.press('a');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      await page.keyboard.type(code, { delay: 30 });
+      
+      // Fill password
+      await page.focus('input[placeholder="wachtwoord"]');
+      await page.keyboard.down('Control');
+      await page.keyboard.press('a');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      await page.keyboard.type(password, { delay: 30 });
 
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Screenshot before submit
       try { await page.screenshot({ path: '/tmp/wasco-before-login.png' }); } catch (e) { /* ignore */ }
 
-      // Try multiple ways to submit the form
-      // 1. Find the login button by text content or type=submit
+      // Log field values to confirm they were filled
+      const fieldValues = await page.evaluate(() => {
+        const d = document.querySelector('input[placeholder="debiteurnummer"]');
+        const c = document.querySelector('input[placeholder="code"]');
+        const p = document.querySelector('input[placeholder="wachtwoord"]');
+        return {
+          debLen: d ? d.value.length : -1,
+          codeLen: c ? c.value.length : -1,
+          passLen: p ? p.value.length : -1,
+        };
+      });
+      logger.info('WASCO', 'Field values after typing', fieldValues);
+
+      // Submit: click button via JS evaluate (never fails with overlay issues)
       const submitted = await page.evaluate(() => {
-        // Try by known ID first
+        // Try known ID
         let btn = document.getElementById('wt1_Wasco2014Layout_wt1_block_wtMainContent_wtMainContent_wt72');
-        // Fallback: find button/input with "Inloggen" text
+        // Fallback: find by text
         if (!btn) {
-          const allBtns = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a.btn, .btn')];
+          const allBtns = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], a.btn, .btn, [class*="Login"]')];
           btn = allBtns.find(b => (b.textContent || b.value || '').toLowerCase().includes('inlog'));
         }
-        // Fallback: any submit button in the form
         if (!btn) {
           btn = document.querySelector('form input[type="submit"], form button[type="submit"]');
         }
         if (btn) {
           btn.click();
-          return btn.id || btn.textContent || 'found';
+          return { id: btn.id, tag: btn.tagName, text: (btn.textContent || '').substring(0, 50) };
+        }
+        // Last resort: submit the form directly  
+        const form = document.querySelector('form');
+        if (form) {
+          form.submit();
+          return { formSubmit: true };
         }
         return null;
       });
-      logger.info('WASCO', 'Login button clicked', { submitted });
+      logger.info('WASCO', 'Login submit attempt', { submitted });
 
-      // If button click didn't work, try pressing Enter on password field
+      // If no button/form found, press Enter
       if (!submitted) {
-        logger.info('WASCO', 'No button found, pressing Enter on password field');
-        await passField.press('Enter');
+        logger.info('WASCO', 'Fallback: pressing Enter');
+        await page.keyboard.press('Enter');
       }
 
       // Wait for navigation
@@ -150,13 +190,11 @@ class WascoScraper {
         logger.info('WASCO', 'No navigation after login submit');
       });
 
-      // Wait for any AJAX
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Screenshot after submit
       try { await page.screenshot({ path: '/tmp/wasco-after-login.png' }); } catch (e) { /* ignore */ }
 
-      // Log page state
       const currentUrl = page.url();
       const pageTitle = await page.title();
       logger.info('WASCO', 'Page after login attempt', { currentUrl, pageTitle });
