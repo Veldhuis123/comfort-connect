@@ -27,7 +27,7 @@ router.get('/mappings', authMiddleware, async (req, res) => {
         p.purchase_price,
         p.base_price
       FROM wasco_mappings wm
-      JOIN products p ON p.id = wm.product_id
+      JOIN products p ON p.id COLLATE utf8mb4_unicode_ci = wm.product_id COLLATE utf8mb4_unicode_ci
       ORDER BY p.category, p.sort_order, p.name
     `);
     res.json(mappings);
@@ -214,6 +214,98 @@ router.get('/history/:productId', authMiddleware, async (req, res) => {
   } catch (error) {
     logger.error('WASCO', 'History error', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
+  }
+});
+
+// Import a new product from Wasco (scrape + create product + mapping)
+router.post('/import', authMiddleware, async (req, res) => {
+  try {
+    const { wasco_article_number, category = 'airco' } = req.body;
+
+    if (!wasco_article_number) {
+      return res.status(400).json({ error: 'wasco_article_number is verplicht' });
+    }
+
+    // Scrape the product info from Wasco
+    const scraper = getWascoScraper();
+    if (!scraper.isLoggedIn) {
+      await scraper.login();
+    }
+
+    const scraped = await scraper.scrapeProduct(wasco_article_number);
+
+    if (scraped.error) {
+      return res.status(400).json({ error: `Kon product niet ophalen: ${scraped.error}` });
+    }
+
+    if (!scraped.name) {
+      return res.status(400).json({ error: 'Geen productnaam gevonden op Wasco' });
+    }
+
+    // Determine price
+    const purchasePrice = scraped.nettoPrice || scraped.brutoPrice || 0;
+    const brand = scraped.brand || 'Onbekend';
+    
+    // Generate a unique product ID
+    const productId = `wasco-${wasco_article_number}`;
+
+    // Check if product already exists
+    const [existing] = await db.query('SELECT id FROM products WHERE id = ?', [productId]);
+    if (existing.length > 0) {
+      return res.status(409).json({ error: 'Dit product is al geïmporteerd', productId });
+    }
+
+    // Create the product
+    await db.query(
+      `INSERT INTO products (id, name, brand, category, purchase_price, base_price, model_number, is_active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), NOW())`,
+      [
+        productId,
+        scraped.name.substring(0, 200),
+        brand,
+        category,
+        purchasePrice,
+        purchasePrice, // base_price = purchase price initially
+        scraped.leverancierscode || wasco_article_number,
+      ]
+    );
+
+    // Create the wasco mapping
+    await db.query(
+      `INSERT INTO wasco_mappings (product_id, wasco_article_number, last_synced_at, last_bruto_price, last_netto_price)
+       VALUES (?, ?, NOW(), ?, ?)`,
+      [productId, wasco_article_number, scraped.brutoPrice, scraped.nettoPrice]
+    );
+
+    // Log the price
+    await db.query(
+      `INSERT INTO wasco_price_log (product_id, wasco_article_number, bruto_price, netto_price, scraped_at)
+       VALUES (?, ?, ?, ?, NOW())`,
+      [productId, wasco_article_number, scraped.brutoPrice, scraped.nettoPrice]
+    );
+
+    logger.info('WASCO', `Imported product ${productId} from Wasco article ${wasco_article_number}`, {
+      name: scraped.name,
+      brand,
+      purchasePrice,
+    });
+
+    res.status(201).json({
+      message: 'Product geïmporteerd',
+      product: {
+        id: productId,
+        name: scraped.name,
+        brand,
+        category,
+        purchasePrice,
+        brutoPrice: scraped.brutoPrice,
+        nettoPrice: scraped.nettoPrice,
+        articleNumber: wasco_article_number,
+      },
+    });
+  } catch (error) {
+    logger.error('WASCO', 'Import error', { error: error.message });
+    res.status(500).json({ error: `Import mislukt: ${error.message}` });
   }
 });
 
