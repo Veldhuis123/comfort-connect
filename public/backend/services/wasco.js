@@ -534,7 +534,7 @@ class WascoScraper {
         // Update the product's purchase price in the database
         await db.query(
           `UPDATE products SET 
-            purchase_price = ?,
+            base_price = ?,
             updated_at = NOW()
           WHERE id = ?`,
           [purchasePrice, mapping.product_id]
