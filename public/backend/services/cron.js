@@ -68,9 +68,8 @@ async function syncWascoPrices() {
   logger.info('CRON', 'Starting weekly Wasco price sync');
 
   try {
-    // Get all mappings
     const [mappings] = await pool.query(
-      'SELECT product_id, wasco_article_number FROM wasco_mappings'
+      'SELECT product_id, wasco_article_number, discount_percent FROM wasco_mappings'
     );
 
     if (mappings.length === 0) {
@@ -80,20 +79,6 @@ async function syncWascoPrices() {
 
     const scraper = getWascoScraper();
     const results = await scraper.syncProducts(pool, mappings);
-
-    // Update last_synced_at for successful syncs
-    for (const detail of results.details) {
-      if (detail.status === 'updated') {
-        await pool.query(
-          `UPDATE wasco_mappings SET 
-            last_synced_at = NOW(),
-            last_bruto_price = ?,
-            last_netto_price = ?
-          WHERE product_id = ?`,
-          [detail.brutoPrice, detail.nettoPrice, detail.productId]
-        );
-      }
-    }
 
     logger.info('CRON', 'Wasco price sync completed', {
       total: results.total,
