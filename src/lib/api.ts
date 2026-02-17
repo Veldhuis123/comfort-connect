@@ -120,18 +120,6 @@ export const api = {
     apiRequest(`/contact/${id}`, { method: 'DELETE' }),
   getUnreadCount: () => apiRequest<{ unread: number }>('/contact/stats/unread'),
 
-  // Airco
-  getPublicAircos: () => apiRequest<AircoUnit[]>('/airco'),
-  getAdminAircos: () => apiRequest<AircoUnit[]>('/airco/admin'),
-  createAirco: (airco: AircoUnit) =>
-    apiRequest('/airco', { method: 'POST', body: JSON.stringify(airco) }),
-  updateAirco: (id: string, airco: Partial<AircoUnit>) =>
-    apiRequest(`/airco/${id}`, { method: 'PUT', body: JSON.stringify(airco) }),
-  deleteAirco: (id: string) =>
-    apiRequest(`/airco/${id}`, { method: 'DELETE' }),
-  toggleAircoActive: (id: string) =>
-    apiRequest(`/airco/${id}/toggle`, { method: 'PATCH' }),
-
   // Products (universal)
   getProducts: (category?: string) =>
     apiRequest<Product[]>(`/products${category ? `?category=${category}` : ''}`),
@@ -309,20 +297,8 @@ export interface CreateContactMessage {
   recaptchaToken?: string;
 }
 
-export interface AircoUnit {
-  id: string;
-  name: string;
-  brand: string;
-  capacity: string;
-  min_m2: number;
-  max_m2: number;
-  base_price: number;
-  image_url: string | null;
-  features: string[];
-  energy_label: string;
-  is_active: boolean;
-  sort_order: number;
-}
+
+
 
 export interface QuoteStats {
   total: number;
@@ -531,8 +507,6 @@ export interface ProductPricingUpdate {
   purchase_price?: number;
   margin_percent?: number;
   expected_hours?: number;
-  model_number?: string;
-  outdoor_model?: string;
   energy_label?: string;
   cooling_capacity?: number;
   heating_capacity?: number;
@@ -541,21 +515,4 @@ export interface ProductPricingUpdate {
   refrigerant?: string;
   noise_indoor?: number;
   noise_outdoor?: number;
-}
-
-export interface ProductWithPricing extends Product {
-  purchase_price?: number | null;
-  margin_percent?: number;
-  expected_hours?: number;
-  model_number?: string | null;
-  outdoor_model?: string | null;
-  energy_label?: string | null;
-  cooling_capacity?: number | null;
-  heating_capacity?: number | null;
-  seer?: number | null;
-  scop?: number | null;
-  refrigerant?: string | null;
-  noise_indoor?: number | null;
-  noise_outdoor?: number | null;
-  calculated_selling_price?: number;
 }
