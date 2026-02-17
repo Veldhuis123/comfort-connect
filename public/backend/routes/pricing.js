@@ -337,8 +337,6 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
       purchase_price, 
       margin_percent, 
       expected_hours,
-      model_number,
-      outdoor_model,
       energy_label,
       cooling_capacity,
       heating_capacity,
@@ -354,8 +352,6 @@ router.patch('/product/:id', authMiddleware, async (req, res) => {
     if (purchase_price !== undefined) updates.purchase_price = purchase_price;
     if (margin_percent !== undefined) updates.margin_percent = margin_percent;
     if (expected_hours !== undefined) updates.expected_hours = expected_hours;
-    if (model_number !== undefined) updates.model_number = model_number;
-    if (outdoor_model !== undefined) updates.outdoor_model = outdoor_model;
     if (energy_label !== undefined) updates.energy_label = energy_label;
     if (cooling_capacity !== undefined) updates.cooling_capacity = cooling_capacity;
     if (heating_capacity !== undefined) updates.heating_capacity = heating_capacity;

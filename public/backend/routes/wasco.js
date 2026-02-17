@@ -131,7 +131,6 @@ router.get('/scrape/:articleNumber', authMiddleware, async (req, res) => {
 // Sync all mapped products (manual trigger)
 router.post('/sync', authMiddleware, async (req, res) => {
   try {
-    // Get all mappings
     const [mappings] = await db.query(
       'SELECT product_id, wasco_article_number, discount_percent FROM wasco_mappings'
     );
@@ -142,21 +141,6 @@ router.post('/sync', authMiddleware, async (req, res) => {
 
     const scraper = getWascoScraper();
     const results = await scraper.syncProducts(db, mappings);
-
-    // Update last_synced_at and prices for successful syncs
-    for (const detail of results.details) {
-      if (detail.status === 'updated') {
-        await db.query(
-          `UPDATE wasco_mappings SET 
-            last_synced_at = NOW(),
-            last_bruto_price = ?,
-            last_netto_price = ?
-          WHERE product_id = ?`,
-          [detail.brutoPrice, detail.nettoPrice, detail.productId]
-        );
-      }
-    }
-
     res.json(results);
   } catch (error) {
     logger.error('WASCO', 'Sync error', { error: error.message });
@@ -180,20 +164,6 @@ router.post('/sync/:productId', authMiddleware, async (req, res) => {
 
     const scraper = getWascoScraper();
     const results = await scraper.syncProducts(db, mappings);
-
-    // Update mapping
-    const detail = results.details[0];
-    if (detail && detail.status === 'updated') {
-      await db.query(
-        `UPDATE wasco_mappings SET 
-          last_synced_at = NOW(),
-          last_bruto_price = ?,
-          last_netto_price = ?
-        WHERE product_id = ?`,
-        [detail.brutoPrice, detail.nettoPrice, detail.productId]
-      );
-    }
-
     res.json(results);
   } catch (error) {
     logger.error('WASCO', 'Single sync error', { error: error.message });

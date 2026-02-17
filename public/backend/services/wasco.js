@@ -602,6 +602,16 @@ class WascoScraper {
           [purchasePrice, mapping.product_id]
         );
 
+        // Update wasco_mappings with sync timestamp and prices
+        await db.query(
+          `UPDATE wasco_mappings SET 
+            last_synced_at = NOW(),
+            last_bruto_price = ?,
+            last_netto_price = ?
+          WHERE product_id = ?`,
+          [scraped.brutoPrice, scraped.nettoPrice, mapping.product_id]
+        );
+
         // Log the price update
         await db.query(
           `INSERT INTO wasco_price_log (product_id, wasco_article_number, bruto_price, netto_price, scraped_at)
