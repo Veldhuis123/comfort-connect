@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const logger = require('./services/logger');
+const { csrfCookie, csrfProtection } = require('./middleware/csrf');
 const { initCronJobs } = require('./services/cron');
 
 // Import routes
@@ -31,10 +32,26 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://www.google.com"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
     },
   },
   crossOriginEmbedderPolicy: false,
+  // Extra security headers
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
 }));
+
+// Prevent clickjacking
+app.use((req, res, next) => {
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
 
 // Rate limiting
 const limiter = rateLimit({
@@ -45,13 +62,25 @@ const limiter = rateLimit({
 });
 
 // Middleware
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',').map(s => s.trim());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl, etc.)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS niet toegestaan'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
 }));
 app.use(express.json({ limit: '10mb' })); // Limit body size
 app.use(cookieParser());
 app.use(limiter);
+app.use(csrfCookie);           // Set CSRF cookie
+app.use(csrfProtection);       // Verify CSRF on state-changing requests
 app.use(logger.requestMiddleware); // BRL 100 audit logging
 
 // Static files voor uploads

@@ -3,7 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const db = require('../config/database');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -122,7 +122,7 @@ router.get('/:id', async (req, res) => {
 // ============================================
 
 // Get all products (including inactive) - admin
-router.get('/admin/all', authMiddleware, async (req, res) => {
+router.get('/admin/all', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { category } = req.query;
     
@@ -152,7 +152,7 @@ router.get('/admin/all', authMiddleware, async (req, res) => {
 });
 
 // Create new product - admin
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { 
       id, name, brand, category, base_price, 
@@ -200,7 +200,7 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 // Update product - admin
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { 
@@ -253,7 +253,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete product - admin
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -278,7 +278,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // Toggle product active status - admin
-router.patch('/:id/toggle', authMiddleware, async (req, res) => {
+router.patch('/:id/toggle', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -300,7 +300,7 @@ router.patch('/:id/toggle', authMiddleware, async (req, res) => {
 });
 
 // Upload product image - admin
-router.post('/:id/image', authMiddleware, upload.single('image'), async (req, res) => {
+router.post('/:id/image', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
     const file = req.file;
@@ -341,7 +341,7 @@ router.post('/:id/image', authMiddleware, upload.single('image'), async (req, re
 });
 
 // Delete product image - admin
-router.delete('/:id/image', authMiddleware, async (req, res) => {
+router.delete('/:id/image', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -367,7 +367,7 @@ router.delete('/:id/image', authMiddleware, async (req, res) => {
 });
 
 // Update sort order for multiple products - admin
-router.patch('/sort', authMiddleware, async (req, res) => {
+router.patch('/sort', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { products } = req.body; // Array of { id, sort_order }
     

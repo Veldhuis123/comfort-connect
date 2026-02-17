@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../config/database');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -36,7 +36,7 @@ router.get('/settings/:category', async (req, res) => {
 });
 
 // Update settings for a category - admin
-router.put('/settings/:category', authMiddleware, async (req, res) => {
+router.put('/settings/:category', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { category } = req.params;
     const { settings } = req.body; // Object with { key: value }
@@ -64,7 +64,7 @@ router.put('/settings/:category', authMiddleware, async (req, res) => {
 });
 
 // Add or update a single setting - admin
-router.post('/settings/:category/:key', authMiddleware, async (req, res) => {
+router.post('/settings/:category/:key', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { category, key } = req.params;
     const { value, unit, description } = req.body;
@@ -108,7 +108,7 @@ router.get('/capacity/:category', async (req, res) => {
 });
 
 // Update capacity pricing - admin
-router.put('/capacity/:category', authMiddleware, async (req, res) => {
+router.put('/capacity/:category', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { category } = req.params;
     const { pricing } = req.body; // Array of pricing entries
@@ -157,7 +157,7 @@ router.get('/pipes/:category', async (req, res) => {
 });
 
 // Update pipe diameter pricing - admin
-router.put('/pipes/:category', authMiddleware, async (req, res) => {
+router.put('/pipes/:category', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { category } = req.params;
     const { pricing } = req.body;
@@ -330,7 +330,7 @@ router.post('/calculate', async (req, res) => {
 // ============================================
 
 // Update product pricing fields - admin
-router.patch('/product/:id', authMiddleware, async (req, res) => {
+router.patch('/product/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { 

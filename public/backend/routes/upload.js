@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -109,7 +109,7 @@ router.post('/quote/:quoteId', uploadLimiter, upload.array('photos', 10), async 
 });
 
 // Delete photo (admin)
-router.delete('/:photoId', authMiddleware, async (req, res) => {
+router.delete('/:photoId', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { photoId } = req.params;
 

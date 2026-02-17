@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../services/logger');
 const { sendFaultNotification, sendEquipmentExpiringNotification } = require('../services/email');
@@ -11,7 +11,7 @@ const { sendFaultNotification, sendEquipmentExpiringNotification } = require('..
 // =============================================
 
 // Get all customers
-router.get('/customers', authMiddleware, async (req, res) => {
+router.get('/customers', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT * FROM customers ORDER BY contact_name ASC'
@@ -24,7 +24,7 @@ router.get('/customers', authMiddleware, async (req, res) => {
 });
 
 // Create customer
-router.post('/customers', authMiddleware, async (req, res) => {
+router.post('/customers', authMiddleware, adminMiddleware, async (req, res) => {
   const { company_name, contact_name, email, phone, address_street, address_number, address_postal, address_city, notes } = req.body;
   
   try {
@@ -41,7 +41,7 @@ router.post('/customers', authMiddleware, async (req, res) => {
 });
 
 // Update customer
-router.put('/customers/:id', authMiddleware, async (req, res) => {
+router.put('/customers/:id', authMiddleware, adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { company_name, contact_name, email, phone, address_street, address_number, address_postal, address_city, notes } = req.body;
   
@@ -60,7 +60,7 @@ router.put('/customers/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete customer
-router.delete('/customers/:id', authMiddleware, async (req, res) => {
+router.delete('/customers/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     // Check if customer has installations
     const [installations] = await pool.query(
@@ -87,7 +87,7 @@ router.delete('/customers/:id', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all technicians
-router.get('/technicians', authMiddleware, async (req, res) => {
+router.get('/technicians', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT * FROM technicians ORDER BY name ASC'
@@ -100,7 +100,7 @@ router.get('/technicians', authMiddleware, async (req, res) => {
 });
 
 // Create technician
-router.post('/technicians', authMiddleware, async (req, res) => {
+router.post('/technicians', authMiddleware, adminMiddleware, async (req, res) => {
   const { name, email, phone, fgas_certificate_number, fgas_certificate_expires, brl_certificate_number, brl_certificate_expires } = req.body;
   
   try {
@@ -117,7 +117,7 @@ router.post('/technicians', authMiddleware, async (req, res) => {
 });
 
 // Update technician
-router.put('/technicians/:id', authMiddleware, async (req, res) => {
+router.put('/technicians/:id', authMiddleware, adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, fgas_certificate_number, fgas_certificate_expires, brl_certificate_number, brl_certificate_expires, is_active } = req.body;
   
@@ -136,7 +136,7 @@ router.put('/technicians/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete technician
-router.delete('/technicians/:id', authMiddleware, async (req, res) => {
+router.delete('/technicians/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     // Check if technician has installations
     const [installations] = await pool.query(
@@ -163,7 +163,7 @@ router.delete('/technicians/:id', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all equipment
-router.get('/equipment', authMiddleware, async (req, res) => {
+router.get('/equipment', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT * FROM equipment ORDER BY equipment_type, name ASC'
@@ -176,7 +176,7 @@ router.get('/equipment', authMiddleware, async (req, res) => {
 });
 
 // Create equipment
-router.post('/equipment', authMiddleware, async (req, res) => {
+router.post('/equipment', authMiddleware, adminMiddleware, async (req, res) => {
   const { equipment_type, name, brand, serial_number, calibration_date, calibration_valid_until, notes } = req.body;
   
   try {
@@ -198,7 +198,7 @@ router.post('/equipment', authMiddleware, async (req, res) => {
 });
 
 // Update equipment
-router.put('/equipment/:id', authMiddleware, async (req, res) => {
+router.put('/equipment/:id', authMiddleware, adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { equipment_type, name, brand, serial_number, calibration_date, calibration_valid_until, notes, is_active } = req.body;
   
@@ -217,7 +217,7 @@ router.put('/equipment/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete equipment
-router.delete('/equipment/:id', authMiddleware, async (req, res) => {
+router.delete('/equipment/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     await pool.query('DELETE FROM equipment WHERE id = ?', [req.params.id]);
     res.json({ success: true });
@@ -232,7 +232,7 @@ router.delete('/equipment/:id', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all cylinders
-router.get('/cylinders', authMiddleware, async (req, res) => {
+router.get('/cylinders', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(
       'SELECT * FROM refrigerant_cylinders WHERE is_active = 1 ORDER BY refrigerant_type, status ASC'
@@ -245,7 +245,7 @@ router.get('/cylinders', authMiddleware, async (req, res) => {
 });
 
 // Create cylinder
-router.post('/cylinders', authMiddleware, async (req, res) => {
+router.post('/cylinders', authMiddleware, adminMiddleware, async (req, res) => {
   const { refrigerant_type, refrigerant_gwp, cylinder_size_kg, current_weight_kg, tare_weight_kg, batch_number, supplier, purchase_date, expiry_date, location, status, notes } = req.body;
   
   try {
@@ -268,7 +268,7 @@ router.post('/cylinders', authMiddleware, async (req, res) => {
 });
 
 // Update cylinder
-router.put('/cylinders/:id', authMiddleware, async (req, res) => {
+router.put('/cylinders/:id', authMiddleware, adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { refrigerant_type, refrigerant_gwp, cylinder_size_kg, current_weight_kg, tare_weight_kg, batch_number, supplier, purchase_date, expiry_date, location, status, notes, is_active } = req.body;
   
@@ -287,7 +287,7 @@ router.put('/cylinders/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete cylinder
-router.delete('/cylinders/:id', authMiddleware, async (req, res) => {
+router.delete('/cylinders/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     await pool.query('UPDATE refrigerant_cylinders SET is_active = 0 WHERE id = ?', [req.params.id]);
     logger.audit('CYLINDER_DELETED', { cylinderId: req.params.id }, req);
@@ -303,7 +303,7 @@ router.delete('/cylinders/:id', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all installations with customer info
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT i.*, c.contact_name as customer_name, c.address_city as customer_city,
@@ -321,7 +321,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Get single installation by ID
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT i.*, c.*, t.name as technician_name, t.fgas_certificate_number
@@ -374,7 +374,7 @@ router.get('/qr/:qrCode', async (req, res) => {
 });
 
 // Create installation
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
   const { 
     customer_id, name, location_description, installation_type,
     brand, model, serial_number, refrigerant_type, refrigerant_gwp,
@@ -434,7 +434,7 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 // Update installation
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { 
     name, location_description, brand, model, serial_number,
@@ -458,7 +458,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete installation
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     await pool.query('DELETE FROM installations WHERE id = ?', [req.params.id]);
     res.json({ success: true });
@@ -473,7 +473,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get F-gas logs for installation
-router.get('/:id/fgas', authMiddleware, async (req, res) => {
+router.get('/:id/fgas', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT f.*, t.name as technician_name, t.fgas_certificate_number
@@ -490,7 +490,7 @@ router.get('/:id/fgas', authMiddleware, async (req, res) => {
 });
 
 // Create F-gas log entry
-router.post('/:id/fgas', authMiddleware, async (req, res) => {
+router.post('/:id/fgas', authMiddleware, adminMiddleware, async (req, res) => {
   const { installation_id } = { installation_id: req.params.id };
   const {
     technician_id, activity_type, refrigerant_type, refrigerant_gwp,
@@ -560,7 +560,7 @@ router.post('/:id/fgas', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get maintenance records for installation
-router.get('/:id/maintenance', authMiddleware, async (req, res) => {
+router.get('/:id/maintenance', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT m.*, t.name as technician_name
@@ -577,7 +577,7 @@ router.get('/:id/maintenance', authMiddleware, async (req, res) => {
 });
 
 // Create maintenance record
-router.post('/:id/maintenance', authMiddleware, async (req, res) => {
+router.post('/:id/maintenance', authMiddleware, adminMiddleware, async (req, res) => {
   const { installation_id } = { installation_id: req.params.id };
   const {
     technician_id, maintenance_type, description, parts_replaced,
@@ -719,7 +719,7 @@ router.post('/qr/:qrCode/fault', async (req, res) => {
 });
 
 // Get all fault reports (admin)
-router.get('/faults/all', authMiddleware, async (req, res) => {
+router.get('/faults/all', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.query(`
       SELECT f.*, i.name as installation_name, i.brand, i.model,
@@ -741,7 +741,7 @@ router.get('/faults/all', authMiddleware, async (req, res) => {
 });
 
 // Update fault report status
-router.patch('/faults/:id', authMiddleware, async (req, res) => {
+router.patch('/faults/:id', authMiddleware, adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { status, assigned_technician_id, resolution_notes } = req.body;
   
@@ -764,7 +764,7 @@ router.patch('/faults/:id', authMiddleware, async (req, res) => {
 // STATISTICS
 // =============================================
 
-router.get('/stats/summary', authMiddleware, async (req, res) => {
+router.get('/stats/summary', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [totalInstallations] = await pool.query('SELECT COUNT(*) as count FROM installations WHERE status != "verwijderd"');
     const [maintenanceDue] = await pool.query('SELECT COUNT(*) as count FROM installations WHERE next_maintenance_date <= CURDATE() AND status = "actief"');
@@ -790,7 +790,7 @@ router.get('/stats/summary', authMiddleware, async (req, res) => {
 // =============================================
 
 // Check expiring equipment and send notification (can be called by cron or manually)
-router.post('/equipment/check-calibration', authMiddleware, async (req, res) => {
+router.post('/equipment/check-calibration', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const daysAhead = req.body.daysAhead || 30; // Default: check 30 days ahead
     
@@ -834,7 +834,7 @@ router.post('/equipment/check-calibration', authMiddleware, async (req, res) => 
 });
 
 // Get expiring equipment list without sending notification
-router.get('/equipment/expiring', authMiddleware, async (req, res) => {
+router.get('/equipment/expiring', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const daysAhead = parseInt(req.query.days) || 30;
     
