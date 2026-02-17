@@ -143,18 +143,27 @@ const AircoCalculator = () => {
 
         // Map products
         if (apiProducts.length > 0) {
-          const mapped = apiProducts.map((p: Product): AircoUnit => ({
-            id: p.id,
-            name: p.name,
-            brand: p.brand,
-            capacity: String((p.specs as Record<string, unknown>).capacity) || "",
-            minM2: Number((p.specs as Record<string, unknown>).min_m2) || 0,
-            maxM2: Number((p.specs as Record<string, unknown>).max_m2) || 0,
-            basePrice: p.base_price,
-            image: p.image_url || fallbackImages[p.id] || daikinBasicImg,
-            features: p.features,
-            energyLabel: String((p.specs as Record<string, unknown>).energy_label) || "A++",
-          }));
+          const mapped = apiProducts.map((p: Product): AircoUnit => {
+            const specs = (p.specs || {}) as Record<string, unknown>;
+            // Support both normalized keys and raw Wasco keys
+            const capacity = specs.capacity || specs['Koelcapaciteit (kW)'] || specs['Koelvermogen (kW)'];
+            const minM2 = specs.min_m2 || specs['Geschikt voor ruimtes van (m²)'];
+            const maxM2 = specs.max_m2 || specs['Geschikt voor ruimtes tot (m²)'];
+            const energyLabel = specs.energy_label || specs['Energielabel koelen'] || specs['Energielabel'];
+            
+            return {
+              id: p.id,
+              name: p.name,
+              brand: p.brand,
+              capacity: capacity ? String(capacity) : "",
+              minM2: minM2 ? parseFloat(String(minM2).replace(',', '.')) : 0,
+              maxM2: maxM2 ? parseFloat(String(maxM2).replace(',', '.')) : 0,
+              basePrice: p.base_price,
+              image: p.image_url || fallbackImages[p.id] || daikinBasicImg,
+              features: Array.isArray(p.features) ? p.features : [],
+              energyLabel: energyLabel ? String(energyLabel).trim() : "A++",
+            };
+          });
           setAircoUnits(mapped);
         }
 

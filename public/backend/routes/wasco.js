@@ -248,8 +248,24 @@ router.post('/import', authMiddleware, async (req, res) => {
     const brand = scraped.brand || 'Onbekend';
     const truncatedName = (scraped.name || '').substring(0, 100);
     const imageUrl = scraped.imageUrl || null;
-    const specs = scraped.specs || {};
+    const rawSpecs = scraped.specs || {};
     const description = scraped.description || scraped.name || '';
+    
+    // Normalize specs to frontend-expected keys
+    const specs = { ...rawSpecs };
+    
+    // Map Wasco spec keys to frontend keys
+    const capacityVal = rawSpecs['Koelcapaciteit (kW)'] || rawSpecs['Koelvermogen (kW)'] || rawSpecs['Capaciteit (kW)'];
+    if (capacityVal) specs.capacity = parseFloat(String(capacityVal).replace(',', '.')) + ' kW';
+    
+    const minM2 = rawSpecs['Geschikt voor ruimtes van (m²)'] || rawSpecs['Geschikt voor ruimtes van (m2)'];
+    if (minM2) specs.min_m2 = parseFloat(String(minM2).replace(',', '.'));
+    
+    const maxM2 = rawSpecs['Geschikt voor ruimtes tot (m²)'] || rawSpecs['Geschikt voor ruimtes tot (m2)'];
+    if (maxM2) specs.max_m2 = parseFloat(String(maxM2).replace(',', '.'));
+    
+    const energyLabel = rawSpecs['Energielabel koelen'] || rawSpecs['Energielabel'] || rawSpecs['Energie-efficiëntieklasse'];
+    if (energyLabel) specs.energy_label = String(energyLabel).trim();
     
     // Build features array from scraped features + specs
     const features = [...(scraped.featuresList || [])];
@@ -270,8 +286,8 @@ router.post('/import', authMiddleware, async (req, res) => {
       'SEER koelen': 'SEER',
     };
     for (const [specKey, label] of Object.entries(specFeatures)) {
-      if (specs[specKey] && !features.some(f => f.includes(label))) {
-        features.push(`${label}: ${specs[specKey]}`);
+      if (rawSpecs[specKey] && !features.some(f => f.includes(label))) {
+        features.push(`${label}: ${rawSpecs[specKey]}`);
       }
     }
 
