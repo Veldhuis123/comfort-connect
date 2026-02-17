@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../config/database');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const { getWascoScraper } = require('../services/wasco');
 const logger = require('../services/logger');
 
@@ -11,7 +11,7 @@ const router = express.Router();
 // ============================================
 
 // Get all product-wasco mappings
-router.get('/mappings', authMiddleware, async (req, res) => {
+router.get('/mappings', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [mappings] = await db.query(`
       SELECT 
@@ -39,7 +39,7 @@ router.get('/mappings', authMiddleware, async (req, res) => {
 });
 
 // Add a product-wasco mapping
-router.post('/mappings', authMiddleware, async (req, res) => {
+router.post('/mappings', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { product_id, wasco_article_number, discount_percent } = req.body;
 
@@ -81,7 +81,7 @@ router.post('/mappings', authMiddleware, async (req, res) => {
 });
 
 // Delete a mapping
-router.delete('/mappings/:id', authMiddleware, async (req, res) => {
+router.delete('/mappings/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     await db.query('DELETE FROM wasco_mappings WHERE id = ?', [req.params.id]);
     res.json({ message: 'Mapping verwijderd' });
@@ -92,7 +92,7 @@ router.delete('/mappings/:id', authMiddleware, async (req, res) => {
 });
 
 // Search Wasco products
-router.get('/search', authMiddleware, async (req, res) => {
+router.get('/search', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { q } = req.query;
     if (!q) {
@@ -113,7 +113,7 @@ router.get('/search', authMiddleware, async (req, res) => {
 });
 
 // Scrape a single product preview (without saving)
-router.get('/scrape/:articleNumber', authMiddleware, async (req, res) => {
+router.get('/scrape/:articleNumber', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const scraper = getWascoScraper();
     if (!scraper.isLoggedIn) {
@@ -129,7 +129,7 @@ router.get('/scrape/:articleNumber', authMiddleware, async (req, res) => {
 });
 
 // Sync all mapped products (manual trigger)
-router.post('/sync', authMiddleware, async (req, res) => {
+router.post('/sync', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [mappings] = await db.query(
       'SELECT product_id, wasco_article_number, discount_percent FROM wasco_mappings'
@@ -149,7 +149,7 @@ router.post('/sync', authMiddleware, async (req, res) => {
 });
 
 // Sync a single product
-router.post('/sync/:productId', authMiddleware, async (req, res) => {
+router.post('/sync/:productId', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { productId } = req.params;
 
@@ -172,7 +172,7 @@ router.post('/sync/:productId', authMiddleware, async (req, res) => {
 });
 
 // Get price history for a product
-router.get('/history/:productId', authMiddleware, async (req, res) => {
+router.get('/history/:productId', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [history] = await db.query(
       `SELECT * FROM wasco_price_log 
@@ -189,7 +189,7 @@ router.get('/history/:productId', authMiddleware, async (req, res) => {
 });
 
 // Import a new product from Wasco (scrape + create product + mapping)
-router.post('/import', authMiddleware, async (req, res) => {
+router.post('/import', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { wasco_article_number, category = 'airco' } = req.body;
 
@@ -344,7 +344,7 @@ router.post('/import', authMiddleware, async (req, res) => {
 });
 
 // Test connection (login)
-router.post('/test-connection', authMiddleware, async (req, res) => {
+router.post('/test-connection', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const scraper = getWascoScraper();
     scraper.logout(); // Clear any existing session

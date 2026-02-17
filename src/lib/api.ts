@@ -15,6 +15,12 @@ export const removeAuthToken = (): void => {
   localStorage.removeItem('auth_token');
 };
 
+// Get CSRF token from cookie
+const getCsrfToken = (): string | null => {
+  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+};
+
 // API request helper
 export const apiRequest = async <T>(
   endpoint: string,
@@ -31,9 +37,19 @@ export const apiRequest = async <T>(
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
+  // Add CSRF token for state-changing requests
+  const method = (options.method || 'GET').toUpperCase();
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      (headers as Record<string, string>)['x-csrf-token'] = csrfToken;
+    }
+  }
+
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials: 'include', // Ensure cookies are sent
   });
 
   if (!response.ok) {

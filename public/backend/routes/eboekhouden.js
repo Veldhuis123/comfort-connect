@@ -1,5 +1,5 @@
 const express = require('express');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -91,7 +91,7 @@ const apiRequest = async (method, endpoint, body = null) => {
 // =============================================
 // Test connection
 // =============================================
-router.get('/test', authMiddleware, async (req, res) => {
+router.get('/test', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     // Check if API token is configured
     const apiToken = process.env.EBOEKHOUDEN_API_TOKEN;
@@ -179,7 +179,7 @@ router.get('/test', authMiddleware, async (req, res) => {
 // =============================================
 // Get administrations (to select which one to use)
 // =============================================
-router.get('/administraties', authMiddleware, async (req, res) => {
+router.get('/administraties', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const administrations = await apiRequest('GET', '/administration');
     res.json(administrations);
@@ -194,7 +194,7 @@ router.get('/administraties', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all relations (customers) - WITH FULL DETAILS
-router.get('/relaties', authMiddleware, async (req, res) => {
+router.get('/relaties', authMiddleware, adminMiddleware, async (req, res) => {
   console.log('=== GET /relaties called ===');
   try {
     const { limit = 100, offset = 0, name, code, type } = req.query;
@@ -289,7 +289,7 @@ router.get('/relaties', authMiddleware, async (req, res) => {
 });
 
 // Get single relation
-router.get('/relaties/:id', authMiddleware, async (req, res) => {
+router.get('/relaties/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', `/relation/${req.params.id}`);
     res.json({
@@ -318,7 +318,7 @@ router.get('/relaties/:id', authMiddleware, async (req, res) => {
 });
 
 // Add new relation (customer) - NO DELETE, only ADD
-router.post('/relaties', authMiddleware, async (req, res) => {
+router.post('/relaties', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { 
       bedrijf, 
@@ -375,7 +375,7 @@ router.post('/relaties', authMiddleware, async (req, res) => {
 });
 
 // Update relation
-router.patch('/relaties/:id', authMiddleware, async (req, res) => {
+router.patch('/relaties/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { 
       bedrijf, 
@@ -424,7 +424,7 @@ router.patch('/relaties/:id', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all products
-router.get('/producten', authMiddleware, async (req, res) => {
+router.get('/producten', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { limit = 100, offset = 0, description, code } = req.query;
     
@@ -456,7 +456,7 @@ router.get('/producten', authMiddleware, async (req, res) => {
 });
 
 // Get product groups
-router.get('/producten/groepen', authMiddleware, async (req, res) => {
+router.get('/producten/groepen', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', '/product/groups');
     res.json(data);
@@ -467,7 +467,7 @@ router.get('/producten/groepen', authMiddleware, async (req, res) => {
 });
 
 // Get single product
-router.get('/producten/:id', authMiddleware, async (req, res) => {
+router.get('/producten/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', `/product/${req.params.id}`);
     res.json({
@@ -490,7 +490,7 @@ router.get('/producten/:id', authMiddleware, async (req, res) => {
 });
 
 // Add new product - NO DELETE, only ADD
-router.post('/producten', authMiddleware, async (req, res) => {
+router.post('/producten', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { 
       code, 
@@ -552,7 +552,7 @@ router.post('/producten', authMiddleware, async (req, res) => {
 });
 
 // Update product
-router.patch('/producten/:id', authMiddleware, async (req, res) => {
+router.patch('/producten/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { 
       code, 
@@ -593,7 +593,7 @@ router.patch('/producten/:id', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all quotes
-router.get('/offertes', authMiddleware, async (req, res) => {
+router.get('/offertes', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { limit = 100, offset = 0, dateFrom, dateTo, relationId } = req.query;
     
@@ -624,7 +624,7 @@ router.get('/offertes', authMiddleware, async (req, res) => {
 });
 
 // Add new quote (offerte) - SAVES LOCALLY (e-Boekhouden has no quote API)
-router.post('/offertes', authMiddleware, async (req, res) => {
+router.post('/offertes', authMiddleware, adminMiddleware, async (req, res) => {
   const db = require('../config/database');
   
   try {
@@ -765,7 +765,7 @@ router.post('/offertes', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all invoices
-router.get('/facturen', authMiddleware, async (req, res) => {
+router.get('/facturen', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { limit = 100, offset = 0, dateFrom, dateTo, relationId, invoiceNumber } = req.query;
     
@@ -798,7 +798,7 @@ router.get('/facturen', authMiddleware, async (req, res) => {
 });
 
 // Get single invoice
-router.get('/facturen/:id', authMiddleware, async (req, res) => {
+router.get('/facturen/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', `/invoice/${req.params.id}`);
     res.json({
@@ -827,7 +827,7 @@ router.get('/facturen/:id', authMiddleware, async (req, res) => {
 });
 
 // Get outstanding invoices
-router.get('/facturen/openstaand/all', authMiddleware, async (req, res) => {
+router.get('/facturen/openstaand/all', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', '/mutation/invoice/outstanding');
     res.json(data);
@@ -838,7 +838,7 @@ router.get('/facturen/openstaand/all', authMiddleware, async (req, res) => {
 });
 
 // Add new invoice - NO DELETE, only ADD
-router.post('/facturen', authMiddleware, async (req, res) => {
+router.post('/facturen', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { 
       relatieId,
@@ -903,7 +903,7 @@ router.post('/facturen', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all ledgers
-router.get('/grootboek', authMiddleware, async (req, res) => {
+router.get('/grootboek', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { limit = 500, offset = 0, category } = req.query;
     
@@ -928,7 +928,7 @@ router.get('/grootboek', authMiddleware, async (req, res) => {
 });
 
 // Get ledger balance
-router.get('/grootboek/:id/saldo', authMiddleware, async (req, res) => {
+router.get('/grootboek/:id/saldo', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', `/ledger/${req.params.id}/balance`);
     res.json(data);
@@ -943,7 +943,7 @@ router.get('/grootboek/:id/saldo', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all cost centers
-router.get('/kostplaatsen', authMiddleware, async (req, res) => {
+router.get('/kostplaatsen', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', '/costcenter');
     res.json(data);
@@ -954,7 +954,7 @@ router.get('/kostplaatsen', authMiddleware, async (req, res) => {
 });
 
 // Add cost center
-router.post('/kostplaatsen', authMiddleware, async (req, res) => {
+router.post('/kostplaatsen', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { omschrijving, parentId } = req.body;
 
@@ -979,7 +979,7 @@ router.post('/kostplaatsen', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all units
-router.get('/eenheden', authMiddleware, async (req, res) => {
+router.get('/eenheden', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', '/unit');
     res.json(data);
@@ -994,7 +994,7 @@ router.get('/eenheden', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get all invoice templates
-router.get('/sjablonen/facturen', authMiddleware, async (req, res) => {
+router.get('/sjablonen/facturen', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', '/invoicetemplate');
     res.json(data);
@@ -1005,7 +1005,7 @@ router.get('/sjablonen/facturen', authMiddleware, async (req, res) => {
 });
 
 // Get all email templates
-router.get('/sjablonen/email', authMiddleware, async (req, res) => {
+router.get('/sjablonen/email', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const data = await apiRequest('GET', '/emailtemplate');
     res.json(data);
@@ -1020,7 +1020,7 @@ router.get('/sjablonen/email', authMiddleware, async (req, res) => {
 // =============================================
 
 // Get mutations
-router.get('/boekingen', authMiddleware, async (req, res) => {
+router.get('/boekingen', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { limit = 100, offset = 0, dateFrom, dateTo, type, ledgerId } = req.query;
     
@@ -1039,7 +1039,7 @@ router.get('/boekingen', authMiddleware, async (req, res) => {
 });
 
 // Add mutation
-router.post('/boekingen', authMiddleware, async (req, res) => {
+router.post('/boekingen', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { 
       type, // FactuurOntvangen, FactuurVerstuurd, FactuurBetaling, etc.

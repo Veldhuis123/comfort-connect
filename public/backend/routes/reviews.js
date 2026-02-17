@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../config/database');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const { validateString, validateNumber, validateEnum, sanitize, validate } = require('../middleware/validators');
 const { sendReviewNotification } = require('../services/email');
 
 const router = express.Router();
@@ -18,7 +19,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get all reviews (admin)
-router.get('/admin', authMiddleware, async (req, res) => {
+router.get('/admin', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const [reviews] = await db.query(
       'SELECT * FROM reviews ORDER BY created_at DESC'
@@ -30,7 +31,7 @@ router.get('/admin', authMiddleware, async (req, res) => {
 });
 
 // Create review (admin)
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { name, location, rating, review_text, service, review_date, is_visible } = req.body;
 
@@ -105,7 +106,7 @@ router.post('/submit', async (req, res) => {
 });
 
 // Update review (admin)
-router.put('/:id', authMiddleware, async (req, res) => {
+router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, location, rating, review_text, service, review_date, is_visible } = req.body;
@@ -122,7 +123,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 });
 
 // Delete review (admin)
-router.delete('/:id', authMiddleware, async (req, res) => {
+router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     await db.query('DELETE FROM reviews WHERE id = ?', [id]);
@@ -133,7 +134,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // Toggle visibility (admin)
-router.patch('/:id/toggle', authMiddleware, async (req, res) => {
+router.patch('/:id/toggle', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     await db.query(
