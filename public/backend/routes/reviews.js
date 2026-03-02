@@ -1,10 +1,20 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const { validateString, validateNumber, validateEnum, sanitize, validate } = require('../middleware/validators');
 const { sendReviewNotification } = require('../services/email');
 
 const router = express.Router();
+
+// Strikte rate limiter voor publieke review submit
+const reviewSubmitLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 uur
+  max: 3, // max 3 reviews per uur per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Te veel reviews ingediend. Probeer het later opnieuw.' },
+});
 
 // Get all visible reviews (public)
 router.get('/', async (req, res) => {
@@ -47,7 +57,7 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
 });
 
 // Submit review (public - no auth required)
-router.post('/submit', async (req, res) => {
+router.post('/submit', reviewSubmitLimiter, async (req, res) => {
   try {
     const { name, location, rating, review_text, service } = req.body;
 
