@@ -1,10 +1,20 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const axios = require('axios');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
 const { sendContactNotification } = require('../services/email');
 
 const router = express.Router();
+
+// Strikte rate limiter voor publieke contactberichten
+const contactSubmitLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 uur
+  max: 5, // max 5 berichten per uur per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Te veel berichten verstuurd. Probeer het later opnieuw.' },
+});
 
 // Get all contact messages (admin)
 router.get('/', authMiddleware, async (req, res) => {
@@ -47,7 +57,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 });
 
 // Create contact message (public)
-router.post('/', async (req, res) => {
+router.post('/', contactSubmitLimiter, async (req, res) => {
   try {
     const { name, email, phone, subject, message, recaptchaToken } = req.body;
 

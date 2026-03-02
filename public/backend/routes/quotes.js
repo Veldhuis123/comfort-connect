@@ -1,9 +1,19 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const { sendQuoteNotification, sendQuoteConfirmation } = require('../services/email');
 
 const router = express.Router();
+
+// Strikte rate limiter voor publieke offerte aanvragen
+const quoteSubmitLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 uur
+  max: 5, // max 5 offertes per uur per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Te veel offerteaanvragen. Probeer het later opnieuw.' },
+});
 
 // Get all quotes (admin)
 router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
@@ -50,7 +60,7 @@ router.get('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 });
 
 // Create quote request (public - from calculator)
-router.post('/', async (req, res) => {
+router.post('/', quoteSubmitLimiter, async (req, res) => {
   try {
     const {
       customer_name,
