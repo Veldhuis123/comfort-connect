@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useLayoutEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Sun, Wind, Wifi, Battery, Car, Cable, Scale } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,6 +58,11 @@ export const saveCalculatorSettings = (settings: CalculatorSettings) => {
 const Calculators = () => {
   const [searchParams] = useSearchParams();
   const [settings, setSettings] = useState<CalculatorSettings>(defaultCalculatorSettings);
+
+  // Scroll to top on mount
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   
   useEffect(() => {
     setSettings(getCalculatorSettings());

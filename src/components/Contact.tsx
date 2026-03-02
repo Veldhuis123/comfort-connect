@@ -115,6 +115,11 @@ const ContactForm = () => {
           <option value="elektra">Elektra</option>
           <option value="water">Water & Sanitair</option>
           <option value="riolering">Riolering</option>
+          <option value="unifi">UniFi Netwerken</option>
+          <option value="camerabewaking">Camerabewaking</option>
+          <option value="zonnepanelen">Zonnepanelen</option>
+          <option value="thuisaccu">Thuisaccu's</option>
+          <option value="laadpalen">Laadpalen</option>
           <option value="anders">Anders</option>
         </select>
       </div>
