@@ -59,9 +59,14 @@ const Calculators = () => {
   const [searchParams] = useSearchParams();
   const [settings, setSettings] = useState<CalculatorSettings>(defaultCalculatorSettings);
 
-  // Scroll to top on mount
+  // Scroll to calculator tabs on mount
   useLayoutEffect(() => {
-    window.scrollTo(0, 0);
+    const tabsEl = document.getElementById('calculator-tabs');
+    if (tabsEl) {
+      tabsEl.scrollIntoView({ block: 'start' });
+    } else {
+      window.scrollTo(0, 0);
+    }
   }, []);
   
   useEffect(() => {
@@ -122,7 +127,7 @@ const Calculators = () => {
               </p>
             </div>
 
-            <Tabs defaultValue={defaultTab} className="max-w-6xl mx-auto">
+            <Tabs id="calculator-tabs" defaultValue={defaultTab} className="max-w-6xl mx-auto scroll-mt-24">
               <TabsList className="flex flex-wrap justify-center gap-1 h-auto w-full bg-transparent mb-8">
                 <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
                 {settings.airco.enabled && (
