@@ -17,6 +17,8 @@ const Hero = () => {
           src={heroImage} 
           alt="Professionele airco installatie door R. Veldhuis Installatie" 
           className="w-full h-full object-cover"
+          loading="eager"
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/70" />
       </div>

@@ -1,14 +1,10 @@
 # R. Veldhuis Installatie - robots.txt
-# https://rveldhuisinstallatie.nl
+# https://rv-installatie.nl
 
 User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin/login
-
-# Crawl-delay voor overige bots
-User-agent: *
-Crawl-delay: 1
 
 # Zoekmachines
 User-agent: Googlebot
@@ -28,4 +24,4 @@ User-agent: LinkedInBot
 Allow: /
 
 # Sitemap locatie
-Sitemap: https://rveldhuisinstallatie.nl/sitemap.xml
+Sitemap: https://rv-installatie.nl/sitemap.xml
