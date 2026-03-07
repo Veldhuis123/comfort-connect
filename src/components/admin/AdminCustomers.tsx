@@ -34,8 +34,16 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const data = await api.getEboekhoudenRelaties();
-      setCustomers(data || []);
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/eboekhouden/relaties`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers(data || []);
+      } else {
+        setCustomers([]);
+      }
     } catch {
       toast({ title: "Fout", description: "Kon klanten niet laden vanuit e-Boekhouden", variant: "destructive" });
     } finally {
