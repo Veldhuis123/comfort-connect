@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, UserPlus, UserCog, Search, Loader2 } from "lucide-react";
-import { api } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
 interface Customer {
   Relatiecode: string;
