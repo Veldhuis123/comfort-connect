@@ -67,7 +67,7 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
 
     // UFW status
     let ufw = null;
-    const ufwOutput = runCommand('sudo ufw status numbered 2>/dev/null');
+    const ufwOutput = runCommand('sudo -n /usr/sbin/ufw status numbered');
     if (ufwOutput) {
       const isActive = ufwOutput.includes('Status: active');
       const rules = [];
