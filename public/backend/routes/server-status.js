@@ -49,7 +49,7 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
 
     // Fail2ban status
     let fail2ban = null;
-    const f2bOutput = runCommand('sudo fail2ban-client status sshd 2>/dev/null');
+    const f2bOutput = runCommand('sudo -n /usr/bin/fail2ban-client status sshd');
     if (f2bOutput) {
       const currentlyBanned = f2bOutput.match(/Currently banned:\s+(\d+)/);
       const totalBanned = f2bOutput.match(/Total banned:\s+(\d+)/);
