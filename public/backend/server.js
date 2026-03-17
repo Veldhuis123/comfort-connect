@@ -98,6 +98,7 @@ app.use('/api/products', productsRoutes);
 app.use('/api/installations', installationsRoutes);
 app.use('/api/pricing', pricingRoutes);
 app.use('/api/wasco', wascoRoutes);
+app.use('/api/server-status', serverStatusRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
