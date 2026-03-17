@@ -55,13 +55,17 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
-        <Services />
-        <CalculatorCTA />
-        <Testimonials />
-        <About />
-        <Contact />
+        <Suspense fallback={null}>
+          <Services />
+          <CalculatorCTA />
+          <Testimonials />
+          <About />
+          <Contact />
+        </Suspense>
       </main>
-      <Footer />
+      <Suspense fallback={null}>
+        <Footer />
+      </Suspense>
     </div>
   );
 };
