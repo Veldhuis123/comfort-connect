@@ -4,6 +4,7 @@ import { QuoteStats, QuoteRequest, Review, ContactMessage } from "@/lib/api";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { useEffect, useState } from "react";
+import ServerStatusWidget from "./ServerStatusWidget";
 
 interface DashboardOverviewProps {
   stats: QuoteStats | null;
