@@ -122,7 +122,11 @@ router.post('/unban', authMiddleware, adminMiddleware, async (req, res) => {
     }
 
     try {
-      runCommand(`sudo -n /usr/bin/fail2ban-client set sshd unbanip ${ip}`);
+      execSync(`sudo -n /usr/bin/fail2ban-client set sshd unbanip ${ip}`, {
+        timeout: 5000,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
       return res.json({ success: true, message: `IP ${ip} is gedeblokkeerd` });
     } catch (cmdError) {
       const detail = String(
