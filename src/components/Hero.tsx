@@ -13,12 +13,14 @@ const Hero = () => {
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Background image with overlay */}
       <div className="absolute inset-0">
+        {/* eslint-disable-next-line react/no-unknown-property */}
         <img 
           src={heroImage} 
           alt="Professionele airco installatie door R. Veldhuis Installatie" 
           className="w-full h-full object-cover"
           loading="eager"
-          fetchPriority="high"
+          // @ts-ignore
+          fetchpriority="high"
           decoding="async"
           width={1920}
           height={1080}
