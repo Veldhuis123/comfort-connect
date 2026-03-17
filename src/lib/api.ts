@@ -222,6 +222,9 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(pricing),
     }),
+
+  // Server Status
+  getServerStatus: () => apiRequest<ServerStatus>('/server-status'),
 };
 
 // Types
