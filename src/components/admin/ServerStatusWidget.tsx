@@ -4,15 +4,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
+} from "@/components/ui/dialog";
+import {
   Server, Cpu, HardDrive, Shield, ShieldCheck, ShieldAlert,
-  RefreshCw, Loader2, Clock, Activity, Wifi
+  RefreshCw, Loader2, Clock, Activity, Wifi, Unlock
 } from "lucide-react";
 import { api, ServerStatus } from "@/lib/api";
+import { toast } from "sonner";
 
 const ServerStatusWidget = () => {
   const [status, setStatus] = useState<ServerStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bannedDialogOpen, setBannedDialogOpen] = useState(false);
+  const [unbanningIP, setUnbanningIP] = useState<string | null>(null);
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -27,9 +33,22 @@ const ServerStatusWidget = () => {
     }
   };
 
+  const handleUnban = async (ip: string) => {
+    setUnbanningIP(ip);
+    try {
+      await api.unbanIP(ip);
+      toast.success(`IP ${ip} is gedeblokkeerd`);
+      await fetchStatus();
+    } catch (err) {
+      toast.error("Kon IP niet deblokkeren");
+    } finally {
+      setUnbanningIP(null);
+    }
+  };
+
   useEffect(() => {
     fetchStatus();
-    const interval = setInterval(fetchStatus, 60000); // Refresh every minute
+    const interval = setInterval(fetchStatus, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -58,6 +77,8 @@ const ServerStatusWidget = () => {
   }
 
   if (!status) return null;
+
+  const hasBannedIPs = status.fail2ban && status.fail2ban.bannedIPs.length > 0;
 
   return (
     <div className="space-y-4">
@@ -145,8 +166,13 @@ const ServerStatusWidget = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Geblokkeerd</span>
-                  <Badge variant={status.fail2ban.currentlyBanned > 0 ? "destructive" : "secondary"}>
+                  <Badge
+                    variant={status.fail2ban.currentlyBanned > 0 ? "destructive" : "secondary"}
+                    className={hasBannedIPs ? "cursor-pointer hover:opacity-80" : ""}
+                    onClick={hasBannedIPs ? () => setBannedDialogOpen(true) : undefined}
+                  >
                     {status.fail2ban.currentlyBanned}
+                    {hasBannedIPs && " — bekijk"}
                   </Badge>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -157,13 +183,16 @@ const ServerStatusWidget = () => {
                   <span className="text-muted-foreground">Mislukte pogingen</span>
                   <span className="font-medium">{status.fail2ban.totalFailed}</span>
                 </div>
-                {status.fail2ban.bannedIPs.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Geblokkeerde IP's:</p>
-                    {status.fail2ban.bannedIPs.map(ip => (
-                      <Badge key={ip} variant="destructive" className="text-xs mr-1 mb-1">{ip}</Badge>
-                    ))}
-                  </div>
+                {hasBannedIPs && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2 gap-1 text-xs"
+                    onClick={() => setBannedDialogOpen(true)}
+                  >
+                    <Shield className="w-3 h-3" />
+                    {status.fail2ban.bannedIPs.length} geblokkeerde IP('s) beheren
+                  </Button>
                 )}
               </div>
             ) : (
@@ -235,6 +264,49 @@ const ServerStatusWidget = () => {
       <p className="text-xs text-muted-foreground text-right">
         {status.platform} • Laatst bijgewerkt: {new Date(status.timestamp).toLocaleTimeString("nl-NL")}
       </p>
+
+      {/* Banned IPs Dialog */}
+      <Dialog open={bannedDialogOpen} onOpenChange={setBannedDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-destructive" />
+              Geblokkeerde IP-adressen
+            </DialogTitle>
+            <DialogDescription>
+              Klik op "Deblokkeren" om een IP-adres te verwijderen uit de fail2ban banlist.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            {status.fail2ban?.bannedIPs.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Geen geblokkeerde IP's</p>
+            ) : (
+              status.fail2ban?.bannedIPs.map(ip => (
+                <div key={ip} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <ShieldAlert className="w-4 h-4 text-destructive" />
+                    <span className="font-mono text-sm font-medium">{ip}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 text-xs"
+                    disabled={unbanningIP === ip}
+                    onClick={() => handleUnban(ip)}
+                  >
+                    {unbanningIP === ip ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Unlock className="w-3 h-3" />
+                    )}
+                    Deblokkeren
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
