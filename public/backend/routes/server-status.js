@@ -120,7 +120,7 @@ router.post('/unban', authMiddleware, adminMiddleware, async (req, res) => {
     if (!ip || !/^[\d.]+$/.test(ip)) {
       return res.status(400).json({ error: 'Ongeldig IP-adres' });
     }
-    const result = runCommand(`sudo fail2ban-client set sshd unbanip ${ip} 2>/dev/null`);
+    const result = runCommand(`sudo -n /usr/bin/fail2ban-client set sshd unbanip ${ip}`);
     if (result === null) {
       return res.status(500).json({ error: 'Kon IP niet deblokkeren' });
     }
