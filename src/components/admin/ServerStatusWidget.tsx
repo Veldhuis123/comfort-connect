@@ -40,7 +40,7 @@ const ServerStatusWidget = () => {
       toast.success(`IP ${ip} is gedeblokkeerd`);
       await fetchStatus();
     } catch (err) {
-      toast.error("Kon IP niet deblokkeren");
+      toast.error(err instanceof Error ? err.message : "Kon IP niet deblokkeren");
     } finally {
       setUnbanningIP(null);
     }
