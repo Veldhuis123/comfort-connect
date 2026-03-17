@@ -120,11 +120,32 @@ router.post('/unban', authMiddleware, adminMiddleware, async (req, res) => {
     if (!ip || !/^[\d.]+$/.test(ip)) {
       return res.status(400).json({ error: 'Ongeldig IP-adres' });
     }
-    const result = runCommand(`sudo -n /usr/bin/fail2ban-client set sshd unbanip ${ip}`);
-    if (result === null) {
-      return res.status(500).json({ error: 'Kon IP niet deblokkeren' });
+
+    try {
+      execSync(`sudo -n /usr/bin/fail2ban-client set sshd unbanip ${ip}`, {
+        timeout: 5000,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      return res.json({ success: true, message: `IP ${ip} is gedeblokkeerd` });
+    } catch (cmdError) {
+      const detail = String(
+        cmdError?.stderr?.toString?.() ||
+        cmdError?.stdout?.toString?.() ||
+        cmdError?.message ||
+        ''
+      ).trim();
+
+      const normalized = detail.toLowerCase();
+      if (normalized.includes('not banned') || normalized.includes('isn\'t banned')) {
+        return res.json({ success: true, message: `IP ${ip} was al gedeblokkeerd` });
+      }
+
+      console.error('Unban command error:', detail || cmdError);
+      return res.status(500).json({
+        error: detail ? `Kon IP niet deblokkeren: ${detail}` : 'Kon IP niet deblokkeren',
+      });
     }
-    res.json({ success: true, message: `IP ${ip} is gedeblokkeerd` });
   } catch (error) {
     console.error('Unban error:', error);
     res.status(500).json({ error: 'Kon IP niet deblokkeren' });
