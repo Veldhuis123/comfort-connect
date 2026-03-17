@@ -225,6 +225,10 @@ export const api = {
 
   // Server Status
   getServerStatus: () => apiRequest<ServerStatus>('/server-status'),
+  unbanIP: (ip: string) => apiRequest<{ success: boolean; message: string }>('/server-status/unban', {
+    method: 'POST',
+    body: JSON.stringify({ ip }),
+  }),
 };
 
 // Types
