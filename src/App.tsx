@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,10 +7,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard";
-import Calculators from "./pages/Calculators";
-import InstallationPublic from "./pages/InstallationPublic";
+
+// Lazy load non-critical routes
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const Calculators = lazy(() => import("./pages/Calculators"));
+const InstallationPublic = lazy(() => import("./pages/InstallationPublic"));
 
 const queryClient = new QueryClient();
 
@@ -22,10 +25,10 @@ const App = () => (
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/calculators" element={<Calculators />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/installatie/:qrCode" element={<InstallationPublic />} />
+            <Route path="/calculators" element={<Suspense fallback={null}><Calculators /></Suspense>} />
+            <Route path="/admin/login" element={<Suspense fallback={null}><AdminLogin /></Suspense>} />
+            <Route path="/admin" element={<Suspense fallback={null}><AdminDashboard /></Suspense>} />
+            <Route path="/installatie/:qrCode" element={<Suspense fallback={null}><InstallationPublic /></Suspense>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
