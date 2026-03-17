@@ -222,6 +222,9 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(pricing),
     }),
+
+  // Server Status
+  getServerStatus: () => apiRequest<ServerStatus>('/server-status'),
 };
 
 // Types
@@ -531,4 +534,18 @@ export interface ProductPricingUpdate {
   refrigerant?: string;
   noise_indoor?: number;
   noise_outdoor?: number;
+}
+
+export interface ServerStatus {
+  uptime: string;
+  uptimeSeconds: number;
+  cpu: { cores: number; model: string; loadAvg: string[] };
+  memory: { total: string; used: string; free: string; percent: number };
+  disk: { total: string; used: string; available: string; percent: number } | null;
+  fail2ban: { currentlyBanned: number; totalBanned: number; currentlyFailed: number; totalFailed: number; bannedIPs: string[] } | null;
+  ufw: { active: boolean; rules: string[] } | null;
+  services: { name: string; status: string }[];
+  hostname: string;
+  platform: string;
+  timestamp: string;
 }
