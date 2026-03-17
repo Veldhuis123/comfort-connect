@@ -238,6 +238,9 @@ const AdminDashboardOverview = ({ stats, quotes, reviews, messages }: DashboardO
           )}
         </CardContent>
       </Card>
+
+      {/* Server Status */}
+      <ServerStatusWidget />
     </div>
   );
 };
