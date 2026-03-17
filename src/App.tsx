@@ -25,10 +25,10 @@ const App = () => (
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/calculators" element={<Calculators />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/installatie/:qrCode" element={<InstallationPublic />} />
+            <Route path="/calculators" element={<Suspense fallback={null}><Calculators /></Suspense>} />
+            <Route path="/admin/login" element={<Suspense fallback={null}><AdminLogin /></Suspense>} />
+            <Route path="/admin" element={<Suspense fallback={null}><AdminDashboard /></Suspense>} />
+            <Route path="/installatie/:qrCode" element={<Suspense fallback={null}><InstallationPublic /></Suspense>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
