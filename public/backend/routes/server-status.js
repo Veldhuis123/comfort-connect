@@ -113,7 +113,32 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
   }
 });
 
+// Unban IP (admin only)
+router.post('/unban', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { ip } = req.body;
+    if (!ip || !/^[\d.]+$/.test(ip)) {
+      return res.status(400).json({ error: 'Ongeldig IP-adres' });
+    }
+    const result = runCommand(`sudo fail2ban-client set sshd unbanip ${ip} 2>/dev/null`);
+    if (result === null) {
+      return res.status(500).json({ error: 'Kon IP niet deblokkeren' });
+    }
+    res.json({ success: true, message: `IP ${ip} is gedeblokkeerd` });
+  } catch (error) {
+    console.error('Unban error:', error);
+    res.status(500).json({ error: 'Kon IP niet deblokkeren' });
+  }
+});
+
 function formatBytes(bytes) {
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb >= 1) return `${gb.toFixed(1)} GB`;
+  const mb = bytes / (1024 * 1024);
+  return `${mb.toFixed(0)} MB`;
+}
+
+module.exports = router;
   const gb = bytes / (1024 * 1024 * 1024);
   if (gb >= 1) return `${gb.toFixed(1)} GB`;
   const mb = bytes / (1024 * 1024);
