@@ -194,6 +194,7 @@ const ReviewSubmitDialog = () => {
             <Label htmlFor="review_text">Je review</Label>
             <Textarea
               id="review_text"
+              name="review_text"
               placeholder="Vertel over je ervaring..."
               value={formData.review_text}
               onChange={(e) => setFormData({ ...formData, review_text: e.target.value })}

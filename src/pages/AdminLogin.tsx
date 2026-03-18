@@ -46,12 +46,15 @@ const AdminLogin = () => {
             )}
             
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label htmlFor="admin-email" className="block text-sm font-medium mb-2">
                 <Mail className="w-4 h-4 inline mr-2" />
                 E-mail
               </label>
               <Input
+                id="admin-email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@rv-installatie.nl"
@@ -60,12 +63,15 @@ const AdminLogin = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label htmlFor="admin-password" className="block text-sm font-medium mb-2">
                 <Lock className="w-4 h-4 inline mr-2" />
                 Wachtwoord
               </label>
               <Input
+                id="admin-password"
+                name="password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
