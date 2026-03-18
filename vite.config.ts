@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    sourcemap: true,
+    sourcemap: mode === "development",
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
