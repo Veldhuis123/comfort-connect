@@ -176,7 +176,7 @@ const ReviewSubmitDialog = () => {
               value={formData.service}
               onValueChange={(value) => setFormData({ ...formData, service: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="service">
                 <SelectValue placeholder="Selecteer een dienst" />
               </SelectTrigger>
               <SelectContent>
