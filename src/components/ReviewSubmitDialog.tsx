@@ -144,6 +144,8 @@ const ReviewSubmitDialog = () => {
             <Label htmlFor="name">Naam</Label>
             <Input
               id="name"
+              name="name"
+              autoComplete="name"
               placeholder="Je naam"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -157,6 +159,8 @@ const ReviewSubmitDialog = () => {
             <Label htmlFor="location">Plaats</Label>
             <Input
               id="location"
+              name="location"
+              autoComplete="address-level2"
               placeholder="Bijv. Westerhaar"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
