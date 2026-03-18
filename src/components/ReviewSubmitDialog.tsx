@@ -144,6 +144,8 @@ const ReviewSubmitDialog = () => {
             <Label htmlFor="name">Naam</Label>
             <Input
               id="name"
+              name="name"
+              autoComplete="name"
               placeholder="Je naam"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -157,6 +159,8 @@ const ReviewSubmitDialog = () => {
             <Label htmlFor="location">Plaats</Label>
             <Input
               id="location"
+              name="location"
+              autoComplete="address-level2"
               placeholder="Bijv. Westerhaar"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
@@ -172,7 +176,7 @@ const ReviewSubmitDialog = () => {
               value={formData.service}
               onValueChange={(value) => setFormData({ ...formData, service: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="service">
                 <SelectValue placeholder="Selecteer een dienst" />
               </SelectTrigger>
               <SelectContent>
@@ -190,6 +194,7 @@ const ReviewSubmitDialog = () => {
             <Label htmlFor="review_text">Je review</Label>
             <Textarea
               id="review_text"
+              name="review_text"
               placeholder="Vertel over je ervaring..."
               value={formData.review_text}
               onChange={(e) => setFormData({ ...formData, review_text: e.target.value })}

@@ -71,6 +71,7 @@ const ContactForm = () => {
           <Input 
             id="name" 
             name="name" 
+            autoComplete="name"
             required 
             placeholder="Uw naam"
           />
@@ -83,6 +84,7 @@ const ContactForm = () => {
             id="phone" 
             name="phone" 
             type="tel" 
+            autoComplete="tel"
             required 
             placeholder="Uw telefoonnummer"
           />
@@ -96,6 +98,7 @@ const ContactForm = () => {
           id="email" 
           name="email" 
           type="email" 
+          autoComplete="email"
           required
           placeholder="Uw e-mailadres"
         />
