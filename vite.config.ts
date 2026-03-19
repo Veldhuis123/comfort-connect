@@ -27,35 +27,6 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     sourcemap: mode === "development",
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          // Group all homepage below-fold components into one chunk
-          'homepage': [
-            './src/components/Services.tsx',
-            './src/components/About.tsx',
-            './src/components/Contact.tsx',
-            './src/components/Footer.tsx',
-            './src/components/Testimonials.tsx',
-            './src/components/ReviewSubmitDialog.tsx',
-          ],
-          // Group vendor UI libs to avoid duplication across chunks
-          'vendor-ui': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-tooltip',
-            '@radix-ui/react-popover',
-          ],
-          'vendor-react': [
-            'react',
-            'react-dom',
-            'react-router-dom',
-          ],
-        },
-      },
-    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
