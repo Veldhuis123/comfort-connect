@@ -57,6 +57,8 @@ const About = () => {
                   src={logo} 
                   alt="R. Veldhuis Installatie" 
                   className="w-48 h-auto mx-auto mb-6"
+                  width={192}
+                  height={103}
                 />
                 <p className="text-muted-foreground">
                   Uw betrouwbare partner voor alle installaties
