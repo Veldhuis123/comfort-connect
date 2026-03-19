@@ -692,14 +692,18 @@ router.post('/offertes', authMiddleware, adminMiddleware, async (req, res) => {
       quoteNumber = `OFF-${year}-${String(nextNum).padStart(4, '0')}`;
     }
 
+    // Generate acceptance token
+    const crypto = require('crypto');
+    const acceptanceToken = crypto.randomUUID();
+
     // Insert quote
     const [quoteResult] = await db.query(
       `INSERT INTO local_quotes (
         relation_id, customer_name, customer_email, customer_phone, customer_address,
         quote_number, quote_date, expiration_date,
         subtotal_excl, vat_amount, total_incl,
-        customer_note, internal_note, quote_request_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        customer_note, internal_note, quote_request_id, acceptance_token
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         relatieId || null,
         klantnaam || 'Onbekend',
@@ -714,7 +718,8 @@ router.post('/offertes', authMiddleware, adminMiddleware, async (req, res) => {
         totalIncl.toFixed(2),
         notitieKlant || null,
         notitieIntern || null,
-        quoteRequestId || null
+        quoteRequestId || null,
+        acceptanceToken
       ]
     );
 
