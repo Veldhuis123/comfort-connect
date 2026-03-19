@@ -7,7 +7,7 @@ import {
   defaultCalculatorSettings, 
   getCalculatorSettings, 
   saveCalculatorSettings 
-} from "@/pages/Calculators";
+} from "@/lib/calculatorSettings";
 import { useState, useEffect } from "react";
 import EBoekhoudenSync from "@/components/EBoekhoudenSync";
 import WascoSync from "@/components/WascoSync";
