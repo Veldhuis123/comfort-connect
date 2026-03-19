@@ -23,7 +23,7 @@ ALTER TABLE local_quotes
   ADD COLUMN accepted_ip VARCHAR(45) NULL COMMENT 'IP address of acceptor',
   ADD COLUMN accepted_user_agent TEXT NULL COMMENT 'User agent of acceptor';
 
-CREATE INDEX IF NOT EXISTS idx_acceptance_token ON local_quotes(acceptance_token);
+CREATE INDEX idx_acceptance_token ON local_quotes(acceptance_token);
 
 -- =============================================
 -- Installation documents table
