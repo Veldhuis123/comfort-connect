@@ -4,7 +4,7 @@
 -- =============================================
 
 -- Add 'elektra' to installation_type ENUM (if not already present)
-ALTER TABLE rv_installations 
+ALTER TABLE installations 
   MODIFY COLUMN installation_type ENUM('airco', 'warmtepomp', 'koeling', 'ventilatie', 'elektra', 'overig') NOT NULL DEFAULT 'airco';
 
 -- Add columns for type-specific data
