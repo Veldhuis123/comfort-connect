@@ -10,9 +10,9 @@ ALTER TABLE installations
 -- Add columns for type-specific data
 ALTER TABLE rv_installations
   ADD COLUMN IF NOT EXISTS groepenverklaring_data JSON NULL COMMENT 'Groepenkast config for elektra installations',
-  ADD COLUMN IF NOT EXISTS commissioning_data JSON NULL COMMENT 'Inbedrijfstellingsrapport for airco/warmtepomp',
-  ADD COLUMN IF NOT EXISTS keuring_datum DATE NULL COMMENT 'Last inspection date for elektra',
-  ADD COLUMN IF NOT EXISTS keurmeester VARCHAR(100) NULL COMMENT 'Inspector name';
+  ADD COLUMN commissioning_data JSON NULL COMMENT 'Inbedrijfstellingsrapport for airco/warmtepomp',
+  ADD COLUMN keuring_datum DATE NULL COMMENT 'Last inspection date for elektra',
+  ADD COLUMN keurmeester VARCHAR(100) NULL COMMENT 'Inspector name';
 
 -- =============================================
 -- Add acceptance token to local_quotes for digital acceptance
