@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Star, Quote } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { api, Review } from "@/lib/api";
@@ -8,24 +8,42 @@ const Testimonials = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  // Only fetch reviews when section becomes visible
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
     const fetchReviews = async () => {
       try {
         const data = await api.getPublicReviews();
         setReviews(data);
       } catch (error) {
-        // API not available, show empty state
         console.log("Reviews API niet beschikbaar");
       } finally {
         setLoading(false);
       }
     };
     fetchReviews();
-  }, []);
+  }, [isVisible]);
 
   if (loading) {
     return (
-      <section id="reviews" className="py-20 md:py-32 bg-muted/30 scroll-mt-24">
+      <section ref={sectionRef} id="reviews" className="py-20 md:py-32 bg-muted/30 scroll-mt-24">
         <div className="container mx-auto px-4 text-center">
           <div className="animate-pulse">
             <div className="h-8 bg-muted rounded w-48 mx-auto mb-4" />
@@ -38,7 +56,7 @@ const Testimonials = () => {
 
   if (reviews.length === 0) {
     return (
-      <section id="reviews" className="py-20 md:py-32 bg-muted/30 scroll-mt-24">
+      <section ref={sectionRef} id="reviews" className="py-20 md:py-32 bg-muted/30 scroll-mt-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <span className="text-accent font-semibold text-sm uppercase tracking-wider">
@@ -92,7 +110,7 @@ const Testimonials = () => {
   const averageRating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
 
   return (
-    <section id="reviews" className="py-20 md:py-32 bg-muted/30 scroll-mt-24">
+    <section ref={sectionRef} id="reviews" className="py-20 md:py-32 bg-muted/30 scroll-mt-24">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <span className="text-accent font-semibold text-sm uppercase tracking-wider">
