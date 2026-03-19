@@ -58,7 +58,11 @@ const Index = () => {
         <Suspense fallback={null}>
           <Services />
           <CalculatorCTA />
+        </Suspense>
+        <Suspense fallback={null}>
           <Testimonials />
+        </Suspense>
+        <Suspense fallback={null}>
           <About />
           <Contact />
         </Suspense>
