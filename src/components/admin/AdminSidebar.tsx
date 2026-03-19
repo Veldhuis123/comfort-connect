@@ -1,7 +1,8 @@
 import { 
   LayoutDashboard, Users, UserPlus, UserCog, FileText, Receipt,
-  Star, MessageSquare, Package, Euro, Thermometer, Settings,
-  Download, BookOpen, Calculator, LogOut, ChevronDown
+  Star, MessageSquare, Euro, Settings,
+  Download, BookOpen, Calculator, LogOut, ChevronDown,
+  Snowflake, Thermometer, Package, Zap, Grid3X3, QrCode
 } from "lucide-react";
 import {
   Sidebar,
@@ -66,6 +67,16 @@ const AdminSidebar = ({
     </SidebarMenuItem>
   );
 
+  const sectionGroups = [
+    { label: "Klantbeheer", sections: ["customers-overview", "customers-add", "customers-edit"] },
+    { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "reviews", "messages"] },
+    { label: "Airco", sections: ["airco-products", "airco-installations", "airco-calculator"] },
+    { label: "Elektra", sections: ["elektra-groepenkasten", "elektra-configurator", "elektra-qrcodes"] },
+    { label: "Systeem", sections: ["settings", "boekhouden", "wasco"] },
+  ];
+
+  const isGroupActive = (sections: string[]) => sections.includes(activeSection);
+
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
@@ -96,7 +107,7 @@ const AdminSidebar = ({
 
         {/* Klantbeheer */}
         <SidebarGroup>
-          <Collapsible defaultOpen={activeSection.startsWith("customers")}>
+          <Collapsible defaultOpen={isGroupActive(sectionGroups[0].sections)}>
             <CollapsibleTrigger className="w-full">
               <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
                 {!collapsed && <span>Klantbeheer</span>}
@@ -117,7 +128,7 @@ const AdminSidebar = ({
 
         {/* Verkoop */}
         <SidebarGroup>
-          <Collapsible defaultOpen={["quotes", "local-quotes", "reviews", "messages"].includes(activeSection)}>
+          <Collapsible defaultOpen={isGroupActive(sectionGroups[1].sections)}>
             <CollapsibleTrigger className="w-full">
               <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
                 {!collapsed && <span>Verkoop</span>}
@@ -129,6 +140,7 @@ const AdminSidebar = ({
                 <SidebarMenu>
                   <MenuItem section="quotes" icon={FileText} label="Offerteaanvragen" badge={newQuotes} />
                   <MenuItem section="local-quotes" icon={Receipt} label="Lokale Offertes" />
+                  <MenuItem section="pricing" icon={Euro} label="Prijsbeheer" />
                   <MenuItem section="reviews" icon={Star} label="Reviews" />
                   <MenuItem section="messages" icon={MessageSquare} label="Berichten" badge={unreadMessages} />
                 </SidebarMenu>
@@ -137,21 +149,42 @@ const AdminSidebar = ({
           </Collapsible>
         </SidebarGroup>
 
-        {/* Productbeheer */}
+        {/* Airco */}
         <SidebarGroup>
-          <Collapsible defaultOpen={["products", "pricing", "installations"].includes(activeSection)}>
+          <Collapsible defaultOpen={isGroupActive(sectionGroups[2].sections)}>
             <CollapsibleTrigger className="w-full">
               <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
-                {!collapsed && <span>Productbeheer</span>}
+                {!collapsed && <span>Airco</span>}
                 {!collapsed && <ChevronDown className="h-3 w-3" />}
               </SidebarGroupLabel>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <MenuItem section="products" icon={Package} label="Producten" />
-                  <MenuItem section="pricing" icon={Euro} label="Prijsbeheer" />
-                  <MenuItem section="installations" icon={Thermometer} label="Installaties" />
+                  <MenuItem section="airco-products" icon={Package} label="Producten" />
+                  <MenuItem section="airco-installations" icon={Thermometer} label="Installaties" />
+                  <MenuItem section="airco-calculator" icon={Snowflake} label="Calculator" />
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarGroup>
+
+        {/* Elektra */}
+        <SidebarGroup>
+          <Collapsible defaultOpen={isGroupActive(sectionGroups[3].sections)}>
+            <CollapsibleTrigger className="w-full">
+              <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
+                {!collapsed && <span>Elektra</span>}
+                {!collapsed && <ChevronDown className="h-3 w-3" />}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <MenuItem section="elektra-groepenkasten" icon={Grid3X3} label="Groepenkasten" />
+                  <MenuItem section="elektra-configurator" icon={Zap} label="Configurator" />
+                  <MenuItem section="elektra-qrcodes" icon={QrCode} label="QR-codes" />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -160,7 +193,7 @@ const AdminSidebar = ({
 
         {/* Systeem */}
         <SidebarGroup>
-          <Collapsible defaultOpen={["settings", "boekhouden", "wasco", "calculators"].includes(activeSection)}>
+          <Collapsible defaultOpen={isGroupActive(sectionGroups[4].sections)}>
             <CollapsibleTrigger className="w-full">
               <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
                 {!collapsed && <span>Systeem</span>}
@@ -173,7 +206,6 @@ const AdminSidebar = ({
                   <MenuItem section="settings" icon={Settings} label="Instellingen" />
                   <MenuItem section="boekhouden" icon={BookOpen} label="e-Boekhouden" />
                   <MenuItem section="wasco" icon={Download} label="Wasco Sync" />
-                  <MenuItem section="calculators" icon={Calculator} label="Calculatoren" />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>

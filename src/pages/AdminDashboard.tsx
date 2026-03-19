@@ -1,16 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { api, Review, QuoteRequest, ContactMessage, QuoteStats, ProductCategory } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { 
-  Star, Plus, 
-  Trash2, Eye, EyeOff, Mail, Phone, Calendar,
-  RefreshCw
+  Star, Plus, Trash2, Eye, EyeOff, Mail, Phone, Calendar, RefreshCw
 } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -23,13 +21,13 @@ import AdminLocalQuotes from "@/components/AdminLocalQuotes";
 import AdminPricing from "@/components/AdminPricing";
 import QuoteDetailDialog from "@/components/QuoteDetailDialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+
+// Lazy load new Elektra components
+const GroepenkastConfigurator = lazy(() => import("@/components/admin/GroepenkastConfigurator"));
+const ElektraGroepenkasten = lazy(() => import("@/components/admin/ElektraGroepenkasten"));
+const ElektraQRCodes = lazy(() => import("@/components/admin/ElektraQRCodes"));
 
 const AdminDashboard = () => {
   const { user, logout, isLoading: authLoading } = useAuth();
@@ -43,13 +41,9 @@ const AdminDashboard = () => {
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("dashboard");
 
-  // Quote detail dialog state
   const [selectedQuote, setSelectedQuote] = useState<QuoteRequest | null>(null);
   const [showQuoteDetail, setShowQuoteDetail] = useState(false);
-
   const [productCategory, setProductCategory] = useState<ProductCategory>('airco');
-
-  // Review form state
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({
     name: "", location: "", rating: 5, review_text: "", service: "", review_date: "", is_visible: true
@@ -222,6 +216,17 @@ const AdminDashboard = () => {
           </div>
         );
 
+      case "pricing":
+        return (
+          <div>
+            <div className="mb-6">
+              <h1 className="font-heading text-2xl font-bold">Prijsbeheer</h1>
+              <p className="text-sm text-muted-foreground">Beheer productprijzen en marges</p>
+            </div>
+            <AdminPricing />
+          </div>
+        );
+
       case "reviews":
         return (
           <div>
@@ -336,43 +341,64 @@ const AdminDashboard = () => {
           </div>
         );
 
-      case "products":
+      // Airco section
+      case "airco-products":
         return (
           <div>
             <div className="mb-6">
-              <h1 className="font-heading text-2xl font-bold">Producten</h1>
-              <p className="text-sm text-muted-foreground">Beheer je productcatalogus</p>
+              <h1 className="font-heading text-2xl font-bold">Airco Producten</h1>
+              <p className="text-sm text-muted-foreground">Beheer je airco productcatalogus</p>
             </div>
             <AdminProducts selectedCategory={productCategory} onCategoryChange={setProductCategory} />
           </div>
         );
 
-      case "pricing":
+      case "airco-installations":
         return (
           <div>
             <div className="mb-6">
-              <h1 className="font-heading text-2xl font-bold">Prijsbeheer</h1>
-              <p className="text-sm text-muted-foreground">Beheer productprijzen en marges</p>
-            </div>
-            <AdminPricing />
-          </div>
-        );
-
-      case "installations":
-        return (
-          <div>
-            <div className="mb-6">
-              <h1 className="font-heading text-2xl font-bold">Installaties</h1>
+              <h1 className="font-heading text-2xl font-bold">Airco Installaties</h1>
               <p className="text-sm text-muted-foreground">Beheer BRL 100 installaties</p>
             </div>
             <AdminInstallations />
           </div>
         );
 
+      case "airco-calculator":
+        return <AdminSettings />;
+
+      // Elektra section
+      case "elektra-groepenkasten":
+        return (
+          <Suspense fallback={<div className="p-8 text-muted-foreground">Laden...</div>}>
+            <ElektraGroepenkasten onOpenConfigurator={(index) => {
+              if (index !== undefined) {
+                // Store active index for configurator
+                sessionStorage.setItem("rv_gk_active_index", String(index));
+              }
+              setActiveSection("elektra-configurator");
+            }} />
+          </Suspense>
+        );
+
+      case "elektra-configurator":
+        return (
+          <Suspense fallback={<div className="p-8 text-muted-foreground">Laden...</div>}>
+            <GroepenkastConfigurator />
+          </Suspense>
+        );
+
+      case "elektra-qrcodes":
+        return (
+          <Suspense fallback={<div className="p-8 text-muted-foreground">Laden...</div>}>
+            <ElektraQRCodes />
+          </Suspense>
+        );
+
+      // Systeem
       case "settings":
       case "boekhouden":
       case "wasco":
-      case "calculators":
         return <AdminSettings />;
 
       default:
@@ -392,7 +418,6 @@ const AdminDashboard = () => {
           newQuotes={newQuotes}
         />
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Top bar */}
           <header className="h-14 flex items-center gap-3 border-b border-border bg-background px-4 sticky top-0 z-40">
             <SidebarTrigger />
             <div className="flex-1" />
@@ -401,8 +426,6 @@ const AdminDashboard = () => {
               <span className="hidden sm:inline">Vernieuwen</span>
             </Button>
           </header>
-
-          {/* Content */}
           <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
             {error && (
               <div className="bg-destructive/10 text-destructive p-4 rounded-lg mb-6">{error}</div>
