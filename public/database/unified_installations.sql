@@ -8,8 +8,8 @@ ALTER TABLE installations
   MODIFY COLUMN installation_type ENUM('airco', 'warmtepomp', 'koeling', 'ventilatie', 'elektra', 'overig') NOT NULL DEFAULT 'airco';
 
 -- Add columns for type-specific data
-ALTER TABLE rv_installations
-  ADD COLUMN IF NOT EXISTS groepenverklaring_data JSON NULL COMMENT 'Groepenkast config for elektra installations',
+ALTER TABLE installations
+  ADD COLUMN groepenverklaring_data JSON NULL COMMENT 'Groepenkast config for elektra installations',
   ADD COLUMN commissioning_data JSON NULL COMMENT 'Inbedrijfstellingsrapport for airco/warmtepomp',
   ADD COLUMN keuring_datum DATE NULL COMMENT 'Last inspection date for elektra',
   ADD COLUMN keurmeester VARCHAR(100) NULL COMMENT 'Inspector name';
