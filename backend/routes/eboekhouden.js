@@ -1203,14 +1203,18 @@ router.post('/local-quotes', authMiddleware, async (req, res) => {
     }
     const quoteNumber = `OFF-${year}-${String(nextNum).padStart(4, '0')}`;
 
+    // Generate acceptance token
+    const crypto = require('crypto');
+    const acceptanceToken = crypto.randomUUID();
+
     // Insert quote
     const [quoteResult] = await db.query(
       `INSERT INTO local_quotes (
         customer_name, customer_email, customer_phone, customer_address,
         quote_number, quote_date, expiration_date,
         subtotal_excl, vat_amount, total_incl,
-        customer_note, internal_note, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'concept')`,
+        customer_note, internal_note, status, acceptance_token
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'concept', ?)`,
       [
         customer_name.trim(),
         customer_email || null,
@@ -1223,7 +1227,8 @@ router.post('/local-quotes', authMiddleware, async (req, res) => {
         vatAmount.toFixed(2),
         totalIncl.toFixed(2),
         customer_note || null,
-        internal_note || null
+        internal_note || null,
+        acceptanceToken
       ]
     );
 
