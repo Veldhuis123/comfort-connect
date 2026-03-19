@@ -55,7 +55,7 @@ export interface CreateTechnician {
   brl_certificate_expires?: string;
 }
 
-export type InstallationType = 'airco' | 'warmtepomp' | 'koeling' | 'ventilatie' | 'overig';
+export type InstallationType = 'airco' | 'warmtepomp' | 'koeling' | 'ventilatie' | 'elektra' | 'overig';
 export type InstallationStatus = 'actief' | 'onderhoud_nodig' | 'storing' | 'buiten_gebruik' | 'verwijderd';
 
 export interface Installation {
