@@ -13,6 +13,7 @@ const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const Calculators = lazy(() => import("./pages/Calculators"));
 const InstallationPublic = lazy(() => import("./pages/InstallationPublic"));
+const QuotePublic = lazy(() => import("./pages/QuotePublic"));
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/admin/login" element={<Suspense fallback={null}><AdminLogin /></Suspense>} />
             <Route path="/admin" element={<Suspense fallback={null}><AdminDashboard /></Suspense>} />
             <Route path="/installatie/:qrCode" element={<Suspense fallback={null}><InstallationPublic /></Suspense>} />
+            <Route path="/offerte/:token" element={<Suspense fallback={null}><QuotePublic /></Suspense>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

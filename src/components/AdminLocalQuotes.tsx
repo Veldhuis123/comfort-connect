@@ -30,10 +30,12 @@ import {
 } from "@/components/ui/table";
 import { 
   FileText, Trash2, Eye, Download, Calendar, Mail, Phone, 
-  User, Euro, RefreshCw, CheckCircle, XCircle, Clock, Send, Plus
+  User, Euro, RefreshCw, CheckCircle, XCircle, Clock, Send, Plus,
+  Link as LinkIcon, Copy
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateLocalQuotePDF } from "@/lib/localQuotePdfExport";
+import CustomerSelectorQuote from "@/components/admin/CustomerSelectorQuote";
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   concept: { label: "Concept", color: "bg-gray-500", icon: <FileText className="w-3 h-3" /> },
@@ -159,10 +161,17 @@ const AdminLocalQuotes = () => {
 
   const handleExportPDF = (quote: LocalQuote) => {
     generateLocalQuotePDF(quote);
-    toast({
-      title: "PDF Gedownload",
-      description: `Offerte ${quote.quote_number} is gedownload`,
-    });
+    toast({ title: "PDF Gedownload", description: `Offerte ${quote.quote_number} is gedownload` });
+  };
+
+  const handleCopyAcceptLink = (quote: LocalQuote) => {
+    if (!quote.acceptance_token) {
+      toast({ title: "Geen link", description: "Deze offerte heeft nog geen acceptatielink", variant: "destructive" });
+      return;
+    }
+    const url = `${window.location.origin}/offerte/${quote.acceptance_token}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Link gekopieerd", description: "De acceptatielink is naar je klembord gekopieerd" });
   };
 
   // New quote handlers
@@ -348,6 +357,7 @@ const AdminLocalQuotes = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleViewQuote(quote.id)}
+                            title="Bekijken"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -355,13 +365,25 @@ const AdminLocalQuotes = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleExportPDF(quote)}
+                            title="PDF downloaden"
                           >
                             <Download className="w-4 h-4" />
                           </Button>
+                          {quote.acceptance_token && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleCopyAcceptLink(quote)}
+                              title="Acceptatielink kopiëren"
+                            >
+                              <LinkIcon className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDelete(quote.id)}
+                            title="Verwijderen"
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
@@ -410,11 +432,17 @@ const AdminLocalQuotes = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" onClick={() => handleExportPDF(selectedQuote)}>
                     <Download className="w-4 h-4 mr-2" />
                     PDF
                   </Button>
+                  {selectedQuote.acceptance_token && (
+                    <Button variant="outline" onClick={() => handleCopyAcceptLink(selectedQuote)}>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Acceptatielink
+                    </Button>
+                  )}
                   <Button
                     variant="destructive"
                     onClick={() => handleDelete(selectedQuote.id)}
@@ -593,41 +621,70 @@ const AdminLocalQuotes = () => {
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Customer Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>Klantnaam *</Label>
-                <Input
-                  value={newQuoteForm.customer_name}
-                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_name: e.target.value }))}
-                  placeholder="Naam van de klant"
-                />
-              </div>
-              <div>
-                <Label>E-mail</Label>
-                <Input
-                  type="email"
-                  value={newQuoteForm.customer_email || ""}
-                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_email: e.target.value }))}
-                  placeholder="klant@email.nl"
-                />
-              </div>
-              <div>
-                <Label>Telefoon</Label>
-                <Input
-                  value={newQuoteForm.customer_phone || ""}
-                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_phone: e.target.value }))}
-                  placeholder="06-12345678"
-                />
-              </div>
-              <div>
-                <Label>Adres</Label>
-                <Input
-                  value={newQuoteForm.customer_address || ""}
-                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_address: e.target.value }))}
-                  placeholder="Straat 1, 1234 AB Plaats"
-                />
-              </div>
+            {/* Customer Selector */}
+            <div>
+              <Label className="text-base font-semibold mb-3 block">Klant</Label>
+              <CustomerSelectorQuote
+                selectedCustomer={newQuoteForm.customer_name ? {
+                  customer_name: newQuoteForm.customer_name,
+                  customer_email: newQuoteForm.customer_email || "",
+                  customer_phone: newQuoteForm.customer_phone || "",
+                  customer_address: newQuoteForm.customer_address || "",
+                } : null}
+                onSelect={(customer) => setNewQuoteForm(prev => ({
+                  ...prev,
+                  customer_name: customer.customer_name,
+                  customer_email: customer.customer_email,
+                  customer_phone: customer.customer_phone,
+                  customer_address: customer.customer_address,
+                }))}
+                onClear={() => setNewQuoteForm(prev => ({
+                  ...prev,
+                  customer_name: "",
+                  customer_email: "",
+                  customer_phone: "",
+                  customer_address: "",
+                }))}
+              />
+
+              {/* Manual entry fields (shown when no customer selected from search) */}
+              {!newQuoteForm.customer_name && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                  <div>
+                    <Label className="text-xs">Klantnaam *</Label>
+                    <Input
+                      value={newQuoteForm.customer_name}
+                      onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_name: e.target.value }))}
+                      placeholder="Naam van de klant"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">E-mail</Label>
+                    <Input
+                      type="email"
+                      value={newQuoteForm.customer_email || ""}
+                      onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_email: e.target.value }))}
+                      placeholder="klant@email.nl"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Telefoon</Label>
+                    <Input
+                      value={newQuoteForm.customer_phone || ""}
+                      onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_phone: e.target.value }))}
+                      placeholder="06-12345678"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Adres</Label>
+                    <Input
+                      value={newQuoteForm.customer_address || ""}
+                      onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_address: e.target.value }))}
+                      placeholder="Straat 1, 1234 AB Plaats"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Line Items */}
