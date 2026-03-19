@@ -30,10 +30,12 @@ import {
 } from "@/components/ui/table";
 import { 
   FileText, Trash2, Eye, Download, Calendar, Mail, Phone, 
-  User, Euro, RefreshCw, CheckCircle, XCircle, Clock, Send, Plus
+  User, Euro, RefreshCw, CheckCircle, XCircle, Clock, Send, Plus,
+  Link as LinkIcon, Copy
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateLocalQuotePDF } from "@/lib/localQuotePdfExport";
+import CustomerSelectorQuote from "@/components/admin/CustomerSelectorQuote";
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   concept: { label: "Concept", color: "bg-gray-500", icon: <FileText className="w-3 h-3" /> },
