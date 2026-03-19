@@ -692,14 +692,18 @@ router.post('/offertes', authMiddleware, adminMiddleware, async (req, res) => {
       quoteNumber = `OFF-${year}-${String(nextNum).padStart(4, '0')}`;
     }
 
+    // Generate acceptance token
+    const crypto = require('crypto');
+    const acceptanceToken = crypto.randomUUID();
+
     // Insert quote
     const [quoteResult] = await db.query(
       `INSERT INTO local_quotes (
         relation_id, customer_name, customer_email, customer_phone, customer_address,
         quote_number, quote_date, expiration_date,
         subtotal_excl, vat_amount, total_incl,
-        customer_note, internal_note, quote_request_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        customer_note, internal_note, quote_request_id, acceptance_token
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         relatieId || null,
         klantnaam || 'Onbekend',
@@ -714,7 +718,8 @@ router.post('/offertes', authMiddleware, adminMiddleware, async (req, res) => {
         totalIncl.toFixed(2),
         notitieKlant || null,
         notitieIntern || null,
-        quoteRequestId || null
+        quoteRequestId || null,
+        acceptanceToken
       ]
     );
 
@@ -1198,14 +1203,18 @@ router.post('/local-quotes', authMiddleware, async (req, res) => {
     }
     const quoteNumber = `OFF-${year}-${String(nextNum).padStart(4, '0')}`;
 
+    // Generate acceptance token
+    const crypto = require('crypto');
+    const acceptanceToken = crypto.randomUUID();
+
     // Insert quote
     const [quoteResult] = await db.query(
       `INSERT INTO local_quotes (
         customer_name, customer_email, customer_phone, customer_address,
         quote_number, quote_date, expiration_date,
         subtotal_excl, vat_amount, total_incl,
-        customer_note, internal_note, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'concept')`,
+        customer_note, internal_note, status, acceptance_token
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'concept', ?)`,
       [
         customer_name.trim(),
         customer_email || null,
@@ -1218,7 +1227,8 @@ router.post('/local-quotes', authMiddleware, async (req, res) => {
         vatAmount.toFixed(2),
         totalIncl.toFixed(2),
         customer_note || null,
-        internal_note || null
+        internal_note || null,
+        acceptanceToken
       ]
     );
 
@@ -1408,6 +1418,91 @@ router.delete('/local-quotes/:id', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Delete local quote error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// =============================================
+// PUBLIEKE OFFERTE ENDPOINTS (geen auth nodig)
+// =============================================
+
+// Get public quote by acceptance token
+router.get('/local-quotes/public/:token', async (req, res) => {
+  const db = require('../config/database');
+  try {
+    const { token } = req.params;
+    
+    const [quotes] = await db.query(
+      'SELECT id, quote_number, customer_name, customer_email, quote_date, expiration_date, subtotal_excl, vat_amount, total_incl, status, customer_note FROM local_quotes WHERE acceptance_token = ?',
+      [token]
+    );
+
+    if (quotes.length === 0) {
+      return res.status(404).json({ error: 'Offerte niet gevonden' });
+    }
+
+    const quote = quotes[0];
+
+    // Get items
+    const [items] = await db.query(
+      'SELECT description, quantity, unit, price_per_unit, vat_percentage, line_total_excl, line_total_incl FROM local_quote_items WHERE quote_id = ? ORDER BY sort_order',
+      [quote.id]
+    );
+
+    res.json({
+      ...quote,
+      items,
+      company: {
+        name: 'R. Veldhuis Installatie',
+        email: 'info@rv-installatie.nl',
+        phone: '06-13629947'
+      }
+    });
+  } catch (error) {
+    console.error('Public quote fetch error:', error);
+    res.status(500).json({ error: 'Server fout' });
+  }
+});
+
+// Accept quote by token
+router.post('/local-quotes/public/:token/accept', async (req, res) => {
+  const db = require('../config/database');
+  try {
+    const { token } = req.params;
+    
+    const [quotes] = await db.query(
+      'SELECT id, status, expiration_date FROM local_quotes WHERE acceptance_token = ?',
+      [token]
+    );
+
+    if (quotes.length === 0) {
+      return res.status(404).json({ error: 'Offerte niet gevonden' });
+    }
+
+    const quote = quotes[0];
+
+    if (quote.status === 'geaccepteerd') {
+      return res.json({ success: true, message: 'Offerte was al geaccepteerd' });
+    }
+
+    if (quote.status !== 'verzonden') {
+      return res.status(400).json({ error: 'Deze offerte kan niet meer geaccepteerd worden' });
+    }
+
+    // Check expiration
+    if (quote.expiration_date && new Date(quote.expiration_date) < new Date()) {
+      await db.query('UPDATE local_quotes SET status = ? WHERE id = ?', ['verlopen', quote.id]);
+      return res.status(400).json({ error: 'Deze offerte is verlopen' });
+    }
+
+    await db.query(
+      'UPDATE local_quotes SET status = ?, accepted_at = NOW() WHERE id = ?',
+      ['geaccepteerd', quote.id]
+    );
+
+    res.json({ success: true, message: 'Offerte geaccepteerd' });
+  } catch (error) {
+    console.error('Quote accept error:', error);
+    res.status(500).json({ error: 'Server fout' });
   }
 });
 
