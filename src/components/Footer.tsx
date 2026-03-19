@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo-small.png";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();

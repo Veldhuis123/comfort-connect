@@ -2,7 +2,7 @@ import { Phone, Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo-small.png";
 import { getCalculatorSettings } from "@/pages/Calculators";
 
 const Header = () => {
