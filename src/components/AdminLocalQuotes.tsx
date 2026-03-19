@@ -161,10 +161,17 @@ const AdminLocalQuotes = () => {
 
   const handleExportPDF = (quote: LocalQuote) => {
     generateLocalQuotePDF(quote);
-    toast({
-      title: "PDF Gedownload",
-      description: `Offerte ${quote.quote_number} is gedownload`,
-    });
+    toast({ title: "PDF Gedownload", description: `Offerte ${quote.quote_number} is gedownload` });
+  };
+
+  const handleCopyAcceptLink = (quote: LocalQuote) => {
+    if (!quote.acceptance_token) {
+      toast({ title: "Geen link", description: "Deze offerte heeft nog geen acceptatielink", variant: "destructive" });
+      return;
+    }
+    const url = `${window.location.origin}/offerte/${quote.acceptance_token}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "Link gekopieerd", description: "De acceptatielink is naar je klembord gekopieerd" });
   };
 
   // New quote handlers
