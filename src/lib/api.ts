@@ -410,6 +410,7 @@ export interface LocalQuote {
   customer_note: string | null;
   internal_note: string | null;
   quote_request_id: number | null;
+  acceptance_token: string | null;
   sent_at: string | null;
   accepted_at: string | null;
   eboekhouden_synced_at: string | null;
