@@ -116,12 +116,15 @@ const ReviewSubmitDialog = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Star Rating */}
           <div className="space-y-2">
-            <Label>Beoordeling</Label>
-            <div className="flex gap-1">
+            <Label id="rating-label">Beoordeling</Label>
+            <div className="flex gap-1" role="radiogroup" aria-labelledby="rating-label">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
+                  role="radio"
+                  aria-checked={rating === star}
+                  aria-label={`${star} ster${star > 1 ? 'ren' : ''}`}
                   onClick={() => setRating(star)}
                   onMouseEnter={() => setHoveredRating(star)}
                   onMouseLeave={() => setHoveredRating(0)}
@@ -173,6 +176,7 @@ const ReviewSubmitDialog = () => {
           <div className="space-y-2">
             <Label htmlFor="service">Dienst</Label>
             <Select
+              name="service"
               value={formData.service}
               onValueChange={(value) => setFormData({ ...formData, service: value })}
             >
