@@ -6,7 +6,7 @@ const About = () => {
     { icon: Clock, value: "10+", label: "Jaar Ervaring" },
     { icon: ThumbsUp, value: "500+", label: "Tevreden Klanten" },
     { icon: Award, value: "100%", label: "Vakmanschap" },
-    { icon: Shield, value: "5 Jaar", label: "Garantie" },
+    { icon: Shield, value: "1 Jaar", label: "Garantie" },
   ];
 
   return (

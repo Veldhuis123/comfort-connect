@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Users, UserPlus, UserCog, Search, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+import { apiRequest } from "@/lib/api";
 
 interface Customer {
   Relatiecode: string;
@@ -22,6 +21,8 @@ interface AdminCustomersProps {
   section: "customers-overview" | "customers-add" | "customers-edit";
 }
 
+const MAX_DISPLAY = 100;
+
 const AdminCustomers = ({ section }: AdminCustomersProps) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,17 +35,10 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("auth_token");
-      const res = await fetch(`${API_BASE}/eboekhouden/relaties`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCustomers(data || []);
-      } else {
-        setCustomers([]);
-      }
+      const data = await apiRequest<Customer[]>('/eboekhouden/relaties');
+      setCustomers(Array.isArray(data) ? data : []);
     } catch {
+      setCustomers([]);
       toast({ title: "Fout", description: "Kon klanten niet laden vanuit e-Boekhouden", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -115,7 +109,7 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.slice(0, 50).map((customer) => (
+                      {filtered.slice(0, MAX_DISPLAY).map((customer) => (
                         <tr key={customer.Relatiecode} className="border-t border-border hover:bg-muted/30 transition-colors">
                           <td className="p-3 font-medium">{customer.Bedrijf || "–"}</td>
                           <td className="p-3">{customer.Contactpersoon || "–"}</td>
@@ -135,9 +129,9 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
                     </tbody>
                   </table>
                 </div>
-                {filtered.length > 50 && (
+                {filtered.length > MAX_DISPLAY && (
                   <p className="text-xs text-muted-foreground p-3 bg-muted/30 text-center">
-                    {filtered.length - 50} meer resultaten. Verfijn je zoekopdracht.
+                    {filtered.length - MAX_DISPLAY} meer resultaten. Verfijn je zoekopdracht.
                   </p>
                 )}
               </div>
