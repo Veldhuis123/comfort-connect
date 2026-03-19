@@ -8,20 +8,38 @@ const Testimonials = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  // Only fetch reviews when section becomes visible
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
     const fetchReviews = async () => {
       try {
         const data = await api.getPublicReviews();
         setReviews(data);
       } catch (error) {
-        // API not available, show empty state
         console.log("Reviews API niet beschikbaar");
       } finally {
         setLoading(false);
       }
     };
     fetchReviews();
-  }, []);
+  }, [isVisible]);
 
   if (loading) {
     return (
