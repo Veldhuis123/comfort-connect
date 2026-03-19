@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Phone, CheckCircle2 } from "lucide-react";
-import heroImage from "@/assets/hero-installation.jpg";
+import heroImage from "@/assets/hero-installation.webp";
 
 const Hero = () => {
   const highlights = [
