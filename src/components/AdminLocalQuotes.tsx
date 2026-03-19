@@ -357,6 +357,7 @@ const AdminLocalQuotes = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleViewQuote(quote.id)}
+                            title="Bekijken"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -364,13 +365,25 @@ const AdminLocalQuotes = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleExportPDF(quote)}
+                            title="PDF downloaden"
                           >
                             <Download className="w-4 h-4" />
                           </Button>
+                          {quote.acceptance_token && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleCopyAcceptLink(quote)}
+                              title="Acceptatielink kopiëren"
+                            >
+                              <LinkIcon className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDelete(quote.id)}
+                            title="Verwijderen"
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
