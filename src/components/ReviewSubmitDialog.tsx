@@ -12,13 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 
@@ -47,7 +40,7 @@ const ReviewSubmitDialog = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.location || !formData.service || !formData.review_text) {
       toast({
         title: "Vul alle velden in",
@@ -114,17 +107,18 @@ const ReviewSubmitDialog = () => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Star Rating */}
-          <div className="space-y-2">
-            <Label id="rating-label">Beoordeling</Label>
-            <div className="flex gap-1" role="radiogroup" aria-labelledby="rating-label">
+          <fieldset className="space-y-2">
+            <legend id="review-rating-label" className="text-sm font-medium text-foreground">
+              Beoordeling
+            </legend>
+            <div className="flex gap-1" role="radiogroup" aria-labelledby="review-rating-label">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   type="button"
                   role="radio"
                   aria-checked={rating === star}
-                  aria-label={`${star} ster${star > 1 ? 'ren' : ''}`}
+                  aria-label={`${star} ster${star > 1 ? "ren" : ""}`}
                   onClick={() => setRating(star)}
                   onMouseEnter={() => setHoveredRating(star)}
                   onMouseLeave={() => setHoveredRating(0)}
@@ -140,13 +134,12 @@ const ReviewSubmitDialog = () => {
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
-          {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Naam</Label>
+            <Label htmlFor="review-name">Naam</Label>
             <Input
-              id="name"
+              id="review-name"
               name="name"
               autoComplete="name"
               placeholder="Je naam"
@@ -157,11 +150,10 @@ const ReviewSubmitDialog = () => {
             />
           </div>
 
-          {/* Location */}
           <div className="space-y-2">
-            <Label htmlFor="location">Plaats</Label>
+            <Label htmlFor="review-location">Plaats</Label>
             <Input
-              id="location"
+              id="review-location"
               name="location"
               autoComplete="address-level2"
               placeholder="Bijv. Westerhaar"
@@ -172,32 +164,31 @@ const ReviewSubmitDialog = () => {
             />
           </div>
 
-          {/* Service */}
           <div className="space-y-2">
-            <Label htmlFor="service">Dienst</Label>
-            <Select
+            <Label htmlFor="review-service">Dienst</Label>
+            <select
+              id="review-service"
               name="service"
               value={formData.service}
-              onValueChange={(value) => setFormData({ ...formData, service: value })}
+              onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              required
             >
-              <SelectTrigger id="service" name="service" aria-label="Selecteer een dienst">
-                <SelectValue placeholder="Selecteer een dienst" />
-              </SelectTrigger>
-              <SelectContent>
-                {services.map((service) => (
-                  <SelectItem key={service} value={service}>
-                    {service}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <option value="" disabled>
+                Selecteer een dienst
+              </option>
+              {services.map((service) => (
+                <option key={service} value={service}>
+                  {service}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Review Text */}
           <div className="space-y-2">
-            <Label htmlFor="review_text">Je review</Label>
+            <Label htmlFor="review-text">Je review</Label>
             <Textarea
-              id="review_text"
+              id="review-text"
               name="review_text"
               placeholder="Vertel over je ervaring..."
               value={formData.review_text}
@@ -206,9 +197,7 @@ const ReviewSubmitDialog = () => {
               maxLength={1000}
               required
             />
-            <p className="text-xs text-muted-foreground text-right">
-              {formData.review_text.length}/1000
-            </p>
+            <p className="text-xs text-muted-foreground text-right">{formData.review_text.length}/1000</p>
           </div>
 
           <Button type="submit" className="w-full gap-2" disabled={isSubmitting}>
