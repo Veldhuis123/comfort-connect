@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo-small.png";
-import { getCalculatorSettings } from "@/pages/Calculators";
+import { getCalculatorSettings } from "@/lib/calculatorSettings";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
