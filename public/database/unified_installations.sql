@@ -38,6 +38,6 @@ CREATE TABLE IF NOT EXISTS installation_documents (
     file_data JSON NULL COMMENT 'Inline document data (for groepenverklaring etc.)',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    FOREIGN KEY (installation_id) REFERENCES rv_installations(id) ON DELETE CASCADE,
+    FOREIGN KEY (installation_id) REFERENCES installations(id) ON DELETE CASCADE,
     INDEX idx_installation (installation_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
