@@ -176,6 +176,7 @@ const ReviewSubmitDialog = () => {
           <div className="space-y-2">
             <Label htmlFor="service">Dienst</Label>
             <Select
+              name="service"
               value={formData.service}
               onValueChange={(value) => setFormData({ ...formData, service: value })}
             >
