@@ -5,9 +5,11 @@ import { Settings, Wind, Sun, Battery, Car, Wifi, Cable, Calculator } from "luci
 import { 
   CalculatorSettings, 
   defaultCalculatorSettings, 
+import { 
+  CalculatorSettings, 
   getCalculatorSettings, 
   saveCalculatorSettings 
-} from "@/pages/Calculators";
+} from "@/lib/calculatorSettings";
 import { useState, useEffect } from "react";
 import EBoekhoudenSync from "@/components/EBoekhoudenSync";
 import WascoSync from "@/components/WascoSync";

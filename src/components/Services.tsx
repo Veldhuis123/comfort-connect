@@ -2,7 +2,7 @@ import { Wind, Flame, Zap, Droplets, PipetteIcon, Wifi, Camera, Sun, Battery } f
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getCalculatorSettings, CalculatorSettings } from "@/pages/Calculators";
+import { getCalculatorSettings, CalculatorSettings } from "@/lib/calculatorSettings";
 
 const Services = () => {
   const [calculatorSettings, setCalculatorSettings] = useState<CalculatorSettings | null>(null);
