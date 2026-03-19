@@ -1422,6 +1422,91 @@ router.delete('/local-quotes/:id', authMiddleware, async (req, res) => {
 });
 
 // =============================================
+// PUBLIEKE OFFERTE ENDPOINTS (geen auth nodig)
+// =============================================
+
+// Get public quote by acceptance token
+router.get('/local-quotes/public/:token', async (req, res) => {
+  const db = require('../config/database');
+  try {
+    const { token } = req.params;
+    
+    const [quotes] = await db.query(
+      'SELECT id, quote_number, customer_name, customer_email, quote_date, expiration_date, subtotal_excl, vat_amount, total_incl, status, customer_note FROM local_quotes WHERE acceptance_token = ?',
+      [token]
+    );
+
+    if (quotes.length === 0) {
+      return res.status(404).json({ error: 'Offerte niet gevonden' });
+    }
+
+    const quote = quotes[0];
+
+    // Get items
+    const [items] = await db.query(
+      'SELECT description, quantity, unit, price_per_unit, vat_percentage, line_total_excl, line_total_incl FROM local_quote_items WHERE quote_id = ? ORDER BY sort_order',
+      [quote.id]
+    );
+
+    res.json({
+      ...quote,
+      items,
+      company: {
+        name: 'R. Veldhuis Installatie',
+        email: 'info@rv-installatie.nl',
+        phone: '06-13629947'
+      }
+    });
+  } catch (error) {
+    console.error('Public quote fetch error:', error);
+    res.status(500).json({ error: 'Server fout' });
+  }
+});
+
+// Accept quote by token
+router.post('/local-quotes/public/:token/accept', async (req, res) => {
+  const db = require('../config/database');
+  try {
+    const { token } = req.params;
+    
+    const [quotes] = await db.query(
+      'SELECT id, status, expiration_date FROM local_quotes WHERE acceptance_token = ?',
+      [token]
+    );
+
+    if (quotes.length === 0) {
+      return res.status(404).json({ error: 'Offerte niet gevonden' });
+    }
+
+    const quote = quotes[0];
+
+    if (quote.status === 'geaccepteerd') {
+      return res.json({ success: true, message: 'Offerte was al geaccepteerd' });
+    }
+
+    if (quote.status !== 'verzonden') {
+      return res.status(400).json({ error: 'Deze offerte kan niet meer geaccepteerd worden' });
+    }
+
+    // Check expiration
+    if (quote.expiration_date && new Date(quote.expiration_date) < new Date()) {
+      await db.query('UPDATE local_quotes SET status = ? WHERE id = ?', ['verlopen', quote.id]);
+      return res.status(400).json({ error: 'Deze offerte is verlopen' });
+    }
+
+    await db.query(
+      'UPDATE local_quotes SET status = ?, accepted_at = NOW() WHERE id = ?',
+      ['geaccepteerd', quote.id]
+    );
+
+    res.json({ success: true, message: 'Offerte geaccepteerd' });
+  } catch (error) {
+    console.error('Quote accept error:', error);
+    res.status(500).json({ error: 'Server fout' });
+  }
+});
+
+// =============================================
 // Clear session cache (useful for testing)
 // =============================================
 router.post('/session/clear', authMiddleware, async (req, res) => {
