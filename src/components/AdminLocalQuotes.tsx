@@ -615,41 +615,70 @@ const AdminLocalQuotes = () => {
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Customer Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>Klantnaam *</Label>
-                <Input
-                  value={newQuoteForm.customer_name}
-                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_name: e.target.value }))}
-                  placeholder="Naam van de klant"
-                />
-              </div>
-              <div>
-                <Label>E-mail</Label>
-                <Input
-                  type="email"
-                  value={newQuoteForm.customer_email || ""}
-                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_email: e.target.value }))}
-                  placeholder="klant@email.nl"
-                />
-              </div>
-              <div>
-                <Label>Telefoon</Label>
-                <Input
-                  value={newQuoteForm.customer_phone || ""}
-                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_phone: e.target.value }))}
-                  placeholder="06-12345678"
-                />
-              </div>
-              <div>
-                <Label>Adres</Label>
-                <Input
-                  value={newQuoteForm.customer_address || ""}
-                  onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_address: e.target.value }))}
-                  placeholder="Straat 1, 1234 AB Plaats"
-                />
-              </div>
+            {/* Customer Selector */}
+            <div>
+              <Label className="text-base font-semibold mb-3 block">Klant</Label>
+              <CustomerSelectorQuote
+                selectedCustomer={newQuoteForm.customer_name ? {
+                  customer_name: newQuoteForm.customer_name,
+                  customer_email: newQuoteForm.customer_email || "",
+                  customer_phone: newQuoteForm.customer_phone || "",
+                  customer_address: newQuoteForm.customer_address || "",
+                } : null}
+                onSelect={(customer) => setNewQuoteForm(prev => ({
+                  ...prev,
+                  customer_name: customer.customer_name,
+                  customer_email: customer.customer_email,
+                  customer_phone: customer.customer_phone,
+                  customer_address: customer.customer_address,
+                }))}
+                onClear={() => setNewQuoteForm(prev => ({
+                  ...prev,
+                  customer_name: "",
+                  customer_email: "",
+                  customer_phone: "",
+                  customer_address: "",
+                }))}
+              />
+
+              {/* Manual entry fields (shown when no customer selected from search) */}
+              {!newQuoteForm.customer_name && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+                  <div>
+                    <Label className="text-xs">Klantnaam *</Label>
+                    <Input
+                      value={newQuoteForm.customer_name}
+                      onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_name: e.target.value }))}
+                      placeholder="Naam van de klant"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">E-mail</Label>
+                    <Input
+                      type="email"
+                      value={newQuoteForm.customer_email || ""}
+                      onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_email: e.target.value }))}
+                      placeholder="klant@email.nl"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Telefoon</Label>
+                    <Input
+                      value={newQuoteForm.customer_phone || ""}
+                      onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_phone: e.target.value }))}
+                      placeholder="06-12345678"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Adres</Label>
+                    <Input
+                      value={newQuoteForm.customer_address || ""}
+                      onChange={(e) => setNewQuoteForm((prev) => ({ ...prev, customer_address: e.target.value }))}
+                      placeholder="Straat 1, 1234 AB Plaats"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Line Items */}
