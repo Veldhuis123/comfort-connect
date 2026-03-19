@@ -56,7 +56,7 @@ const Testimonials = () => {
 
   if (reviews.length === 0) {
     return (
-      <section id="reviews" className="py-20 md:py-32 bg-muted/30 scroll-mt-24">
+      <section ref={sectionRef} id="reviews" className="py-20 md:py-32 bg-muted/30 scroll-mt-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <span className="text-accent font-semibold text-sm uppercase tracking-wider">
