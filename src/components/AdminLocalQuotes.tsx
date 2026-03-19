@@ -432,11 +432,17 @@ const AdminLocalQuotes = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button variant="outline" onClick={() => handleExportPDF(selectedQuote)}>
                     <Download className="w-4 h-4 mr-2" />
                     PDF
                   </Button>
+                  {selectedQuote.acceptance_token && (
+                    <Button variant="outline" onClick={() => handleCopyAcceptLink(selectedQuote)}>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Acceptatielink
+                    </Button>
+                  )}
                   <Button
                     variant="destructive"
                     onClick={() => handleDelete(selectedQuote.id)}
