@@ -19,9 +19,9 @@ ALTER TABLE rv_installations
 -- =============================================
 
 ALTER TABLE local_quotes
-  ADD COLUMN IF NOT EXISTS acceptance_token VARCHAR(64) NULL UNIQUE COMMENT 'Unique token for public acceptance URL',
-  ADD COLUMN IF NOT EXISTS accepted_ip VARCHAR(45) NULL COMMENT 'IP address of acceptor',
-  ADD COLUMN IF NOT EXISTS accepted_user_agent TEXT NULL COMMENT 'User agent of acceptor';
+  ADD COLUMN acceptance_token VARCHAR(64) NULL UNIQUE COMMENT 'Unique token for public acceptance URL',
+  ADD COLUMN accepted_ip VARCHAR(45) NULL COMMENT 'IP address of acceptor',
+  ADD COLUMN accepted_user_agent TEXT NULL COMMENT 'User agent of acceptor';
 
 CREATE INDEX IF NOT EXISTS idx_acceptance_token ON local_quotes(acceptance_token);
 
