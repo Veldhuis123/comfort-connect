@@ -1,22 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { api, Review, QuoteRequest, ContactMessage, QuoteStats } from "@/lib/api";
+import { api, Review, QuoteRequest, ContactMessage, QuoteStats, ProductCategory } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { 
-  Star, MessageSquare, FileText, Plus, 
+  Star, Plus, 
   Trash2, Eye, EyeOff, Mail, Phone, Calendar,
-  RefreshCw, Package
+  RefreshCw
 } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AdminSidebar from "@/components/admin/AdminSidebar";
@@ -27,10 +21,7 @@ import AdminProducts from "@/components/AdminProducts";
 import AdminInstallations from "@/components/AdminInstallations";
 import AdminLocalQuotes from "@/components/AdminLocalQuotes";
 import AdminPricing from "@/components/AdminPricing";
-import EBoekhoudenSync from "@/components/EBoekhoudenSync";
-import WascoSync from "@/components/WascoSync";
 import QuoteDetailDialog from "@/components/QuoteDetailDialog";
-import { ProductCategory } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -379,30 +370,8 @@ const AdminDashboard = () => {
         );
 
       case "settings":
-        return <AdminSettings />;
-
       case "boekhouden":
-        return (
-          <div>
-            <div className="mb-6">
-              <h1 className="font-heading text-2xl font-bold">e-Boekhouden</h1>
-              <p className="text-sm text-muted-foreground">Synchronisatie met e-Boekhouden</p>
-            </div>
-            <EBoekhoudenSync />
-          </div>
-        );
-
       case "wasco":
-        return (
-          <div>
-            <div className="mb-6">
-              <h1 className="font-heading text-2xl font-bold">Wasco Sync</h1>
-              <p className="text-sm text-muted-foreground">Producten synchroniseren vanuit Wasco</p>
-            </div>
-            <WascoSync />
-          </div>
-        );
-
       case "calculators":
         return <AdminSettings />;
 
