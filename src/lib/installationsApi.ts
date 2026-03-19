@@ -305,6 +305,28 @@ export interface PublicInstallation {
     description: string;
     performed_at: string;
   }>;
+  // Elektra-specific
+  groepenverklaring?: GroepenverklaringData | null;
+  // Airco-specific  
+  commissioning_report?: Record<string, unknown> | null;
+  documents?: Array<{ name: string; type: string; url?: string }>;
+}
+
+export interface GroepenverklaringData {
+  kast_naam: string;
+  rows: Array<{
+    row_number: number;
+    components: Array<{
+      type: string;
+      article: string;
+      amperage: string;
+      label: string;
+      te_modules: number;
+    }>;
+  }>;
+  total_te: number;
+  keuring_datum?: string;
+  keurmeester?: string;
 }
 
 // =============================================
