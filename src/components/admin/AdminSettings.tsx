@@ -5,8 +5,6 @@ import { Settings, Wind, Sun, Battery, Car, Wifi, Cable, Calculator } from "luci
 import { 
   CalculatorSettings, 
   defaultCalculatorSettings, 
-import { 
-  CalculatorSettings, 
   getCalculatorSettings, 
   saveCalculatorSettings 
 } from "@/lib/calculatorSettings";
