@@ -370,30 +370,8 @@ const AdminDashboard = () => {
         );
 
       case "settings":
-        return <AdminSettings />;
-
       case "boekhouden":
-        return (
-          <div>
-            <div className="mb-6">
-              <h1 className="font-heading text-2xl font-bold">e-Boekhouden</h1>
-              <p className="text-sm text-muted-foreground">Synchronisatie met e-Boekhouden</p>
-            </div>
-            <EBoekhoudenSync />
-          </div>
-        );
-
       case "wasco":
-        return (
-          <div>
-            <div className="mb-6">
-              <h1 className="font-heading text-2xl font-bold">Wasco Sync</h1>
-              <p className="text-sm text-muted-foreground">Producten synchroniseren vanuit Wasco</p>
-            </div>
-            <WascoSync />
-          </div>
-        );
-
       case "calculators":
         return <AdminSettings />;
 
