@@ -69,6 +69,7 @@ const installationTypeLabels: Record<InstallationType, string> = {
   warmtepomp: "Warmtepomp",
   koeling: "Koeling",
   ventilatie: "Ventilatie",
+  elektra: "Elektra",
   overig: "Overig",
 };
 
