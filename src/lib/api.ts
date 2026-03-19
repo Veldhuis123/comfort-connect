@@ -321,8 +321,6 @@ export interface CreateContactMessage {
 }
 
 
-
-
 export interface QuoteStats {
   total: number;
   thisMonth: number;
