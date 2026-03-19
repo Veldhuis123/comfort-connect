@@ -1,5 +1,5 @@
 import { Shield, Clock, Award, ThumbsUp } from "lucide-react";
-import logo from "@/assets/logo-small.webp";
+import logo from "@/assets/logo-small.png";
 
 const About = () => {
   const stats = [
