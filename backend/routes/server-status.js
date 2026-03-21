@@ -50,18 +50,37 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
     // Fail2ban status
     let fail2ban = null;
     const fail2banServiceStatus = runCommand('systemctl is-active fail2ban 2>/dev/null');
-    const f2bCommands = [
+    const fail2banProcess = runCommand("pgrep -f 'fail2ban-server' | head -1");
+    const fail2banIsActive = fail2banServiceStatus === 'active' || Boolean(fail2banProcess);
+
+    const f2bSshdCommands = [
       'sudo -n /usr/bin/fail2ban-client status sshd',
       'sudo -n /usr/bin/fail2ban-client -s /run/fail2ban/fail2ban.sock status sshd',
       'sudo -n /usr/bin/fail2ban-client -s /var/run/fail2ban/fail2ban.sock status sshd',
     ];
 
+    const f2bGlobalCommands = [
+      'sudo -n /usr/bin/fail2ban-client status',
+      'sudo -n /usr/bin/fail2ban-client -s /run/fail2ban/fail2ban.sock status',
+      'sudo -n /usr/bin/fail2ban-client -s /var/run/fail2ban/fail2ban.sock status',
+    ];
+
     let f2bOutput = null;
-    for (const cmd of f2bCommands) {
+    for (const cmd of f2bSshdCommands) {
       const result = runCommand(cmd);
       if (result) {
         f2bOutput = result;
         break;
+      }
+    }
+
+    if (!f2bOutput) {
+      for (const cmd of f2bGlobalCommands) {
+        const result = runCommand(cmd);
+        if (result) {
+          f2bOutput = result;
+          break;
+        }
       }
     }
 
@@ -78,8 +97,8 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
         totalFailed: totalFailed ? parseInt(totalFailed[1]) : 0,
         bannedIPs: bannedIPs && bannedIPs[1] ? bannedIPs[1].trim().split(/\s+/).filter(Boolean) : [],
       };
-    } else if (fail2banServiceStatus === 'active') {
-      // Service is active, maar jail-output niet leesbaar; toon wel als actief
+    } else if (fail2banIsActive) {
+      // Service/process actief maar jail-output niet leesbaar; toon wel als actief
       fail2ban = {
         currentlyBanned: 0,
         totalBanned: 0,
