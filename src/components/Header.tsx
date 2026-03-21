@@ -3,31 +3,19 @@ import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo-small.png";
-import { getCalculatorSettings } from "@/lib/calculatorSettings";
+import { refreshCalculatorSettings } from "@/lib/calculatorSettings";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [hasEnabledCalculators, setHasEnabledCalculators] = useState(true);
+  const [hasEnabledCalculators, setHasEnabledCalculators] = useState(false);
   const location = useLocation();
   const isHomePage = location.pathname === "/";
 
   useEffect(() => {
-    const checkCalculators = () => {
-      const settings = getCalculatorSettings();
+    refreshCalculatorSettings().then(settings => {
       const anyEnabled = Object.values(settings).some(calc => calc.enabled);
       setHasEnabledCalculators(anyEnabled);
-    };
-    
-    checkCalculators();
-    
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "calculatorSettings") {
-        checkCalculators();
-      }
-    };
-    
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    });
   }, []);
 
   const navItems = [
