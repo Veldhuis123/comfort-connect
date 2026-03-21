@@ -24,16 +24,18 @@ const AdminSettings = () => {
     field: "enabled" | "name",
     value: boolean | string
   ) => {
-    const newSettings = {
-      ...calculatorSettings,
-      [key]: { ...calculatorSettings[key], [field]: value }
-    };
-    setCalculatorSettings(newSettings);
-    saveCalculatorSettings(newSettings);
-    window.dispatchEvent(new StorageEvent("storage", {
-      key: "calculatorSettings",
-      newValue: JSON.stringify(newSettings)
-    }));
+    setCalculatorSettings(prev => {
+      const newSettings = {
+        ...prev,
+        [key]: { ...prev[key], [field]: value }
+      };
+      saveCalculatorSettings(newSettings);
+      window.dispatchEvent(new StorageEvent("storage", {
+        key: "calculatorSettings",
+        newValue: JSON.stringify(newSettings)
+      }));
+      return newSettings;
+    });
   };
 
   const calculators = [
