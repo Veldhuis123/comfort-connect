@@ -7,14 +7,15 @@ import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
 
 interface Customer {
-  Relatiecode: string;
-  Bedrijf: string;
-  Contactpersoon?: string;
-  Email?: string;
-  Telefoon?: string;
-  Adres?: string;
-  Postcode?: string;
-  Plaats?: string;
+  id: string;
+  code: string;
+  bedrijf: string;
+  contactpersoon?: string;
+  email?: string;
+  telefoon?: string;
+  adres?: string;
+  postcode?: string;
+  plaats?: string;
 }
 
 interface AdminCustomersProps {
@@ -50,9 +51,9 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
   }, []);
 
   const filtered = customers.filter(c =>
-    (c.Bedrijf || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.Contactpersoon || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.Email || "").toLowerCase().includes(searchQuery.toLowerCase())
+    (c.bedrijf || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.contactpersoon || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.email || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -110,11 +111,11 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
                     </thead>
                     <tbody>
                       {filtered.slice(0, MAX_DISPLAY).map((customer) => (
-                        <tr key={customer.Relatiecode} className="border-t border-border hover:bg-muted/30 transition-colors">
-                          <td className="p-3 font-medium">{customer.Bedrijf || "–"}</td>
-                          <td className="p-3">{customer.Contactpersoon || "–"}</td>
-                          <td className="p-3 hidden md:table-cell text-muted-foreground">{customer.Email || "–"}</td>
-                          <td className="p-3 hidden lg:table-cell text-muted-foreground">{customer.Plaats || "–"}</td>
+                        <tr key={customer.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                          <td className="p-3 font-medium">{customer.bedrijf || "–"}</td>
+                          <td className="p-3">{customer.contactpersoon || "–"}</td>
+                          <td className="p-3 hidden md:table-cell text-muted-foreground">{customer.email || "–"}</td>
+                          <td className="p-3 hidden lg:table-cell text-muted-foreground">{customer.plaats || "–"}</td>
                           <td className="p-3 text-right">
                             <Button
                               variant="ghost"
@@ -164,12 +165,12 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
               {searchQuery && filtered.length > 0 && (
                 <div className="border border-border rounded-lg p-2 max-h-48 overflow-y-auto space-y-1">
                   {filtered.slice(0, 10).map(c => (
-                    <div key={c.Relatiecode} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer">
+                    <div key={c.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer">
                       <div>
-                        <p className="text-sm font-medium">{c.Bedrijf}</p>
-                        <p className="text-xs text-muted-foreground">{c.Contactpersoon} • {c.Plaats}</p>
+                        <p className="text-sm font-medium">{c.bedrijf}</p>
+                        <p className="text-xs text-muted-foreground">{c.contactpersoon} • {c.plaats}</p>
                       </div>
-                      <span className="text-xs text-muted-foreground">{c.Relatiecode}</span>
+                      <span className="text-xs text-muted-foreground">{c.code}</span>
                     </div>
                   ))}
                 </div>
@@ -214,37 +215,37 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
             {selectedCustomer ? (
               <div className="space-y-4 border border-border rounded-lg p-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{selectedCustomer.Bedrijf}</h3>
+                  <h3 className="font-medium">{selectedCustomer.bedrijf}</h3>
                   <Button variant="ghost" size="sm" onClick={() => setSelectedCustomer(null)}>Sluiten</Button>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground">Bedrijfsnaam</label>
-                    <Input defaultValue={selectedCustomer.Bedrijf} />
+                    <Input defaultValue={selectedCustomer.bedrijf} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Contactpersoon</label>
-                    <Input defaultValue={selectedCustomer.Contactpersoon} />
+                    <Input defaultValue={selectedCustomer.contactpersoon} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Email</label>
-                    <Input defaultValue={selectedCustomer.Email} />
+                    <Input defaultValue={selectedCustomer.email} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Telefoon</label>
-                    <Input defaultValue={selectedCustomer.Telefoon} />
+                    <Input defaultValue={selectedCustomer.telefoon} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Adres</label>
-                    <Input defaultValue={selectedCustomer.Adres} />
+                    <Input defaultValue={selectedCustomer.adres} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Postcode</label>
-                    <Input defaultValue={selectedCustomer.Postcode} />
+                    <Input defaultValue={selectedCustomer.postcode} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Plaats</label>
-                    <Input defaultValue={selectedCustomer.Plaats} />
+                    <Input defaultValue={selectedCustomer.plaats} />
                   </div>
                 </div>
                 <Button className="w-full">Opslaan in e-Boekhouden</Button>
@@ -253,13 +254,13 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
               <div className="space-y-1">
                 {filtered.slice(0, 20).map(c => (
                   <div
-                    key={c.Relatiecode}
+                    key={c.id}
                     onClick={() => setSelectedCustomer(c)}
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border transition-colors"
                   >
                     <div>
-                      <p className="text-sm font-medium">{c.Bedrijf}</p>
-                      <p className="text-xs text-muted-foreground">{c.Contactpersoon} • {c.Email}</p>
+                      <p className="text-sm font-medium">{c.bedrijf}</p>
+                      <p className="text-xs text-muted-foreground">{c.contactpersoon} • {c.email}</p>
                     </div>
                     <UserCog className="w-4 h-4 text-muted-foreground" />
                   </div>
