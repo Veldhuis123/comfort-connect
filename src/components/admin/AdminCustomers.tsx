@@ -7,14 +7,15 @@ import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
 
 interface Customer {
-  Relatiecode: string;
-  Bedrijf: string;
-  Contactpersoon?: string;
-  Email?: string;
-  Telefoon?: string;
-  Adres?: string;
-  Postcode?: string;
-  Plaats?: string;
+  id: string;
+  code: string;
+  bedrijf: string;
+  contactpersoon?: string;
+  email?: string;
+  telefoon?: string;
+  adres?: string;
+  postcode?: string;
+  plaats?: string;
 }
 
 interface AdminCustomersProps {
