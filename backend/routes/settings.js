@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const { requireAdmin } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 // GET /api/settings/calculators — public, no auth needed
 router.get('/calculators', async (req, res) => {
@@ -29,7 +29,7 @@ router.get('/calculators', async (req, res) => {
 });
 
 // PUT /api/settings/calculators — admin only
-router.put('/calculators', requireAdmin, async (req, res) => {
+router.put('/calculators', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const settings = req.body;
     const json = JSON.stringify(settings);
