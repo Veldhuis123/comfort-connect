@@ -229,6 +229,9 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ ip }),
   }),
+
+  // Analytics
+  getVisitorStats: () => apiRequest<VisitorStats>('/analytics/visitors'),
 };
 
 // Types
