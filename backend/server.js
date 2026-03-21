@@ -102,6 +102,7 @@ app.use('/api/pricing', pricingRoutes);
 app.use('/api/wasco', wascoRoutes);
 app.use('/api/server-status', serverStatusRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
