@@ -215,37 +215,37 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
             {selectedCustomer ? (
               <div className="space-y-4 border border-border rounded-lg p-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{selectedCustomer.Bedrijf}</h3>
+                  <h3 className="font-medium">{selectedCustomer.bedrijf}</h3>
                   <Button variant="ghost" size="sm" onClick={() => setSelectedCustomer(null)}>Sluiten</Button>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-muted-foreground">Bedrijfsnaam</label>
-                    <Input defaultValue={selectedCustomer.Bedrijf} />
+                    <Input defaultValue={selectedCustomer.bedrijf} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Contactpersoon</label>
-                    <Input defaultValue={selectedCustomer.Contactpersoon} />
+                    <Input defaultValue={selectedCustomer.contactpersoon} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Email</label>
-                    <Input defaultValue={selectedCustomer.Email} />
+                    <Input defaultValue={selectedCustomer.email} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Telefoon</label>
-                    <Input defaultValue={selectedCustomer.Telefoon} />
+                    <Input defaultValue={selectedCustomer.telefoon} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Adres</label>
-                    <Input defaultValue={selectedCustomer.Adres} />
+                    <Input defaultValue={selectedCustomer.adres} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Postcode</label>
-                    <Input defaultValue={selectedCustomer.Postcode} />
+                    <Input defaultValue={selectedCustomer.postcode} />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Plaats</label>
-                    <Input defaultValue={selectedCustomer.Plaats} />
+                    <Input defaultValue={selectedCustomer.plaats} />
                   </div>
                 </div>
                 <Button className="w-full">Opslaan in e-Boekhouden</Button>
