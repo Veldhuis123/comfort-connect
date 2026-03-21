@@ -323,16 +323,14 @@ const WascoSync = () => {
       {/* Product Mappings */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Productkoppelingen</CardTitle>
-              <CardDescription>
-                Koppel je producten aan Wasco artikelnummers
-              </CardDescription>
-            </div>
-            <Button onClick={() => setShowAddDialog(true)} disabled={unmappedProducts.length === 0}>
-              <Link2 className="w-4 h-4 mr-2" />
-              Koppeling Toevoegen
+          <CardTitle>Productkoppelingen</CardTitle>
+          <CardDescription>
+            Koppel je producten aan Wasco artikelnummers
+          </CardDescription>
+          <div className="pt-2">
+            <Button size="sm" onClick={() => setShowAddDialog(true)} disabled={unmappedProducts.length === 0}>
+              <Link2 className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Koppeling Toevoegen</span>
             </Button>
           </div>
         </CardHeader>
