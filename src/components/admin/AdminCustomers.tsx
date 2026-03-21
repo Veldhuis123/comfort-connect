@@ -165,12 +165,12 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
               {searchQuery && filtered.length > 0 && (
                 <div className="border border-border rounded-lg p-2 max-h-48 overflow-y-auto space-y-1">
                   {filtered.slice(0, 10).map(c => (
-                    <div key={c.Relatiecode} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer">
+                    <div key={c.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50 cursor-pointer">
                       <div>
-                        <p className="text-sm font-medium">{c.Bedrijf}</p>
-                        <p className="text-xs text-muted-foreground">{c.Contactpersoon} • {c.Plaats}</p>
+                        <p className="text-sm font-medium">{c.bedrijf}</p>
+                        <p className="text-xs text-muted-foreground">{c.contactpersoon} • {c.plaats}</p>
                       </div>
-                      <span className="text-xs text-muted-foreground">{c.Relatiecode}</span>
+                      <span className="text-xs text-muted-foreground">{c.code}</span>
                     </div>
                   ))}
                 </div>
