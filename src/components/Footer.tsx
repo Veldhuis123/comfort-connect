@@ -44,9 +44,11 @@ const Footer = () => {
               <a href={getHref("diensten")} className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                 Diensten
               </a>
-              <Link to="/calculators" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-                Calculatoren
-              </Link>
+              {hasEnabledCalculators && (
+                <Link to="/calculators" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+                  Calculatoren
+                </Link>
+              )}
               <a href={getHref("over")} className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">
                 Over Mij
               </a>
