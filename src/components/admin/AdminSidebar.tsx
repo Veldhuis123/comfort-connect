@@ -1,7 +1,7 @@
 import { 
-  LayoutDashboard, Users, UserPlus, UserCog, FileText, Receipt,
+  LayoutDashboard, Users, FileText, Receipt,
   Star, MessageSquare, Euro, Settings,
-  Download, BookOpen, Calculator, LogOut, ChevronDown,
+  Download, BookOpen, LogOut, ChevronDown,
   Snowflake, Thermometer, Package, Zap, Grid3X3, QrCode
 } from "lucide-react";
 import {
