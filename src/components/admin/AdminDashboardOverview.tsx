@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Star, MessageSquare, TrendingUp, Eye, ArrowUpRight, Calendar } from "lucide-react";
-import { QuoteStats, QuoteRequest, Review, ContactMessage } from "@/lib/api";
+import { FileText, Star, MessageSquare, TrendingUp, Eye, ArrowUpRight, Calendar, Loader2 } from "lucide-react";
+import { QuoteStats, QuoteRequest, Review, ContactMessage, api } from "@/lib/api";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { useEffect, useState } from "react";
@@ -13,41 +13,29 @@ interface DashboardOverviewProps {
   messages: ContactMessage[];
 }
 
-// Simple page view counter using localStorage (placeholder for real analytics)
-const getPageViews = () => {
-  const stored = localStorage.getItem("rv_page_views");
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      return { total: 0, today: 0, thisWeek: 0, thisMonth: 0, daily: [] };
-    }
-  }
-  // Generate some sample data for visualization
-  const days = [];
-  const now = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    days.push({
-      date: date.toLocaleDateString("nl-NL", { day: "2-digit", month: "short" }),
-      views: Math.floor(Math.random() * 50) + 10
-    });
-  }
-  const total = days.reduce((sum, d) => sum + d.views, 0);
-  return { total, today: days[29].views, thisWeek: days.slice(23).reduce((s, d) => s + d.views, 0), thisMonth: total, daily: days };
-};
-
 const AdminDashboardOverview = ({ stats, quotes, reviews, messages }: DashboardOverviewProps) => {
-  const [pageViews, setPageViews] = useState(getPageViews());
+  const [pageViews, setPageViews] = useState<{
+    total: number; today: number; thisWeek: number; thisMonth: number;
+    daily: { date: string; views: number; visitors?: number }[];
+  } | null>(null);
+  const [loadingViews, setLoadingViews] = useState(true);
 
   useEffect(() => {
-    // Track this admin visit
-    const views = getPageViews();
-    views.total += 1;
-    views.today += 1;
-    localStorage.setItem("rv_page_views", JSON.stringify(views));
-    setPageViews(views);
+    api.getVisitorStats()
+      .then(data => {
+        setPageViews({
+          total: data.total,
+          today: data.today,
+          thisWeek: data.thisWeek,
+          thisMonth: data.thisMonth,
+          daily: data.daily.map(d => ({ date: d.date, views: d.visitors || d.views })),
+        });
+      })
+      .catch(() => {
+        // Fallback: toon 0 als Cloudflare niet geconfigureerd is
+        setPageViews({ total: 0, today: 0, thisWeek: 0, thisMonth: 0, daily: [] });
+      })
+      .finally(() => setLoadingViews(false));
   }, []);
 
   const unreadMessages = messages.filter(m => !m.is_read).length;
@@ -78,11 +66,12 @@ const AdminDashboardOverview = ({ stats, quotes, reviews, messages }: DashboardO
   const statCards = [
     {
       title: "Website Bezoekers",
-      value: pageViews.thisMonth,
-      subtitle: `${pageViews.today} vandaag`,
+      value: pageViews?.thisMonth || 0,
+      subtitle: `${pageViews?.today || 0} vandaag`,
       icon: Eye,
       color: "bg-blue-500/10 text-blue-600",
-      trend: "+12%"
+      trend: `${pageViews?.thisWeek || 0} deze week`,
+      loading: loadingViews,
     },
     {
       title: "Offerteaanvragen",
@@ -90,7 +79,7 @@ const AdminDashboardOverview = ({ stats, quotes, reviews, messages }: DashboardO
       subtitle: `${newQuotes} nieuw`,
       icon: FileText,
       color: "bg-emerald-500/10 text-emerald-600",
-      trend: `+${stats?.thisMonth || 0} deze maand`
+      trend: `+${stats?.thisMonth || 0} deze maand`,
     },
     {
       title: "Reviews",
@@ -132,7 +121,11 @@ const AdminDashboardOverview = ({ stats, quotes, reviews, messages }: DashboardO
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">{card.title}</p>
-                  <p className="text-3xl font-bold font-heading mt-1">{card.value.toLocaleString()}</p>
+                  {'loading' in card && card.loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin mt-2 text-muted-foreground" />
+                  ) : (
+                    <p className="text-3xl font-bold font-heading mt-1">{card.value.toLocaleString()}</p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">{card.subtitle}</p>
                 </div>
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${card.color}`}>
@@ -159,21 +152,31 @@ const AdminDashboardOverview = ({ stats, quotes, reviews, messages }: DashboardO
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[220px] w-full">
-              <AreaChart data={pageViews.daily}>
-                <defs>
-                  <linearGradient id="viewsGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
-                <YAxis tick={{ fontSize: 10 }} width={30} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Area type="monotone" dataKey="views" stroke="hsl(var(--primary))" fill="url(#viewsGrad)" strokeWidth={2} />
-              </AreaChart>
-            </ChartContainer>
+            {pageViews && pageViews.daily.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[220px] w-full">
+                <AreaChart data={pageViews.daily}>
+                  <defs>
+                    <linearGradient id="viewsGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={4} />
+                  <YAxis tick={{ fontSize: 10 }} width={30} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area type="monotone" dataKey="views" stroke="hsl(var(--primary))" fill="url(#viewsGrad)" strokeWidth={2} />
+                </AreaChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">
+                {loadingViews ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  "Geen bezoekersdata beschikbaar — configureer Cloudflare API"
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
