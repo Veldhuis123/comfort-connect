@@ -111,11 +111,11 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
                     </thead>
                     <tbody>
                       {filtered.slice(0, MAX_DISPLAY).map((customer) => (
-                        <tr key={customer.Relatiecode} className="border-t border-border hover:bg-muted/30 transition-colors">
-                          <td className="p-3 font-medium">{customer.Bedrijf || "–"}</td>
-                          <td className="p-3">{customer.Contactpersoon || "–"}</td>
-                          <td className="p-3 hidden md:table-cell text-muted-foreground">{customer.Email || "–"}</td>
-                          <td className="p-3 hidden lg:table-cell text-muted-foreground">{customer.Plaats || "–"}</td>
+                        <tr key={customer.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                          <td className="p-3 font-medium">{customer.bedrijf || "–"}</td>
+                          <td className="p-3">{customer.contactpersoon || "–"}</td>
+                          <td className="p-3 hidden md:table-cell text-muted-foreground">{customer.email || "–"}</td>
+                          <td className="p-3 hidden lg:table-cell text-muted-foreground">{customer.plaats || "–"}</td>
                           <td className="p-3 text-right">
                             <Button
                               variant="ghost"
