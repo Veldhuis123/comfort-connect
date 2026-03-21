@@ -29,7 +29,7 @@ router.get('/calculators', async (req, res) => {
 });
 
 // PUT /api/settings/calculators — admin only
-router.put('/calculators', requireAdmin, async (req, res) => {
+router.put('/calculators', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const settings = req.body;
     const json = JSON.stringify(settings);
