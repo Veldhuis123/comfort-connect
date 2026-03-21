@@ -261,46 +261,43 @@ const WascoSync = () => {
       {/* Connection Status & Actions */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Download className="w-5 h-5" />
-                Wasco Prijssynchronisatie
-              </CardTitle>
-              <CardDescription>
-                Automatisch inkoopprijzen ophalen van Wasco.nl
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={testConnection}
-                disabled={testing}
-              >
-                {testing ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : connectionOk === true ? (
-                  <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
-                ) : connectionOk === false ? (
-                  <XCircle className="w-4 h-4 mr-2 text-red-500" />
-                ) : (
-                  <Link2 className="w-4 h-4 mr-2" />
-                )}
-                Test Verbinding
-              </Button>
-              <Button
-                onClick={handleSyncAll}
-                disabled={syncing || mappings.length === 0}
-              >
-                {syncing ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                )}
-                Alle Prijzen Ophalen
-              </Button>
-            </div>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="w-5 h-5" />
+            Wasco Prijssynchronisatie
+          </CardTitle>
+          <CardDescription>
+            Automatisch inkoopprijzen ophalen van Wasco.nl
+          </CardDescription>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={testConnection}
+              disabled={testing}
+            >
+              {testing ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : connectionOk === true ? (
+                <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+              ) : connectionOk === false ? (
+                <XCircle className="w-4 h-4 mr-2 text-red-500" />
+              ) : (
+                <Link2 className="w-4 h-4 mr-2" />
+              )}
+              <span className="hidden sm:inline">Test Verbinding</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleSyncAll}
+              disabled={syncing || mappings.length === 0}
+            >
+              {syncing ? (
+                <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 sm:mr-2" />
+              )}
+              <span className="hidden sm:inline">Alle Prijzen Ophalen</span>
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -326,16 +323,14 @@ const WascoSync = () => {
       {/* Product Mappings */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Productkoppelingen</CardTitle>
-              <CardDescription>
-                Koppel je producten aan Wasco artikelnummers
-              </CardDescription>
-            </div>
-            <Button onClick={() => setShowAddDialog(true)} disabled={unmappedProducts.length === 0}>
-              <Link2 className="w-4 h-4 mr-2" />
-              Koppeling Toevoegen
+          <CardTitle>Productkoppelingen</CardTitle>
+          <CardDescription>
+            Koppel je producten aan Wasco artikelnummers
+          </CardDescription>
+          <div className="pt-2">
+            <Button size="sm" onClick={() => setShowAddDialog(true)} disabled={unmappedProducts.length === 0}>
+              <Link2 className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Koppeling Toevoegen</span>
             </Button>
           </div>
         </CardHeader>
