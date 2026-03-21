@@ -21,6 +21,7 @@ const installationsRoutes = require('./routes/installations');
 const pricingRoutes = require('./routes/pricing');
 const wascoRoutes = require('./routes/wasco');
 const serverStatusRoutes = require('./routes/server-status');
+const settingsRoutes = require('./routes/settings');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
