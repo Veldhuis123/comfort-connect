@@ -49,7 +49,22 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
 
     // Fail2ban status
     let fail2ban = null;
-    const f2bOutput = runCommand('sudo -n /usr/bin/fail2ban-client status sshd');
+    const fail2banServiceStatus = runCommand('systemctl is-active fail2ban 2>/dev/null');
+    const f2bCommands = [
+      'sudo -n /usr/bin/fail2ban-client status sshd',
+      'sudo -n /usr/bin/fail2ban-client -s /run/fail2ban/fail2ban.sock status sshd',
+      'sudo -n /usr/bin/fail2ban-client -s /var/run/fail2ban/fail2ban.sock status sshd',
+    ];
+
+    let f2bOutput = null;
+    for (const cmd of f2bCommands) {
+      const result = runCommand(cmd);
+      if (result) {
+        f2bOutput = result;
+        break;
+      }
+    }
+
     if (f2bOutput) {
       const currentlyBanned = f2bOutput.match(/Currently banned:\s+(\d+)/);
       const totalBanned = f2bOutput.match(/Total banned:\s+(\d+)/);
@@ -62,6 +77,15 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
         currentlyFailed: currentlyFailed ? parseInt(currentlyFailed[1]) : 0,
         totalFailed: totalFailed ? parseInt(totalFailed[1]) : 0,
         bannedIPs: bannedIPs && bannedIPs[1] ? bannedIPs[1].trim().split(/\s+/).filter(Boolean) : [],
+      };
+    } else if (fail2banServiceStatus === 'active') {
+      // Service is active, maar jail-output niet leesbaar; toon wel als actief
+      fail2ban = {
+        currentlyBanned: 0,
+        totalBanned: 0,
+        currentlyFailed: 0,
+        totalFailed: 0,
+        bannedIPs: [],
       };
     }
 
