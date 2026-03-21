@@ -254,13 +254,13 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
               <div className="space-y-1">
                 {filtered.slice(0, 20).map(c => (
                   <div
-                    key={c.Relatiecode}
+                    key={c.id}
                     onClick={() => setSelectedCustomer(c)}
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 cursor-pointer border border-transparent hover:border-border transition-colors"
                   >
                     <div>
-                      <p className="text-sm font-medium">{c.Bedrijf}</p>
-                      <p className="text-xs text-muted-foreground">{c.Contactpersoon} • {c.Email}</p>
+                      <p className="text-sm font-medium">{c.bedrijf}</p>
+                      <p className="text-xs text-muted-foreground">{c.contactpersoon} • {c.email}</p>
                     </div>
                     <UserCog className="w-4 h-4 text-muted-foreground" />
                   </div>
