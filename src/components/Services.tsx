@@ -2,28 +2,16 @@ import { Wind, Flame, Zap, Droplets, PipetteIcon, Wifi, Camera, Sun, Battery } f
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { getCalculatorSettings, CalculatorSettings } from "@/lib/calculatorSettings";
+import { type CalculatorSettings, defaultCalculatorSettings, refreshCalculatorSettings } from "@/lib/calculatorSettings";
 
 const Services = () => {
-  const [calculatorSettings, setCalculatorSettings] = useState<CalculatorSettings | null>(null);
+  const [calculatorSettings, setCalculatorSettings] = useState<CalculatorSettings>(defaultCalculatorSettings);
 
   useEffect(() => {
-    setCalculatorSettings(getCalculatorSettings());
-    
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "calculatorSettings") {
-        setCalculatorSettings(getCalculatorSettings());
-      }
-    };
-    
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    refreshCalculatorSettings().then(setCalculatorSettings);
   }, []);
 
-  // Map calculator tabs to their settings keys
   const getCalculatorLink = (tab: string): string | undefined => {
-    if (!calculatorSettings) return undefined;
-    
     const tabToSettingsKey: Record<string, keyof CalculatorSettings> = {
       airco: "airco",
       pv: "pv",

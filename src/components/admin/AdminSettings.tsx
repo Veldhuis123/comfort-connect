@@ -1,22 +1,25 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Settings, Wind, Sun, Battery, Car, Wifi, Cable, Calculator } from "lucide-react";
+import { Settings, Wind, Sun, Battery, Car, Wifi, Cable, Calculator, Loader2 } from "lucide-react";
 import { 
   CalculatorSettings, 
   defaultCalculatorSettings, 
-  getCalculatorSettings, 
+  fetchCalculatorSettings, 
   saveCalculatorSettings 
 } from "@/lib/calculatorSettings";
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import EBoekhoudenSync from "@/components/EBoekhoudenSync";
 import WascoSync from "@/components/WascoSync";
 
 const AdminSettings = () => {
   const [calculatorSettings, setCalculatorSettings] = useState<CalculatorSettings>(defaultCalculatorSettings);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    setCalculatorSettings(getCalculatorSettings());
+    fetchCalculatorSettings().then(setCalculatorSettings);
   }, []);
 
   const handleUpdate = (
@@ -29,11 +32,18 @@ const AdminSettings = () => {
         ...prev,
         [key]: { ...prev[key], [field]: value }
       };
-      saveCalculatorSettings(newSettings);
-      window.dispatchEvent(new StorageEvent("storage", {
-        key: "calculatorSettings",
-        newValue: JSON.stringify(newSettings)
-      }));
+      
+      // Debounce save to server
+      setSaving(true);
+      saveCalculatorSettings(newSettings)
+        .then(() => {
+          toast({ title: "Opgeslagen", description: "Calculator instellingen bijgewerkt" });
+        })
+        .catch(() => {
+          toast({ title: "Fout", description: "Kon instellingen niet opslaan", variant: "destructive" });
+        })
+        .finally(() => setSaving(false));
+      
       return newSettings;
     });
   };
@@ -72,6 +82,7 @@ const AdminSettings = () => {
           <CardTitle className="flex items-center gap-2 text-base">
             <Calculator className="w-5 h-5" />
             Calculator Modules
+            {saving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
           </CardTitle>
           <CardDescription>Bepaal welke calculatoren zichtbaar zijn op de website</CardDescription>
         </CardHeader>
@@ -103,7 +114,7 @@ const AdminSettings = () => {
             </div>
           ))}
           <p className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-lg">
-            💡 Wijzigingen worden direct opgeslagen en zijn meteen zichtbaar op de website.
+            💡 Wijzigingen worden direct opgeslagen op de server en gelden voor alle bezoekers.
           </p>
         </CardContent>
       </Card>
