@@ -1,10 +1,20 @@
 import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import logo from "@/assets/logo-small.png";
+import { refreshCalculatorSettings } from "@/lib/calculatorSettings";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
   const location = useLocation();
   const isHomePage = location.pathname === "/";
+  const [hasEnabledCalculators, setHasEnabledCalculators] = useState(false);
+
+  useEffect(() => {
+    refreshCalculatorSettings().then(settings => {
+      const anyEnabled = Object.values(settings).some(calc => calc.enabled);
+      setHasEnabledCalculators(anyEnabled);
+    });
+  }, []);
 
   const getHref = (hash: string) => isHomePage ? `#${hash}` : `/#${hash}`;
 
