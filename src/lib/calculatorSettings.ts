@@ -1,3 +1,5 @@
+import { apiRequest } from './api';
+
 export interface CalculatorSettings {
   airco: { enabled: boolean; name: string };
   pv: { enabled: boolean; name: string };
@@ -16,26 +18,40 @@ export const defaultCalculatorSettings: CalculatorSettings = {
   schema: { enabled: true, name: "Installatie" },
 };
 
-export const getCalculatorSettings = (): CalculatorSettings => {
-  const stored = localStorage.getItem("calculatorSettings");
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      return {
-        airco: { ...defaultCalculatorSettings.airco, ...parsed.airco },
-        pv: { ...defaultCalculatorSettings.pv, ...parsed.pv },
-        battery: { ...defaultCalculatorSettings.battery, ...parsed.battery },
-        unifi: { ...defaultCalculatorSettings.unifi, ...parsed.unifi },
-        charging: { ...defaultCalculatorSettings.charging, ...parsed.charging },
-        schema: { ...defaultCalculatorSettings.schema, ...parsed.schema },
-      };
-    } catch {
-      return defaultCalculatorSettings;
-    }
+// Fetch settings from server (public endpoint)
+export const fetchCalculatorSettings = async (): Promise<CalculatorSettings> => {
+  try {
+    const data = await apiRequest<CalculatorSettings>('/settings/calculators');
+    return {
+      airco: { ...defaultCalculatorSettings.airco, ...data.airco },
+      pv: { ...defaultCalculatorSettings.pv, ...data.pv },
+      battery: { ...defaultCalculatorSettings.battery, ...data.battery },
+      unifi: { ...defaultCalculatorSettings.unifi, ...data.unifi },
+      charging: { ...defaultCalculatorSettings.charging, ...data.charging },
+      schema: { ...defaultCalculatorSettings.schema, ...data.schema },
+    };
+  } catch {
+    return defaultCalculatorSettings;
   }
-  return defaultCalculatorSettings;
 };
 
-export const saveCalculatorSettings = (settings: CalculatorSettings) => {
-  localStorage.setItem("calculatorSettings", JSON.stringify(settings));
+// Save settings to server (admin only)
+export const saveCalculatorSettings = async (settings: CalculatorSettings): Promise<void> => {
+  await apiRequest('/settings/calculators', {
+    method: 'PUT',
+    body: JSON.stringify(settings),
+  });
 };
+
+// Legacy compat - sync read from cache
+let cachedSettings: CalculatorSettings = defaultCalculatorSettings;
+
+export const getCachedCalculatorSettings = (): CalculatorSettings => cachedSettings;
+
+export const refreshCalculatorSettings = async (): Promise<CalculatorSettings> => {
+  cachedSettings = await fetchCalculatorSettings();
+  return cachedSettings;
+};
+
+// Deprecated — kept for backward compat during migration
+export const getCalculatorSettings = (): CalculatorSettings => cachedSettings;
