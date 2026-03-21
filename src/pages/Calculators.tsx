@@ -1,6 +1,6 @@
 import { useEffect, useState, useLayoutEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Sun, Wind, Wifi, Battery, Car, Cable, Scale } from "lucide-react";
+import { Sun, Wind, Wifi, Battery, Car, Cable } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -14,16 +14,17 @@ import ProductCompare, { CompareProduct } from "@/components/ProductCompare";
 import {
   type CalculatorSettings,
   defaultCalculatorSettings,
-  getCalculatorSettings,
+  fetchCalculatorSettings,
   saveCalculatorSettings,
 } from "@/lib/calculatorSettings";
 
 // Re-export for backward compatibility
-export { type CalculatorSettings, defaultCalculatorSettings, getCalculatorSettings, saveCalculatorSettings };
+export { type CalculatorSettings, defaultCalculatorSettings, fetchCalculatorSettings, saveCalculatorSettings };
 
 const Calculators = () => {
   const [searchParams] = useSearchParams();
   const [settings, setSettings] = useState<CalculatorSettings>(defaultCalculatorSettings);
+  const [loaded, setLoaded] = useState(false);
 
   // Scroll to calculator tabs on mount
   useLayoutEffect(() => {
@@ -36,21 +37,30 @@ const Calculators = () => {
   }, []);
   
   useEffect(() => {
-    setSettings(getCalculatorSettings());
-    
-    // Listen for storage changes from other tabs/windows
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "calculatorSettings") {
-        setSettings(getCalculatorSettings());
-      }
-    };
-    
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    fetchCalculatorSettings().then(s => {
+      setSettings(s);
+      setLoaded(true);
+    });
   }, []);
 
   const enabledCalculators = Object.entries(settings).filter(([_, value]) => value.enabled);
   const defaultTab = searchParams.get("tab") || (enabledCalculators[0]?.[0] || "airco");
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-20">
+          <section className="py-12 md:py-20">
+            <div className="container mx-auto px-4 text-center">
+              <p className="text-muted-foreground">Laden...</p>
+            </div>
+          </section>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (enabledCalculators.length === 0) {
     return (
