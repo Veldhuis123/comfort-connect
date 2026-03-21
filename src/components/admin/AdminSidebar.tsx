@@ -117,9 +117,7 @@ const AdminSidebar = ({
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <MenuItem section="customers-overview" icon={Users} label="Overzicht" />
-                  <MenuItem section="customers-add" icon={UserPlus} label="Toevoegen" />
-                  <MenuItem section="customers-edit" icon={UserCog} label="Wijzigen" />
+                  <MenuItem section="customers-overview" icon={Users} label="Klanten" />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
