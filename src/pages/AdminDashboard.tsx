@@ -131,9 +131,7 @@ const AdminDashboard = () => {
         return <AdminDashboardOverview stats={stats} quotes={quotes} reviews={reviews} messages={messages} />;
 
       case "customers-overview":
-      case "customers-add":
-      case "customers-edit":
-        return <AdminCustomers section={activeSection as any} />;
+        return <AdminCustomers />;
 
       case "quotes":
         return (

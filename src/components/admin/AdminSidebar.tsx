@@ -1,7 +1,7 @@
 import { 
-  LayoutDashboard, Users, UserPlus, UserCog, FileText, Receipt,
+  LayoutDashboard, Users, FileText, Receipt,
   Star, MessageSquare, Euro, Settings,
-  Download, BookOpen, Calculator, LogOut, ChevronDown,
+  Download, BookOpen, LogOut, ChevronDown,
   Snowflake, Thermometer, Package, Zap, Grid3X3, QrCode
 } from "lucide-react";
 import {
@@ -68,7 +68,7 @@ const AdminSidebar = ({
   );
 
   const sectionGroups = [
-    { label: "Klantbeheer", sections: ["customers-overview", "customers-add", "customers-edit"] },
+    { label: "Klantbeheer", sections: ["customers-overview"] },
     { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "reviews", "messages"] },
     { label: "Airco", sections: ["airco-products", "airco-installations", "airco-calculator"] },
     { label: "Elektra", sections: ["elektra-groepenkasten", "elektra-configurator", "elektra-qrcodes"] },
@@ -117,9 +117,7 @@ const AdminSidebar = ({
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <MenuItem section="customers-overview" icon={Users} label="Overzicht" />
-                  <MenuItem section="customers-add" icon={UserPlus} label="Toevoegen" />
-                  <MenuItem section="customers-edit" icon={UserCog} label="Wijzigen" />
+                  <MenuItem section="customers-overview" icon={Users} label="Klanten" />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
