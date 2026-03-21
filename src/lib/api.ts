@@ -229,6 +229,9 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ ip }),
   }),
+
+  // Analytics
+  getVisitorStats: () => apiRequest<VisitorStats>('/analytics/visitors'),
 };
 
 // Types
@@ -551,4 +554,14 @@ export interface ServerStatus {
   hostname: string;
   platform: string;
   timestamp: string;
+}
+
+export interface VisitorStats {
+  total: number;
+  totalVisitors: number;
+  today: number;
+  todayVisitors: number;
+  thisWeek: number;
+  thisMonth: number;
+  daily: { date: string; views: number; visitors: number; requests: number }[];
 }
