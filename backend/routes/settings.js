@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
-const { requireAdmin } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
 // GET /api/settings/calculators — public, no auth needed
 router.get('/calculators', async (req, res) => {
