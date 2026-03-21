@@ -51,9 +51,9 @@ const AdminCustomers = ({ section }: AdminCustomersProps) => {
   }, []);
 
   const filtered = customers.filter(c =>
-    (c.Bedrijf || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.Contactpersoon || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.Email || "").toLowerCase().includes(searchQuery.toLowerCase())
+    (c.bedrijf || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.contactpersoon || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.email || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
