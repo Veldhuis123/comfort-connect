@@ -43,7 +43,7 @@ const Header = () => {
                 <Link
                   key={item.label}
                   to={item.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
                 >
                   {item.label}
                 </Link>
@@ -51,7 +51,7 @@ const Header = () => {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
                 >
                   {item.label}
                 </a>
