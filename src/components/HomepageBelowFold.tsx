@@ -46,11 +46,19 @@ const CalculatorCTA = () => {
 
 const HomepageBelowFold = () => (
   <>
-    <Services />
+    <div className="content-lazy">
+      <Services />
+    </div>
     <CalculatorCTA />
-    <Testimonials />
-    <About />
-    <Contact />
+    <div className="content-lazy">
+      <Testimonials />
+    </div>
+    <div className="content-lazy">
+      <About />
+    </div>
+    <div className="content-lazy">
+      <Contact />
+    </div>
     <Footer />
   </>
 );

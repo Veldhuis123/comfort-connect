@@ -113,10 +113,17 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    text-rendering: optimizeSpeed;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
+  }
+
+  /* Optimize below-fold rendering */
+  .content-lazy {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 500px;
   }
 }
 
