@@ -25,7 +25,7 @@ const Hero = () => {
           width={1920}
           height={1080}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/90 to-primary/50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/75 to-primary/40" />
       </div>
       
       {/* Decorative elements */}
