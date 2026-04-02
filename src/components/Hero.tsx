@@ -53,7 +53,7 @@ const Hero = () => {
             <Button size="lg" variant="secondary" asChild className="text-lg px-8 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
               <a href="#contact">Vraag een Offerte Aan</a>
             </Button>
-            <Button size="lg" variant="outline" asChild className="text-lg px-8 border-white/40 text-white hover:bg-white/10 backdrop-blur-sm">
+            <Button size="lg" variant="outline" asChild className="text-lg px-8 border-white/50 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm [&>a]:text-white">
               <a href="tel:0613629947" className="flex items-center gap-2">
                 <Phone className="w-5 h-5" />
                 Bel Direct
