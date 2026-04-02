@@ -82,14 +82,14 @@ const Header = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
+          <div className="md:hidden py-4 border-t border-primary-foreground/20">
             <nav className="flex flex-col gap-4">
               {navItems.map((item) => (
                 item.isLink ? (
                   <Link
                     key={item.label}
                     to={item.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors font-medium py-2"
+                    className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item.label}
@@ -98,7 +98,7 @@ const Header = () => {
                   <a
                     key={item.label}
                     href={item.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors font-medium py-2"
+                    className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item.label}
@@ -109,7 +109,7 @@ const Header = () => {
                 <Phone className="w-5 h-5" />
                 06 - 1362 9947
               </a>
-              <Button variant="default" className="w-full" asChild>
+              <Button variant="secondary" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground border-0 font-semibold" asChild>
                 <a href="#contact">Offerte Aanvragen</a>
               </Button>
             </nav>
