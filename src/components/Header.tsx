@@ -28,7 +28,7 @@ const Header = () => {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-primary/95 backdrop-blur-md border-b border-primary/20 shadow-lg shadow-primary/10">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
@@ -43,7 +43,7 @@ const Header = () => {
                 <Link
                   key={item.label}
                   to={item.href}
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
                   {item.label}
                 </Link>
@@ -51,7 +51,7 @@ const Header = () => {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
                   {item.label}
                 </a>
@@ -61,11 +61,11 @@ const Header = () => {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
-            <a href="tel:0613629947" className="flex items-center gap-2 text-primary-foreground font-semibold">
+            <a href="tel:0613629947" className="flex items-center gap-2 text-primary font-semibold">
               <Phone className="w-5 h-5 text-accent" />
               06 - 1362 9947
             </a>
-            <Button variant="secondary" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground border-0 font-semibold">
+            <Button variant="default" asChild>
               <a href="#contact">Offerte Aanvragen</a>
             </Button>
           </div>
@@ -76,20 +76,20 @@ const Header = () => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Menu"
           >
-            {isMenuOpen ? <X className="w-6 h-6 text-primary-foreground" /> : <Menu className="w-6 h-6 text-primary-foreground" />}
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-primary-foreground/20">
+          <div className="md:hidden py-4 border-t border-border">
             <nav className="flex flex-col gap-4">
               {navItems.map((item) => (
                 item.isLink ? (
                   <Link
                     key={item.label}
                     to={item.href}
-                    className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium py-2"
+                    className="text-muted-foreground hover:text-foreground transition-colors font-medium py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item.label}
@@ -98,7 +98,7 @@ const Header = () => {
                   <a
                     key={item.label}
                     href={item.href}
-                    className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium py-2"
+                    className="text-muted-foreground hover:text-foreground transition-colors font-medium py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     {item.label}
@@ -109,7 +109,7 @@ const Header = () => {
                 <Phone className="w-5 h-5" />
                 06 - 1362 9947
               </a>
-              <Button variant="secondary" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground border-0 font-semibold" asChild>
+              <Button variant="default" className="w-full" asChild>
                 <a href="#contact">Offerte Aanvragen</a>
               </Button>
             </nav>
