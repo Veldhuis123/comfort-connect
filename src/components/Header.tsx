@@ -76,7 +76,7 @@ const Header = () => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Menu"
           >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMenuOpen ? <X className="w-6 h-6 text-primary-foreground" /> : <Menu className="w-6 h-6 text-primary-foreground" />}
           </button>
         </div>
 
