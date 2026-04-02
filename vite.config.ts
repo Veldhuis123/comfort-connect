@@ -29,28 +29,6 @@ export default defineConfig(({ mode }) => ({
     sourcemap: mode === "development",
     target: "es2020",
     cssMinify: true,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          // Vendor chunk for React core
-          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/") || id.includes("node_modules/react-router")) {
-            return "react-vendor";
-          }
-          // UI library chunk
-          if (id.includes("node_modules/@radix-ui/") || id.includes("node_modules/class-variance-authority") || id.includes("node_modules/clsx") || id.includes("node_modules/tailwind-merge")) {
-            return "ui-vendor";
-          }
-          // Chart library (heavy, only used in admin)
-          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
-            return "charts";
-          }
-          // PDF generation (only used in admin)
-          if (id.includes("node_modules/jspdf")) {
-            return "pdf";
-          }
-        },
-      },
-    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
