@@ -43,7 +43,7 @@ const Header = () => {
                 <Link
                   key={item.label}
                   to={item.href}
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
                   {item.label}
                 </Link>
@@ -51,7 +51,7 @@ const Header = () => {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium"
                 >
                   {item.label}
                 </a>
@@ -61,11 +61,11 @@ const Header = () => {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
-            <a href="tel:0613629947" className="flex items-center gap-2 text-primary-foreground font-semibold">
+            <a href="tel:0613629947" className="flex items-center gap-2 text-primary font-semibold">
               <Phone className="w-5 h-5 text-accent" />
               06 - 1362 9947
             </a>
-            <Button variant="secondary" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground border-0 font-semibold">
+            <Button variant="default" asChild>
               <a href="#contact">Offerte Aanvragen</a>
             </Button>
           </div>
@@ -76,7 +76,7 @@ const Header = () => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Menu"
           >
-            {isMenuOpen ? <X className="w-6 h-6 text-primary-foreground" /> : <Menu className="w-6 h-6 text-primary-foreground" />}
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
