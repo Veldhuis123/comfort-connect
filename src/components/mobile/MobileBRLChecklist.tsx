@@ -110,7 +110,7 @@ const MobileBRLChecklist = ({ checklist, setChecklist }: Props) => {
         const isExpanded = expandedStep === idx;
 
         return (
-          <Card key={idx} className={`border ${isComplete ? "border-green-300 bg-green-50/50" : "border-border"}`}>
+          <Card key={idx} className={`border ${isComplete ? "border-primary/30 bg-primary/5" : "border-border"}`}>
             <CardHeader
               className="p-4 cursor-pointer"
               onClick={() => setExpandedStep(isExpanded ? -1 : idx)}

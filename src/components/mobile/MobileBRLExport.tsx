@@ -30,9 +30,10 @@ const MobileBRLExport = ({ data, checklist }: Props) => {
   ];
   const missingFields = requiredFields.filter((f) => !data[f]);
 
-  const handleGeneratePDF = () => {
+  const handleGeneratePDF = async () => {
     try {
-      generateCommissioningPDF(data);
+      const { doc } = await generateCommissioningPDF(data, data.customer_name || "BRL-rapport");
+      doc.save(`BRL-rapport-${data.werkbon_number || "concept"}.pdf`);
       toast({ title: "PDF gegenereerd", description: "Het rapport is gedownload" });
     } catch {
       toast({ title: "Fout bij genereren", variant: "destructive" });
