@@ -25,7 +25,7 @@ const StepCustomer = ({ data, setData, onComplete }: Props) => {
     if (!search.trim()) return;
     setLoading(true);
     try {
-      const res = await apiRequest(`/eboekhouden/contacts?search=${encodeURIComponent(search)}`) as any;
+      const res = await apiRequest(`/eboekhouden/relaties?name=${encodeURIComponent(search)}&limit=25`) as any;
       setContacts(res.contacts || res || []);
     } catch {
       toast({ title: "Zoeken mislukt", variant: "destructive" });
