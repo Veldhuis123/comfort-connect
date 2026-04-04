@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, ClipboardCheck, FileText, Thermometer, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, FileText, Thermometer, Send, Loader2, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import MobileBRLChecklist from "@/components/mobile/MobileBRLChecklist";
