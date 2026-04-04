@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Plus, ChevronRight, Trash2, Clock, CheckCircle2, Send, FileEdit } from "lucide-react";
+import { Plus, ChevronRight, Trash2, Clock, CheckCircle2, Send, FileEdit, LogOut } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +12,7 @@ interface Props {
   onNewReport: () => void;
   onOpenReport: (id: string) => void;
   onDeleteReport: (id: string) => void;
+  onLogout?: () => void;
 }
 
 const statusConfig: Record<BRLReportStatus, { label: string; icon: typeof Clock; color: string }> = {
@@ -22,12 +22,26 @@ const statusConfig: Record<BRLReportStatus, { label: string; icon: typeof Clock;
   verzonden: { label: "Verzonden", icon: Send, color: "bg-blue-100 text-blue-800" },
 };
 
-const BRLOverview = ({ reports, onNewReport, onOpenReport, onDeleteReport }: Props) => {
+const BRLOverview = ({ reports, onNewReport, onOpenReport, onDeleteReport, onLogout }: Props) => {
   return (
-    <div className="min-h-screen bg-background safe-area-inset">
-      <header className="bg-primary text-primary-foreground p-6 pt-[calc(1.5rem+env(safe-area-inset-top))]">
-        <h1 className="text-2xl font-bold">BRL 100</h1>
-        <p className="text-primary-foreground/80 text-sm mt-1">Inbedrijfstellingsrapporten</p>
+    <div className="min-h-screen bg-background">
+      <header className="bg-primary text-primary-foreground px-6 pb-5" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">BRL 100</h1>
+            <p className="text-primary-foreground/80 text-sm mt-1">Inbedrijfstellingsrapporten</p>
+          </div>
+          {onLogout && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onLogout}
+              className="text-primary-foreground hover:bg-primary-foreground/20 h-10 w-10"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
       </header>
 
       <main className="p-4 pt-5 space-y-3">

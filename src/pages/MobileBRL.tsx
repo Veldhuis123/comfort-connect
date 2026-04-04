@@ -12,12 +12,11 @@ import { getReports, saveReport, deleteReport, createNewReport } from "@/lib/brl
 type View = "overview" | "wizard";
 
 const MobileBRL = () => {
-  const { isAuthenticated, isLoading, login } = useAuth();
+  const { isAuthenticated, isLoading, login, logout } = useAuth();
   const [view, setView] = useState<View>("overview");
   const [reports, setReports] = useState<BRLReport[]>([]);
   const [activeReportId, setActiveReportId] = useState<string | null>(null);
 
-  // Login state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -50,8 +49,8 @@ const MobileBRL = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background safe-area-inset">
-        <header className="bg-primary text-primary-foreground p-6 pb-8">
+      <div className="min-h-screen bg-background">
+        <header className="bg-primary text-primary-foreground px-6 pb-8" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
           <h1 className="text-2xl font-bold">BRL 100</h1>
           <p className="text-primary-foreground/80 text-sm mt-1">Inbedrijfstellingsrapport</p>
         </header>
@@ -132,6 +131,7 @@ const MobileBRL = () => {
       onNewReport={handleNew}
       onOpenReport={handleOpen}
       onDeleteReport={handleDelete}
+      onLogout={logout}
     />
   );
 };
