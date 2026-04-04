@@ -44,7 +44,6 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
     setReport(updated);
     onSave(updated);
     
-    // Auto advance to next step
     if (stepIndex < WIZARD_STEPS.length - 1) {
       setActiveStep(stepIndex + 1);
     }
@@ -59,6 +58,12 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
   };
 
   const progress = getReportProgress(report);
+
+  const handleBack = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onBack();
+  };
 
   const renderStep = () => {
     switch (activeStep) {
@@ -136,14 +141,15 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
   };
 
   return (
-    <div className="min-h-screen bg-background safe-area-inset">
-      {/* Header */}
+    <div className="min-h-screen bg-background">
+      {/* Header with proper safe-area */}
       <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="flex items-center gap-3 p-4">
           <button
             type="button"
-            onClick={onBack}
-            className="flex items-center justify-center h-10 w-10 rounded-lg text-primary-foreground hover:bg-primary-foreground/20 active:bg-primary-foreground/30 transition-colors"
+            onClick={handleBack}
+            className="flex items-center justify-center h-10 w-10 rounded-lg text-primary-foreground hover:bg-primary-foreground/20 active:bg-primary-foreground/30 transition-colors shrink-0"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
@@ -167,6 +173,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
             return (
               <button
                 key={step.id}
+                type="button"
                 onClick={() => setActiveStep(i)}
                 className={`flex flex-col items-center min-w-[52px] py-1.5 px-1 rounded-lg text-xs transition-colors ${
                   active
