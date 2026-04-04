@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,19 +9,39 @@ import BRLWizard from "@/components/mobile/BRLWizard";
 import type { BRLReport } from "@/lib/brlTypes";
 import { createNewReport, deleteReport, getReports, mergeReports, saveReport, saveReports } from "@/lib/brlStorage";
 import { installationsApi } from "@/lib/installationsApi";
-
-type View = "overview" | "wizard";
+import { useSearchParams } from "react-router-dom";
 
 const MobileBRL = () => {
   const { isAuthenticated, isLoading, login, logout } = useAuth();
-  const [view, setView] = useState<View>("overview");
   const [reports, setReports] = useState<BRLReport[]>([]);
-  const [activeReportId, setActiveReportId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+
+  const activeReportId = searchParams.get("report");
+
+  const activeReport = useMemo(
+    () => (activeReportId ? reports.find((report) => report.id === activeReportId) ?? null : null),
+    [activeReportId, reports],
+  );
+
+  const openWizard = useCallback(
+    (reportId: string) => {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set("report", reportId);
+      setSearchParams(nextParams);
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const closeWizard = useCallback(() => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("report");
+    setSearchParams(nextParams);
+  }, [searchParams, setSearchParams]);
 
   const syncReportsFromServer = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -52,6 +72,12 @@ const MobileBRL = () => {
 
     void bootstrapSync();
   }, [isAuthenticated, syncReportsFromServer]);
+
+  useEffect(() => {
+    if (activeReportId && !activeReport && reports.length > 0) {
+      closeWizard();
+    }
+  }, [activeReport, activeReportId, closeWizard, reports.length]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -146,13 +172,11 @@ const MobileBRL = () => {
     saveReport(report);
     setReports(getReports());
     void installationsApi.saveBRLReport(report).catch(() => null);
-    setActiveReportId(report.id);
-    setView("wizard");
+    openWizard(report.id);
   };
 
   const handleOpen = (id: string) => {
-    setActiveReportId(id);
-    setView("wizard");
+    openWizard(id);
   };
 
   const handleDelete = (id: string) => {
@@ -168,16 +192,12 @@ const MobileBRL = () => {
   };
 
   const handleBack = () => {
-    setView("overview");
-    setActiveReportId(null);
     setReports(getReports());
+    closeWizard();
   };
 
-  if (view === "wizard" && activeReportId) {
-    const report = reports.find(r => r.id === activeReportId);
-    if (report) {
-      return <BRLWizard report={report} onBack={handleBack} onSave={handleSave} />;
-    }
+  if (activeReport) {
+    return <BRLWizard report={activeReport} onBack={handleBack} onSave={handleSave} />;
   }
 
   return (
