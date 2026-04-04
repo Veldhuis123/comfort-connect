@@ -105,7 +105,7 @@ const StepTechnician = ({ technicianId, selectedTools, onUpdate, onComplete }: P
         <CardContent className="px-4 pb-4 space-y-2">
           {technicians.length === 0 && !showAddTech && (
             <p className="text-sm text-muted-foreground text-center py-4">Nog geen monteurs. Voeg hieronder een monteur toe.</p>
-          )}
+          {technicians.map(tech => {
             const expired = isCertificateExpired(tech);
             return (
               <div
