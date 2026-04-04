@@ -158,6 +158,7 @@ const StepTechnician = ({ technicianId, selectedTools, onUpdate, onComplete }: P
           {tools.length === 0 && !showAddTool && (
             <p className="text-sm text-muted-foreground text-center py-4">Nog geen gereedschap. Voeg hieronder gereedschap toe.</p>
           )}
+          {tools.map(tool => {
             const expired = isToolExpired(tool);
             const selected = selectedTools.includes(tool.id);
             return (
