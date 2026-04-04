@@ -30,18 +30,14 @@ const MobileBRL = () => {
 
   const openWizard = useCallback(
     (reportId: string) => {
-      const nextParams = new URLSearchParams(searchParams);
-      nextParams.set("report", reportId);
-      setSearchParams(nextParams);
+      setSearchParams({ report: reportId });
     },
-    [searchParams, setSearchParams],
+    [setSearchParams],
   );
 
   const closeWizard = useCallback(() => {
-    const nextParams = new URLSearchParams(searchParams);
-    nextParams.delete("report");
-    setSearchParams(nextParams);
-  }, [searchParams, setSearchParams]);
+    setSearchParams({});
+  }, [setSearchParams]);
 
   const syncReportsFromServer = useCallback(async () => {
     if (!isAuthenticated) return;
