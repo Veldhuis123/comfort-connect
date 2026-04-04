@@ -124,7 +124,7 @@ const MobileBRL = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="bg-primary text-primary-foreground px-6 pb-6" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
+        <header className="bg-primary text-primary-foreground px-6 pb-6" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)' }}>
           <h1 className="text-2xl font-bold">BRL 100</h1>
           <p className="text-primary-foreground/80 text-sm mt-1">Inbedrijfstellingsrapport</p>
         </header>

@@ -142,13 +142,13 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header with proper safe-area */}
-      <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}>
-        <div className="flex items-center gap-3 px-4 pb-3">
+      <header className="bg-primary text-primary-foreground shadow-md pt-safe-top" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)' }}>
+        <div className="flex items-center gap-3 px-4 py-3">
           <button
             type="button"
             onClick={handleBack}
             aria-label="Terug naar overzicht"
-            className="flex items-center justify-center h-11 w-11 rounded-xl text-primary-foreground hover:bg-primary-foreground/20 active:bg-primary-foreground/30 transition-colors shrink-0"
+            className="relative z-20 flex items-center justify-center h-11 w-11 rounded-xl text-primary-foreground hover:bg-primary-foreground/20 active:bg-primary-foreground/30 transition-colors shrink-0"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <ArrowLeft className="h-5 w-5" />
