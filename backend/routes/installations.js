@@ -6,9 +6,107 @@ const { v4: uuidv4 } = require('uuid');
 const logger = require('../services/logger');
 const { sendFaultNotification, sendEquipmentExpiringNotification } = require('../services/email');
 
+const toIsoString = (value) => {
+  if (!value) return new Date().toISOString();
+  return value instanceof Date ? value.toISOString() : String(value);
+};
+
+const parseBrlReportRow = (row) => {
+  const payload = typeof row.report_data === 'string'
+    ? JSON.parse(row.report_data)
+    : (row.report_data || {});
+
+  return {
+    ...payload,
+    id: row.report_uuid,
+    status: row.status || payload.status || 'concept',
+    current_step: typeof row.current_step === 'number' ? row.current_step : (payload.current_step || 0),
+    created_at: toIsoString(row.created_at || payload.created_at),
+    updated_at: toIsoString(row.updated_at || payload.updated_at),
+  };
+};
+
 // =============================================
 // CUSTOMERS
 // =============================================
+
+// =============================================
+// BRL REPORTS
+// =============================================
+
+router.get('/brl-reports', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT report_uuid, status, current_step, report_data, created_at, updated_at
+      FROM brl_reports
+      WHERE deleted_at IS NULL
+      ORDER BY updated_at DESC
+    `);
+
+    res.json(rows.map(parseBrlReportRow));
+  } catch (err) {
+    console.error('Error fetching BRL reports:', err);
+    res.status(500).json({ error: 'Kon BRL rapporten niet ophalen' });
+  }
+});
+
+router.put('/brl-reports/:reportId', authMiddleware, async (req, res) => {
+  const { reportId } = req.params;
+  const report = { ...req.body, id: reportId };
+
+  try {
+    await pool.query(
+      `INSERT INTO brl_reports (
+        report_uuid,
+        created_by_user_id,
+        updated_by_user_id,
+        customer_name,
+        workbon_number,
+        status,
+        current_step,
+        report_data,
+        deleted_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+      ON DUPLICATE KEY UPDATE
+        updated_by_user_id = VALUES(updated_by_user_id),
+        customer_name = VALUES(customer_name),
+        workbon_number = VALUES(workbon_number),
+        status = VALUES(status),
+        current_step = VALUES(current_step),
+        report_data = VALUES(report_data),
+        deleted_at = NULL`,
+      [
+        reportId,
+        req.user.id,
+        req.user.id,
+        report.customer_data?.customer_name || null,
+        report.customer_data?.werkbon_number || null,
+        report.status || 'concept',
+        typeof report.current_step === 'number' ? report.current_step : 0,
+        JSON.stringify(report),
+      ]
+    );
+
+    res.json({ success: true, id: reportId });
+  } catch (err) {
+    console.error('Error saving BRL report:', err);
+    res.status(500).json({ error: 'Kon BRL rapport niet opslaan' });
+  }
+});
+
+router.delete('/brl-reports/:reportId', authMiddleware, async (req, res) => {
+  try {
+    await pool.query(
+      'UPDATE brl_reports SET deleted_at = NOW(), updated_by_user_id = ? WHERE report_uuid = ?',
+      [req.user.id, req.params.reportId]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting BRL report:', err);
+    res.status(500).json({ error: 'Kon BRL rapport niet verwijderen' });
+  }
+});
 
 // Get all customers
 router.get('/customers', authMiddleware, adminMiddleware, async (req, res) => {

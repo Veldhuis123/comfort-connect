@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import BRLOverview from "@/components/mobile/BRLOverview";
 import BRLWizard from "@/components/mobile/BRLWizard";
 import type { BRLReport } from "@/lib/brlTypes";
-import { getReports, saveReport, deleteReport, createNewReport } from "@/lib/brlStorage";
+import { createNewReport, deleteReport, getReports, mergeReports, saveReport, saveReports } from "@/lib/brlStorage";
+import { installationsApi } from "@/lib/installationsApi";
 
 type View = "overview" | "wizard";
 
@@ -22,9 +23,60 @@ const MobileBRL = () => {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) setReports(getReports());
+  const syncReportsFromServer = useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      const remoteReports = await installationsApi.getBRLReports();
+      const merged = mergeReports(getReports(), remoteReports);
+      saveReports(merged);
+      setReports(merged);
+    } catch {
+      setReports(getReports());
+    }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const bootstrapSync = async () => {
+      const localReports = getReports();
+      setReports(localReports);
+
+      await Promise.all(
+        localReports.map((report) => installationsApi.saveBRLReport(report).catch(() => null)),
+      );
+
+      await syncReportsFromServer();
+    };
+
+    void bootstrapSync();
+  }, [isAuthenticated, syncReportsFromServer]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const refresh = () => {
+      if (document.visibilityState === "visible") {
+        void syncReportsFromServer();
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void syncReportsFromServer();
+      }
+    }, 8000);
+
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [isAuthenticated, syncReportsFromServer]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,11 +102,11 @@ const MobileBRL = () => {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="bg-primary text-primary-foreground px-6 pb-8" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
+        <header className="bg-primary text-primary-foreground px-6 pb-6" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
           <h1 className="text-2xl font-bold">BRL 100</h1>
           <p className="text-primary-foreground/80 text-sm mt-1">Inbedrijfstellingsrapport</p>
         </header>
-        <main className="p-4 -mt-4">
+        <main className="p-4 pt-4">
           <Card className="shadow-lg">
             <CardHeader className="text-center">
               <CardTitle className="text-xl">Inloggen</CardTitle>
@@ -93,6 +145,7 @@ const MobileBRL = () => {
     const report = createNewReport();
     saveReport(report);
     setReports(getReports());
+    void installationsApi.saveBRLReport(report).catch(() => null);
     setActiveReportId(report.id);
     setView("wizard");
   };
@@ -105,11 +158,13 @@ const MobileBRL = () => {
   const handleDelete = (id: string) => {
     deleteReport(id);
     setReports(getReports());
+    void installationsApi.deleteBRLReport(id).catch(() => null);
   };
 
   const handleSave = (updated: BRLReport) => {
     saveReport(updated);
     setReports(getReports());
+    void installationsApi.saveBRLReport(updated).catch(() => null);
   };
 
   const handleBack = () => {

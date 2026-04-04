@@ -1,4 +1,5 @@
 import { apiRequest, API_URL, getAuthToken } from "./api";
+import type { BRLReport } from "./brlTypes";
 
 // =============================================
 // Types
@@ -334,6 +335,16 @@ export interface GroepenverklaringData {
 // =============================================
 
 export const installationsApi = {
+  // BRL reports
+  getBRLReports: () => apiRequest<BRLReport[]>('/installations/brl-reports'),
+  saveBRLReport: (report: BRLReport) =>
+    apiRequest<{ success: boolean; id: string }>('/installations/brl-reports/' + report.id, {
+      method: 'PUT',
+      body: JSON.stringify(report),
+    }),
+  deleteBRLReport: (id: string) =>
+    apiRequest<{ success: boolean }>('/installations/brl-reports/' + id, { method: 'DELETE' }),
+
   // Customers
   getCustomers: () => apiRequest<Customer[]>('/installations/customers'),
   createCustomer: (data: CreateCustomer) =>
