@@ -33,7 +33,7 @@ const MobileBRL = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center space-y-4">
-          <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
+          <LockKeyhole className="h-12 w-12 mx-auto text-muted-foreground" />
           <h1 className="text-xl font-bold text-foreground">Toegang beperkt</h1>
           <p className="text-muted-foreground">Je moet ingelogd zijn om de BRL app te gebruiken.</p>
           <Button onClick={() => navigate("/admin/login")} className="mt-4">
