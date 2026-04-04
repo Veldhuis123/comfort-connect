@@ -59,9 +59,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
 
   const progress = getReportProgress(report);
 
-  const handleBack = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleBack = () => {
     onBack();
   };
 
@@ -143,7 +141,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header with proper safe-area */}
-      <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}>
+      <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}>
         <div className="flex items-center gap-3 px-4 pb-3">
           <button
             type="button"
