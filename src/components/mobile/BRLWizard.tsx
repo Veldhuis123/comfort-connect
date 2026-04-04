@@ -92,6 +92,8 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
           <StepChecklist
             checklist={checklist}
             setChecklist={setChecklist}
+            commissioningData={report.customer_data}
+            setCommissioningData={d => updateReport({ customer_data: d })}
             onComplete={() => completeStep(3)}
           />
         );

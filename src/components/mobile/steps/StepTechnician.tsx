@@ -155,7 +155,9 @@ const StepTechnician = ({ technicianId, selectedTools, onUpdate, onComplete }: P
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-2">
-          {tools.map(tool => {
+          {tools.length === 0 && !showAddTool && (
+            <p className="text-sm text-muted-foreground text-center py-4">Nog geen gereedschap. Voeg hieronder gereedschap toe.</p>
+          )}
             const expired = isToolExpired(tool);
             const selected = selectedTools.includes(tool.id);
             return (
