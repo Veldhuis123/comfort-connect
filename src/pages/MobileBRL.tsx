@@ -183,12 +183,11 @@ const MobileBRL = () => {
 
   const handleSave = (updated: BRLReport) => {
     saveReport(updated);
-    setReports(getReports());
+    setReports(prev => prev.map(r => r.id === updated.id ? updated : r));
     void installationsApi.saveBRLReport(updated).catch(() => null);
   };
 
   const handleBack = () => {
-    setReports(getReports());
     closeWizard();
   };
 

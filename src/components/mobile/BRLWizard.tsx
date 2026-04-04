@@ -32,7 +32,6 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
   useEffect(() => {
     const updated = { ...report, current_step: activeStep, checklist, photos };
     saveReport(updated);
-    onSave(updated);
   }, [report, activeStep, checklist, photos]);
 
   const completeStep = (stepIndex: number) => {
@@ -43,6 +42,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
     updated.checklist = checklist;
     updated.photos = photos;
     setReport(updated);
+    onSave(updated);
     
     if (stepIndex < WIZARD_STEPS.length - 1) {
       setActiveStep(stepIndex + 1);
@@ -53,6 +53,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
     setReport(prev => {
       const updated = { ...prev, ...partial };
       saveReport(updated);
+      onSave(updated);
       return updated;
     });
   };
