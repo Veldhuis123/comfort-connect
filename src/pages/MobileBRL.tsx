@@ -13,9 +13,36 @@ import { defaultCommissioningData, defaultChecklist, type CommissioningData, typ
 type MobileTab = "home" | "checklist" | "commissioning" | "testo" | "export";
 
 const MobileBRL = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<MobileTab>("home");
   const [commissioningData, setCommissioningData] = useState<CommissioningData>(defaultCommissioningData);
   const [checklist, setChecklist] = useState<BRLChecklist>(defaultChecklist);
+
+  // Show nothing while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Not authenticated → redirect to login
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="text-center space-y-4">
+          <Lock className="h-12 w-12 mx-auto text-muted-foreground" />
+          <h1 className="text-xl font-bold text-foreground">Toegang beperkt</h1>
+          <p className="text-muted-foreground">Je moet ingelogd zijn om de BRL app te gebruiken.</p>
+          <Button onClick={() => navigate("/admin/login")} className="mt-4">
+            Inloggen
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (activeTab !== "home") {
     return (
