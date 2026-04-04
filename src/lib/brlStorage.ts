@@ -5,22 +5,40 @@ const REPORTS_KEY = "brl_reports";
 const TECHNICIANS_KEY = "brl_technicians";
 const TOOLS_KEY = "brl_tools";
 
+const normalizeReport = (report: Partial<BRLReport> & { id: string }): BRLReport => ({
+  id: report.id,
+  created_at: report.created_at || new Date().toISOString(),
+  updated_at: report.updated_at || new Date().toISOString(),
+  status: report.status || "concept",
+  current_step: typeof report.current_step === "number" ? report.current_step : 0,
+  steps_completed: Array.isArray(report.steps_completed)
+    ? report.steps_completed
+    : [false, false, false, false, false, false, false],
+  customer_data: { ...defaultCommissioningData, ...(report.customer_data || {}) },
+  technician_id: report.technician_id || "",
+  selected_tools: Array.isArray(report.selected_tools) ? report.selected_tools : [],
+  checklist: { ...defaultChecklist, ...(report.checklist || {}) },
+  photos: Array.isArray(report.photos) ? report.photos : [],
+  customer_email: report.customer_email || "",
+});
+
 // Reports
 export const getReports = (): BRLReport[] => {
   try {
-    return JSON.parse(localStorage.getItem(REPORTS_KEY) || "[]");
+    return JSON.parse(localStorage.getItem(REPORTS_KEY) || "[]").map(normalizeReport);
   } catch { return []; }
 };
 
 export const saveReports = (reports: BRLReport[]) => {
-  localStorage.setItem(REPORTS_KEY, JSON.stringify(reports));
+  localStorage.setItem(REPORTS_KEY, JSON.stringify(reports.map(normalizeReport)));
 };
 
 export const saveReport = (report: BRLReport) => {
   const reports = getReports();
   const idx = reports.findIndex(r => r.id === report.id);
-  if (idx >= 0) reports[idx] = { ...report, updated_at: new Date().toISOString() };
-  else reports.unshift(report);
+  const normalized = normalizeReport({ ...report, updated_at: new Date().toISOString() });
+  if (idx >= 0) reports[idx] = normalized;
+  else reports.unshift(normalized);
   saveReports(reports);
 };
 
@@ -42,6 +60,23 @@ export const createNewReport = (): BRLReport => ({
   photos: [],
   customer_email: "",
 });
+
+export const mergeReports = (localReports: BRLReport[], remoteReports: BRLReport[]): BRLReport[] => {
+  const merged = new Map<string, BRLReport>();
+
+  [...localReports, ...remoteReports]
+    .map(normalizeReport)
+    .forEach((report) => {
+      const existing = merged.get(report.id);
+      if (!existing || new Date(report.updated_at).getTime() >= new Date(existing.updated_at).getTime()) {
+        merged.set(report.id, report);
+      }
+    });
+
+  return Array.from(merged.values()).sort(
+    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+  );
+};
 
 // Technicians
 export const getTechnicians = (): BRLTechnician[] => {

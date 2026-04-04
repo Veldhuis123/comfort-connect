@@ -32,6 +32,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
   useEffect(() => {
     const updated = { ...report, current_step: activeStep, checklist, photos };
     saveReport(updated);
+    onSave(updated);
   }, [report, activeStep, checklist, photos]);
 
   const completeStep = (stepIndex: number) => {
@@ -42,7 +43,6 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
     updated.checklist = checklist;
     updated.photos = photos;
     setReport(updated);
-    onSave(updated);
     
     if (stepIndex < WIZARD_STEPS.length - 1) {
       setActiveStep(stepIndex + 1);
@@ -143,12 +143,13 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header with proper safe-area */}
-      <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="flex items-center gap-3 p-4">
+      <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}>
+        <div className="flex items-center gap-3 px-4 pb-3">
           <button
             type="button"
             onClick={handleBack}
-            className="flex items-center justify-center h-10 w-10 rounded-lg text-primary-foreground hover:bg-primary-foreground/20 active:bg-primary-foreground/30 transition-colors shrink-0"
+            aria-label="Terug naar overzicht"
+            className="flex items-center justify-center h-11 w-11 rounded-xl text-primary-foreground hover:bg-primary-foreground/20 active:bg-primary-foreground/30 transition-colors shrink-0"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <ArrowLeft className="h-5 w-5" />
@@ -165,7 +166,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
         </div>
 
         {/* Step indicators */}
-        <div className="flex px-2 pb-2 gap-1 overflow-x-auto">
+        <div className="flex px-3 pb-3 gap-2 overflow-x-auto">
           {WIZARD_STEPS.map((step, i) => {
             const Icon = stepIcons[i];
             const completed = report.steps_completed[i];
@@ -175,7 +176,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
                 key={step.id}
                 type="button"
                 onClick={() => setActiveStep(i)}
-                className={`flex flex-col items-center min-w-[52px] py-1.5 px-1 rounded-lg text-xs transition-colors ${
+                className={`flex flex-col items-center min-w-[58px] py-2 px-1 rounded-xl text-xs transition-colors ${
                   active
                     ? "bg-primary-foreground/20 text-primary-foreground"
                     : completed
@@ -197,7 +198,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
       </header>
 
       {/* Content */}
-      <main className="p-4 pb-20">
+      <main className="p-4 pb-24">
         {renderStep()}
       </main>
     </div>

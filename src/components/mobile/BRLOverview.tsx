@@ -25,7 +25,7 @@ const statusConfig: Record<BRLReportStatus, { label: string; icon: typeof Clock;
 const BRLOverview = ({ reports, onNewReport, onOpenReport, onDeleteReport, onLogout }: Props) => {
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-primary text-primary-foreground px-6 pb-5" style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}>
+      <header className="bg-primary text-primary-foreground px-6 pb-5" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">BRL 100</h1>
@@ -44,7 +44,7 @@ const BRLOverview = ({ reports, onNewReport, onOpenReport, onDeleteReport, onLog
         </div>
       </header>
 
-      <main className="p-4 pt-5 space-y-3">
+      <main className="p-4 pt-4 space-y-3">
         <Button onClick={onNewReport} variant="outline" className="w-full h-14 text-base shadow-md border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground" size="lg">
           <Plus className="h-5 w-5 mr-2" />
           Nieuwe inbedrijfstelling
