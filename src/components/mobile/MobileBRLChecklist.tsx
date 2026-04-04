@@ -3,18 +3,31 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { BRLChecklist } from "@/lib/installationTypes";
+import type { CommissioningData } from "@/lib/installationTypes";
 
 interface Props {
   checklist: BRLChecklist;
   setChecklist: React.Dispatch<React.SetStateAction<BRLChecklist>>;
+  commissioningData?: CommissioningData;
+  setCommissioningData?: (data: CommissioningData) => void;
+}
+
+interface MeasurementField {
+  key: keyof CommissioningData;
+  label: string;
+  unit?: string;
+  type?: string;
 }
 
 interface StepConfig {
   title: string;
   fields: { key: keyof BRLChecklist; label: string }[];
   notesKey: keyof BRLChecklist;
+  measurements?: MeasurementField[];
 }
 
 const steps: StepConfig[] = [
@@ -67,6 +80,11 @@ const steps: StepConfig[] = [
       { key: "electrical_connected", label: "Elektrisch aangesloten" },
     ],
     notesKey: "notes_step5",
+    measurements: [
+      { key: "high_pressure_value", label: "Beproevingsdruk hoog", unit: "kPa" },
+      { key: "low_pressure_value", label: "Beproevingsdruk laag", unit: "kPa" },
+      { key: "pressure_hold_time", label: "Drukhoudtijd", unit: "min" },
+    ],
   },
   {
     title: "6. Vacuüm & vullen",
@@ -77,6 +95,12 @@ const steps: StepConfig[] = [
       { key: "charge_recorded", label: "Vulling geregistreerd" },
     ],
     notesKey: "notes_step6",
+    measurements: [
+      { key: "vacuum_pressure", label: "Vacuümdruk", unit: "Pa/Micron" },
+      { key: "vacuum_hold_time", label: "Vacuüm houdtijd", unit: "min" },
+      { key: "standard_charge", label: "Fabrieksvulling", unit: "g" },
+      { key: "additional_charge", label: "Bijvulling", unit: "g" },
+    ],
   },
   {
     title: "7. Testen & oplevering",
@@ -87,10 +111,21 @@ const steps: StepConfig[] = [
       { key: "documentation_handed", label: "Documentatie overhandigd" },
     ],
     notesKey: "notes_step7",
+    measurements: [
+      { key: "high_pressure_reading", label: "Hogedruk", unit: "bar" },
+      { key: "low_pressure_reading", label: "Lagedruk", unit: "bar" },
+      { key: "condensation_temp", label: "Condensatietemperatuur", unit: "°C" },
+      { key: "evaporation_temp", label: "Verdampingstemperatuur", unit: "°C" },
+      { key: "discharge_temp", label: "Perstemperatuur", unit: "°C" },
+      { key: "suction_temp", label: "Zuigtemperatuur", unit: "°C" },
+      { key: "outdoor_temp", label: "Buitentemperatuur", unit: "°C" },
+      { key: "indoor_temp", label: "Binnentemperatuur", unit: "°C" },
+      { key: "outlet_temp", label: "Uitblaastemperatuur", unit: "°C" },
+    ],
   },
 ];
 
-const MobileBRLChecklist = ({ checklist, setChecklist }: Props) => {
+const MobileBRLChecklist = ({ checklist, setChecklist, commissioningData, setCommissioningData }: Props) => {
   const [expandedStep, setExpandedStep] = useState(0);
 
   const getStepProgress = (step: StepConfig) => {
@@ -100,6 +135,12 @@ const MobileBRLChecklist = ({ checklist, setChecklist }: Props) => {
 
   const toggleField = (key: keyof BRLChecklist) => {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const updateMeasurement = (key: keyof CommissioningData, value: string) => {
+    if (commissioningData && setCommissioningData) {
+      setCommissioningData({ ...commissioningData, [key]: value });
+    }
   };
 
   return (
@@ -140,6 +181,29 @@ const MobileBRLChecklist = ({ checklist, setChecklist }: Props) => {
                     <span className="text-sm">{field.label}</span>
                   </label>
                 ))}
+
+                {/* Meetwaarden bij deze stap */}
+                {step.measurements && commissioningData && setCommissioningData && (
+                  <div className="mt-3 pt-3 border-t space-y-2">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Meetwaarden</p>
+                    {step.measurements.map((m) => (
+                      <div key={m.key} className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground flex-1 min-w-0">{m.label}</Label>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            value={(commissioningData[m.key] as string) || ""}
+                            onChange={(e) => updateMeasurement(m.key, e.target.value)}
+                            className="h-9 w-24 text-sm text-right"
+                          />
+                          {m.unit && <span className="text-xs text-muted-foreground w-12">{m.unit}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <Textarea
                   placeholder="Opmerkingen..."
                   value={checklist[step.notesKey] as string}

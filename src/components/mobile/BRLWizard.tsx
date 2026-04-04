@@ -136,11 +136,15 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
   return (
     <div className="min-h-screen bg-background safe-area-inset">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md">
+      <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="flex items-center gap-3 p-4">
-          <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary/80" onClick={onBack}>
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center justify-center h-10 w-10 rounded-lg text-primary-foreground hover:bg-primary-foreground/20 active:bg-primary-foreground/30 transition-colors"
+          >
             <ArrowLeft className="h-5 w-5" />
-          </Button>
+          </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold truncate">
               {report.customer_data.customer_name || "Nieuw rapport"}
