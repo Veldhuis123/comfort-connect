@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Check, AlertTriangle, Wrench, User, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { BRLTechnician, BRLTool } from "@/lib/brlTypes";
 import { isCertificateExpired, isToolExpired } from "@/lib/brlTypes";
 import { getTechnicians, saveTechnicians, getTools, saveTools } from "@/lib/brlStorage";
+import { installationsApi, type Equipment, type Technician } from "@/lib/installationsApi";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   technicianId: string;
@@ -20,10 +22,71 @@ interface Props {
 const StepTechnician = ({ technicianId, selectedTools, onUpdate, onComplete }: Props) => {
   const [technicians, setTechnicians] = useState<BRLTechnician[]>(getTechnicians);
   const [tools, setTools] = useState<BRLTool[]>(getTools);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [showAddTech, setShowAddTech] = useState(false);
   const [showAddTool, setShowAddTool] = useState(false);
   const [newTech, setNewTech] = useState<Partial<BRLTechnician>>({});
   const [newTool, setNewTool] = useState<Partial<BRLTool>>({});
+  const { toast } = useToast();
+
+  const mapTechnicianToBRL = (tech: Technician): BRLTechnician => ({
+    id: String(tech.id),
+    name: tech.name,
+    certificate_number: tech.brl_certificate_number || tech.fgas_certificate_number || "",
+    certificate_expiry: tech.brl_certificate_expires || tech.fgas_certificate_expires || "",
+    phone: tech.phone || "",
+  });
+
+  const mapEquipmentToBRL = (tool: Equipment): BRLTool => ({
+    id: String(tool.id),
+    name: tool.name,
+    brand: tool.brand,
+    serial: tool.serial_number,
+    calibration_date: tool.calibration_date || "",
+    calibration_expiry: tool.calibration_valid_until || "",
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    const syncExistingData = async () => {
+      setIsSyncing(true);
+      try {
+        const [technicianRows, equipmentRows] = await Promise.all([
+          installationsApi.getTechnicians(),
+          installationsApi.getEquipment(),
+        ]);
+
+        if (!active) return;
+
+        const syncedTechnicians = technicianRows
+          .filter((tech) => tech.is_active !== false)
+          .map(mapTechnicianToBRL);
+        const syncedTools = equipmentRows
+          .filter((tool) => tool.is_active !== false)
+          .map(mapEquipmentToBRL);
+
+        setTechnicians(syncedTechnicians);
+        setTools(syncedTools);
+        saveTechnicians(syncedTechnicians);
+        saveTools(syncedTools);
+      } catch {
+        if (!active) return;
+        toast({
+          title: "Offline cache gebruikt",
+          description: "Kon monteurs en gereedschap niet live ophalen.",
+        });
+      } finally {
+        if (active) setIsSyncing(false);
+      }
+    };
+
+    syncExistingData();
+
+    return () => {
+      active = false;
+    };
+  }, [toast]);
 
   const addTechnician = () => {
     if (!newTech.name) return;
@@ -103,6 +166,7 @@ const StepTechnician = ({ technicianId, selectedTools, onUpdate, onComplete }: P
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-2">
+          {isSyncing && <p className="text-xs text-muted-foreground">Monteurs worden geladen...</p>}
           {technicians.length === 0 && !showAddTech && (
             <p className="text-sm text-muted-foreground text-center py-4">Nog geen monteurs. Voeg hieronder een monteur toe.</p>
           )}
@@ -156,6 +220,7 @@ const StepTechnician = ({ technicianId, selectedTools, onUpdate, onComplete }: P
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 space-y-2">
+          {isSyncing && <p className="text-xs text-muted-foreground">Gereedschap wordt geladen...</p>}
           {tools.length === 0 && !showAddTool && (
             <p className="text-sm text-muted-foreground text-center py-4">Nog geen gereedschap. Voeg hieronder gereedschap toe.</p>
           )}
