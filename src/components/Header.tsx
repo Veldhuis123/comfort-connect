@@ -22,6 +22,7 @@ const Header = () => {
     { label: "Home", href: isHomePage ? "#home" : "/" },
     { label: "Diensten", href: isHomePage ? "#diensten" : "/#diensten" },
     ...(hasEnabledCalculators ? [{ label: "Calculatoren", href: "/calculators", isLink: true }] : []),
+    { label: "Projecten", href: "/projecten", isLink: true },
     { label: "Reviews", href: isHomePage ? "#reviews" : "/#reviews" },
     { label: "Over Mij", href: isHomePage ? "#over" : "/#over" },
     { label: "Contact", href: isHomePage ? "#contact" : "/#contact" },

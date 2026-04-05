@@ -23,6 +23,7 @@ const wascoRoutes = require('./routes/wasco');
 const serverStatusRoutes = require('./routes/server-status');
 const settingsRoutes = require('./routes/settings');
 const analyticsRoutes = require('./routes/analytics');
+const projectsRoutes = require('./routes/projects');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -103,6 +104,7 @@ app.use('/api/wasco', wascoRoutes);
 app.use('/api/server-status', serverStatusRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/projects', projectsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

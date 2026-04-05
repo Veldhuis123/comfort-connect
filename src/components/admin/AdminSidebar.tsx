@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Users, FileText, Receipt,
   Star, MessageSquare, Euro, Settings,
   Download, BookOpen, LogOut, ChevronDown,
-  Snowflake, Thermometer, Package, Zap, Grid3X3, QrCode
+  Snowflake, Thermometer, Package, Zap, Grid3X3, QrCode, FolderOpen
 } from "lucide-react";
 import {
   Sidebar,
@@ -72,6 +72,7 @@ const AdminSidebar = ({
     { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "reviews", "messages"] },
     { label: "Airco", sections: ["airco-products", "airco-installations", "airco-calculator"] },
     { label: "Elektra", sections: ["elektra-groepenkasten", "elektra-configurator", "elektra-qrcodes"] },
+    { label: "Website", sections: ["projects"] },
     { label: "Systeem", sections: ["settings", "boekhouden", "wasco"] },
   ];
 
@@ -189,9 +190,28 @@ const AdminSidebar = ({
           </Collapsible>
         </SidebarGroup>
 
-        {/* Systeem */}
+        {/* Website */}
         <SidebarGroup>
           <Collapsible defaultOpen={isGroupActive(sectionGroups[4].sections)}>
+            <CollapsibleTrigger className="w-full">
+              <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
+                {!collapsed && <span>Website</span>}
+                {!collapsed && <ChevronDown className="h-3 w-3" />}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <MenuItem section="projects" icon={FolderOpen} label="Projecten" />
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarGroup>
+
+        {/* Systeem */}
+        <SidebarGroup>
+          <Collapsible defaultOpen={isGroupActive(sectionGroups[5].sections)}>
             <CollapsibleTrigger className="w-full">
               <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
                 {!collapsed && <span>Systeem</span>}
