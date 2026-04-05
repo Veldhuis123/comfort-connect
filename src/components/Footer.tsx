@@ -29,7 +29,7 @@ const Footer = () => {
                 <img src={logo} alt="R. Veldhuis Installatie" className="h-16 w-auto" width={192} height={103} loading="lazy" />
               </Link>
             </div>
-            <p className="text-primary-foreground/80">
+            <p className="text-primary-foreground/90">
               Uw specialist voor airco, verwarming, elektra, water en riolering.
             </p>
           </div>
@@ -38,21 +38,21 @@ const Footer = () => {
           <div>
             <h4 className="font-heading font-bold text-lg mb-4">Snelle Links</h4>
             <nav className="space-y-2" aria-label="Footer navigatie">
-              <a href={getHref("home")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+              <a href={getHref("home")} className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                 Home
               </a>
-              <a href={getHref("diensten")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+              <a href={getHref("diensten")} className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                 Diensten
               </a>
               {hasEnabledCalculators && (
-                <Link to="/calculators" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                <Link to="/calculators" className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                   Calculatoren
                 </Link>
               )}
-              <a href={getHref("over")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+              <a href={getHref("over")} className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                 Over Mij
               </a>
-              <a href={getHref("contact")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+              <a href={getHref("contact")} className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                 Contact
               </a>
             </nav>
@@ -61,15 +61,15 @@ const Footer = () => {
           {/* Contact */}
           <div>
             <h4 className="font-heading font-bold text-lg mb-4">Contact</h4>
-            <div className="space-y-2 text-primary-foreground/80">
-              <p><a href="tel:0613629947" className="hover:text-primary-foreground transition-colors">Tel: 06 - 1362 9947</a></p>
-              <p><a href="mailto:info@rv-installatie.nl" className="hover:text-primary-foreground transition-colors">E-mail: info@rv-installatie.nl</a></p>
+            <div className="space-y-2 text-primary-foreground/90">
+              <p><a href="tel:0613629947" className="hover:text-primary-foreground transition-colors py-1 inline-block">Tel: 06 - 1362 9947</a></p>
+              <p><a href="mailto:info@rv-installatie.nl" className="hover:text-primary-foreground transition-colors py-1 inline-block">E-mail: info@rv-installatie.nl</a></p>
               <p>Werkgebied: Regio Nederland</p>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-primary-foreground/20 pt-8 text-center text-primary-foreground/70 text-sm">
+        <div className="border-t border-primary-foreground/20 pt-8 text-center text-primary-foreground/90 text-sm">
           <p>© {currentYear} R. Veldhuis Installatie. Alle rechten voorbehouden.</p>
         </div>
       </div>

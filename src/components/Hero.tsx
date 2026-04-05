@@ -34,9 +34,9 @@ const Hero = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 bg-white/20 text-white px-4 py-2 rounded-full mb-6 backdrop-blur-sm border border-white/30">
+          <div className="inline-flex items-center gap-2 bg-white/25 text-white px-4 py-2 rounded-full mb-6 backdrop-blur-sm border border-white/40">
             <span className="w-2 h-2 bg-accent rounded-full animate-pulse" aria-hidden="true" />
-            <span className="text-sm font-medium">Beschikbaar in uw regio</span>
+            <span className="text-sm font-semibold">Beschikbaar in uw regio</span>
           </div>
 
           <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight mb-6">
@@ -50,10 +50,10 @@ const Hero = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
-            <Button size="lg" variant="secondary" asChild className="text-lg px-8 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
+            <Button size="lg" variant="secondary" asChild className="text-lg px-8 min-h-[48px] bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
               <a href="#contact">Vraag een Offerte Aan</a>
             </Button>
-            <Button size="lg" variant="outline" asChild className="text-lg px-8 border-white/50 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm [&>a]:text-white">
+            <Button size="lg" variant="outline" asChild className="text-lg px-8 min-h-[48px] border-white/50 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm [&>a]:text-white">
               <a href="tel:0613629947" className="flex items-center gap-2" aria-label="Bel ons op 06 1362 9947">
                 <Phone className="w-5 h-5" />
                 Bel Direct
