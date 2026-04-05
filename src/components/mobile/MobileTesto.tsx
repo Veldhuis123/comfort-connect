@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Thermometer, Upload, Keyboard, Info } from "lucide-react";
+import { useState, lazy, Suspense } from "react";
+import { Thermometer, Upload, Keyboard, Info, Bluetooth } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import type { CommissioningData } from "@/lib/installationTypes";
+
+const TestoBLE = lazy(() => import("./TestoBLE"));
 
 interface Props {
   data: CommissioningData;
@@ -33,7 +35,7 @@ const readings: TestoReading[] = [
 ];
 
 const MobileTesto = ({ data, setData }: Props) => {
-  const [mode, setMode] = useState<"manual" | "import">("manual");
+  const [mode, setMode] = useState<"manual" | "import" | "ble">("manual");
   const { toast } = useToast();
 
   const updateReading = (key: keyof CommissioningData, value: string) => {
@@ -83,13 +85,13 @@ const MobileTesto = ({ data, setData }: Props) => {
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <Button
           variant={mode === "manual" ? "default" : "outline"}
           onClick={() => setMode("manual")}
           className="h-12"
         >
-          <Keyboard className="h-4 w-4 mr-2" />
+          <Keyboard className="h-4 w-4 mr-1" />
           Handmatig
         </Button>
         <Button
@@ -97,8 +99,16 @@ const MobileTesto = ({ data, setData }: Props) => {
           onClick={() => setMode("import")}
           className="h-12"
         >
-          <Upload className="h-4 w-4 mr-2" />
-          CSV Import
+          <Upload className="h-4 w-4 mr-1" />
+          CSV
+        </Button>
+        <Button
+          variant={mode === "ble" ? "default" : "outline"}
+          onClick={() => setMode("ble")}
+          className="h-12"
+        >
+          <Bluetooth className="h-4 w-4 mr-1" />
+          BLE
         </Button>
       </div>
 
@@ -118,6 +128,12 @@ const MobileTesto = ({ data, setData }: Props) => {
             </label>
           </CardContent>
         </Card>
+      )}
+
+      {mode === "ble" && (
+        <Suspense fallback={<div className="text-center py-8 text-muted-foreground">BLE laden...</div>}>
+          <TestoBLE data={data} setData={setData} />
+        </Suspense>
       )}
 
       <Card>
