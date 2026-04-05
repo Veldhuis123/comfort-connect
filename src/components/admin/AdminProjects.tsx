@@ -69,10 +69,17 @@ const AdminProjects = () => {
 
   const handleSave = async () => {
     try {
+      let projectId: number;
       if (editingProject) {
         await api.updateProject(editingProject.id, { ...form, photos: editingProject.photos });
+        projectId = editingProject.id;
       } else {
-        await api.createProject(form);
+        const result = await api.createProject(form);
+        projectId = result.id;
+      }
+      // Upload selected photos
+      for (const file of formFiles) {
+        await api.uploadProjectImage(projectId, file);
       }
       setShowForm(false);
       resetForm();
