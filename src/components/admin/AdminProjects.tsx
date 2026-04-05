@@ -50,6 +50,7 @@ const AdminProjects = () => {
   const resetForm = () => {
     setForm({ title: "", description: "", category: "airco", location: "", completion_date: "", is_visible: true, sort_order: 0 });
     setEditingProject(null);
+    setFormFiles([]);
   };
 
   const handleEdit = (project: Project) => {
