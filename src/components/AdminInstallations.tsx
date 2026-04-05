@@ -2241,7 +2241,7 @@ const AdminInstallations = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Model</label>
-                    <p className="text-sm">{selectedBrlReport.customer_data.model || "-"}</p>
+                    <p className="text-sm">{(selectedBrlReport.customer_data as any)?.model || "-"}</p>
                   </div>
                 </div>
               )}
