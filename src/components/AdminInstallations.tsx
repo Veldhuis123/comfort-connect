@@ -2209,7 +2209,7 @@ const AdminInstallations = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Datum</label>
-                  <p className="text-sm">{selectedBrlReport.customer_data?.installation_date || new Date(selectedBrlReport.created_at).toLocaleDateString('nl-NL')}</p>
+                  <p className="text-sm">{(selectedBrlReport.customer_data as any)?.installation_date || new Date(selectedBrlReport.created_at).toLocaleDateString('nl-NL')}</p>
                 </div>
               </div>
 
