@@ -83,7 +83,7 @@ const Header = () => {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
-            <nav className="flex flex-col gap-4">
+            <nav className="flex flex-col gap-4" aria-label="Mobiele navigatie">
               {navItems.map((item) => (
                 item.isLink ? (
                   <Link
