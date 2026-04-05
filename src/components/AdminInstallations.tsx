@@ -67,6 +67,8 @@ import {
 import { generateKenplaatPDF } from "@/lib/kenplaatPdfExport";
 import { generateCommissioningPDF } from "@/lib/commissioningPdfExport";
 import type { CommissioningData } from "@/lib/installationTypes";
+import type { BRLReport } from "@/lib/brlTypes";
+import { getReportProgress } from "@/lib/brlTypes";
 
 const installationTypeLabels: Record<InstallationType, string> = {
   airco: "Airco",
