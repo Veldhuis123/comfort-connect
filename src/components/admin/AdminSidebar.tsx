@@ -211,7 +211,7 @@ const AdminSidebar = ({
 
         {/* Systeem */}
         <SidebarGroup>
-          <Collapsible defaultOpen={isGroupActive(sectionGroups[4].sections)}>
+          <Collapsible defaultOpen={isGroupActive(sectionGroups[5].sections)}>
             <CollapsibleTrigger className="w-full">
               <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
                 {!collapsed && <span>Systeem</span>}
