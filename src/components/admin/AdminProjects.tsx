@@ -32,7 +32,9 @@ const AdminProjects = () => {
     title: "", description: "", category: "airco", location: "", completion_date: "", is_visible: true, sort_order: 0
   });
   const [uploading, setUploading] = useState(false);
+  const [formFiles, setFormFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formFileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProjects = async () => {
     setLoading(true);
