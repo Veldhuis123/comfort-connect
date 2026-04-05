@@ -85,13 +85,13 @@ const MobileTesto = ({ data, setData }: Props) => {
         </AlertDescription>
       </Alert>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <Button
           variant={mode === "manual" ? "default" : "outline"}
           onClick={() => setMode("manual")}
           className="h-12"
         >
-          <Keyboard className="h-4 w-4 mr-2" />
+          <Keyboard className="h-4 w-4 mr-1" />
           Handmatig
         </Button>
         <Button
@@ -99,8 +99,16 @@ const MobileTesto = ({ data, setData }: Props) => {
           onClick={() => setMode("import")}
           className="h-12"
         >
-          <Upload className="h-4 w-4 mr-2" />
-          CSV Import
+          <Upload className="h-4 w-4 mr-1" />
+          CSV
+        </Button>
+        <Button
+          variant={mode === "ble" ? "default" : "outline"}
+          onClick={() => setMode("ble")}
+          className="h-12"
+        >
+          <Bluetooth className="h-4 w-4 mr-1" />
+          BLE
         </Button>
       </div>
 
