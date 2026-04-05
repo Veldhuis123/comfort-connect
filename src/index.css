@@ -40,8 +40,8 @@
     --muted: 200 30% 96%;
     --muted-foreground: 240 30% 45%;
 
-    /* Accent - Sky Blue from RVI logo */
-    --accent: 197 90% 36%;
+    /* Accent - Sky Blue from RVI logo (darkened for WCAG AA contrast) */
+    --accent: 197 90% 28%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive */

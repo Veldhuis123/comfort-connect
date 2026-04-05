@@ -41,7 +41,7 @@ const Hero = () => {
 
           <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight mb-6">
             Uw Specialist voor{" "}
-            <span className="text-accent">Alle Installaties</span>
+            <span className="text-amber-300">Alle Installaties</span>
           </h1>
 
           <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 max-w-2xl">
@@ -64,7 +64,7 @@ const Hero = () => {
           <div className="flex flex-wrap gap-6">
             {highlights.map((item) => (
               <div key={item} className="flex items-center gap-2 text-primary-foreground bg-primary-foreground/10 backdrop-blur-sm px-3 py-1 rounded-full border border-primary-foreground/20">
-                <CheckCircle2 className="w-5 h-5 text-accent" />
+                <CheckCircle2 className="w-5 h-5 text-amber-300" />
                 <span>{item}</span>
               </div>
             ))}
