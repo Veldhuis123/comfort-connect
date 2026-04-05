@@ -15,6 +15,7 @@ const Calculators = lazy(() => import("./pages/Calculators"));
 const InstallationPublic = lazy(() => import("./pages/InstallationPublic"));
 const QuotePublic = lazy(() => import("./pages/QuotePublic"));
 const MobileBRL = lazy(() => import("./pages/MobileBRL"));
+const Projects = lazy(() => import("./pages/Projects"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
