@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 // GET /api/projects - Public: visible projects
 router.get('/', async (req, res) => {
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/projects/admin/all - Admin: all projects
-router.get('/admin/all', authenticateToken, async (req, res) => {
+router.get('/admin/all', authMiddleware, async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM projects ORDER BY sort_order ASC, created_at DESC');
     res.json(rows);
@@ -28,7 +28,7 @@ router.get('/admin/all', authenticateToken, async (req, res) => {
 });
 
 // POST /api/projects - Create project
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const { title, description, category, location, completion_date, photos, is_visible, sort_order } = req.body;
     const [result] = await db.query(
@@ -43,7 +43,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/projects/:id - Update project
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const { title, description, category, location, completion_date, photos, is_visible, sort_order } = req.body;
     await db.query(
@@ -58,7 +58,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // PATCH /api/projects/:id/toggle - Toggle visibility
-router.patch('/:id/toggle', authenticateToken, async (req, res) => {
+router.patch('/:id/toggle', authMiddleware, async (req, res) => {
   try {
     const [rows] = await db.query('SELECT is_visible FROM projects WHERE id = ?', [req.params.id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Project niet gevonden' });
@@ -72,7 +72,7 @@ router.patch('/:id/toggle', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/projects/:id - Delete project
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     await db.query('DELETE FROM projects WHERE id = ?', [req.params.id]);
     res.json({ success: true });
@@ -83,7 +83,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/projects/:id/image - Upload project image
-router.post('/:id/image', authenticateToken, async (req, res) => {
+router.post('/:id/image', authMiddleware, async (req, res) => {
   try {
     // Use multer from upload route pattern
     const multer = require('multer');
