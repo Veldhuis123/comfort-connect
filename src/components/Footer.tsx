@@ -26,7 +26,7 @@ const Footer = () => {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Link to="/">
-                <img src={logo} alt="R. Veldhuis Installatie" className="h-16 w-auto" width={192} height={103} />
+                <img src={logo} alt="R. Veldhuis Installatie" className="h-16 w-auto" width={192} height={103} loading="lazy" />
               </Link>
             </div>
             <p className="text-primary-foreground/70">
