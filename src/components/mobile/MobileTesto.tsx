@@ -130,6 +130,12 @@ const MobileTesto = ({ data, setData }: Props) => {
         </Card>
       )}
 
+      {mode === "ble" && (
+        <Suspense fallback={<div className="text-center py-8 text-muted-foreground">BLE laden...</div>}>
+          <TestoBLE data={data} setData={setData} />
+        </Suspense>
+      )}
+
       <Card>
         <CardHeader className="p-4 pb-2">
           <CardTitle className="text-base flex items-center gap-2">
