@@ -2184,6 +2184,85 @@ const AdminInstallations = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* BRL Report Detail Dialog */}
+      <Dialog open={selectedBrlReport !== null} onOpenChange={(open) => !open && setSelectedBrlReport(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>BRL Rapport - {selectedBrlReport?.customer_data?.werkbon_number || "Onbekend"}</DialogTitle>
+            <DialogDescription>Details van het inbedrijfstellingsrapport</DialogDescription>
+          </DialogHeader>
+          {selectedBrlReport && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Klant</label>
+                  <p className="font-medium">{selectedBrlReport.customer_data?.customer_name || "Niet opgegeven"}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Status</label>
+                  <p><Badge>{selectedBrlReport.status}</Badge></p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Adres</label>
+                  <p className="text-sm">{selectedBrlReport.customer_data?.customer_address || "-"} {selectedBrlReport.customer_data?.customer_postal || ""} {selectedBrlReport.customer_data?.customer_city || ""}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Datum</label>
+                  <p className="text-sm">{selectedBrlReport.customer_data?.installation_date || new Date(selectedBrlReport.created_at).toLocaleDateString('nl-NL')}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Voortgang</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Progress value={getReportProgress(selectedBrlReport)} className="h-3 flex-1" />
+                  <span className="text-sm font-medium">{getReportProgress(selectedBrlReport)}%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Stappen voltooid</label>
+                <div className="grid grid-cols-2 gap-1 mt-1">
+                  {["Voorbereiding", "Gereedschap", "Materiaal", "Buitenunit", "Binnenunit", "Leidingwerk", "Vacuüm & Vullen", "Oplevering"].map((step, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <div className={`w-3 h-3 rounded-full ${selectedBrlReport.steps_completed[i] ? "bg-green-500" : "bg-muted"}`} />
+                      {step}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {selectedBrlReport.customer_data?.brand && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Merk</label>
+                    <p className="text-sm">{selectedBrlReport.customer_data.brand}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Model</label>
+                    <p className="text-sm">{selectedBrlReport.customer_data.model || "-"}</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedBrlReport.photos && selectedBrlReport.photos.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Foto's ({selectedBrlReport.photos.length})</label>
+                  <p className="text-xs text-muted-foreground mt-1">{selectedBrlReport.photos.length} foto('s) bijgevoegd</p>
+                </div>
+              )}
+
+              {selectedBrlReport.customer_email && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Klant e-mail</label>
+                  <p className="text-sm">{selectedBrlReport.customer_email}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
