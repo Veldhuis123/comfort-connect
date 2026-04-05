@@ -29,7 +29,7 @@ const Footer = () => {
                 <img src={logo} alt="R. Veldhuis Installatie" className="h-16 w-auto" width={192} height={103} loading="lazy" />
               </Link>
             </div>
-            <p className="text-primary-foreground/80">
+            <p className="text-primary-foreground/90">
               Uw specialist voor airco, verwarming, elektra, water en riolering.
             </p>
           </div>
