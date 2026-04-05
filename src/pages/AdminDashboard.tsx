@@ -28,6 +28,7 @@ import {
 const GroepenkastConfigurator = lazy(() => import("@/components/admin/GroepenkastConfigurator"));
 const ElektraGroepenkasten = lazy(() => import("@/components/admin/ElektraGroepenkasten"));
 const ElektraQRCodes = lazy(() => import("@/components/admin/ElektraQRCodes"));
+const AdminProjects = lazy(() => import("@/components/admin/AdminProjects"));
 
 const AdminDashboard = () => {
   const { user, logout, isLoading: authLoading } = useAuth();
