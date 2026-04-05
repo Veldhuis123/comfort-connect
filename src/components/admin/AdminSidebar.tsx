@@ -190,6 +190,25 @@ const AdminSidebar = ({
           </Collapsible>
         </SidebarGroup>
 
+        {/* Website */}
+        <SidebarGroup>
+          <Collapsible defaultOpen={isGroupActive(sectionGroups[4].sections)}>
+            <CollapsibleTrigger className="w-full">
+              <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
+                {!collapsed && <span>Website</span>}
+                {!collapsed && <ChevronDown className="h-3 w-3" />}
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <MenuItem section="projects" icon={FolderOpen} label="Projecten" />
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </Collapsible>
+        </SidebarGroup>
+
         {/* Systeem */}
         <SidebarGroup>
           <Collapsible defaultOpen={isGroupActive(sectionGroups[4].sections)}>
