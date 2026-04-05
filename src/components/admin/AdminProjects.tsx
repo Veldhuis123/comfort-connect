@@ -32,7 +32,9 @@ const AdminProjects = () => {
     title: "", description: "", category: "airco", location: "", completion_date: "", is_visible: true, sort_order: 0
   });
   const [uploading, setUploading] = useState(false);
+  const [formFiles, setFormFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formFileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -48,6 +50,7 @@ const AdminProjects = () => {
   const resetForm = () => {
     setForm({ title: "", description: "", category: "airco", location: "", completion_date: "", is_visible: true, sort_order: 0 });
     setEditingProject(null);
+    setFormFiles([]);
   };
 
   const handleEdit = (project: Project) => {
@@ -66,10 +69,17 @@ const AdminProjects = () => {
 
   const handleSave = async () => {
     try {
+      let projectId: number;
       if (editingProject) {
         await api.updateProject(editingProject.id, { ...form, photos: editingProject.photos });
+        projectId = editingProject.id;
       } else {
-        await api.createProject(form);
+        const result = await api.createProject(form);
+        projectId = result.id;
+      }
+      // Upload selected photos
+      for (const file of formFiles) {
+        await api.uploadProjectImage(projectId, file);
       }
       setShowForm(false);
       resetForm();
@@ -137,7 +147,45 @@ const AdminProjects = () => {
               <Input placeholder="Locatie (bijv. Almere)" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
               <Input type="date" value={form.completion_date} onChange={(e) => setForm({ ...form, completion_date: e.target.value })} />
               <Input type="number" placeholder="Sorteervolgorde" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })} />
-              <Button onClick={handleSave} className="w-full">{editingProject ? "Bijwerken" : "Opslaan"}</Button>
+              
+              {/* Photo upload in form */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Foto's</label>
+                <input
+                  ref={formFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      setFormFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                    }
+                  }}
+                />
+                <Button type="button" variant="outline" className="w-full" onClick={() => formFileInputRef.current?.click()}>
+                  <Upload className="w-4 h-4 mr-2" />Foto's selecteren
+                </Button>
+                {formFiles.length > 0 && (
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    {formFiles.map((file, i) => (
+                      <div key={i} className="relative">
+                        <img src={URL.createObjectURL(file)} alt="" className="w-16 h-16 rounded object-cover border border-border" />
+                        <button
+                          onClick={() => setFormFiles(prev => prev.filter((_, idx) => idx !== i))}
+                          className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Button onClick={handleSave} className="w-full" disabled={uploading}>
+                {uploading ? "Uploaden..." : editingProject ? "Bijwerken" : "Opslaan"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
