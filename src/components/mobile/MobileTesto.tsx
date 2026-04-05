@@ -36,6 +36,7 @@ const readings: TestoReading[] = [
 
 const MobileTesto = ({ data, setData }: Props) => {
   const [mode, setMode] = useState<"manual" | "import" | "ble">("manual");
+  const { toast } = useToast();
 
   const updateReading = (key: keyof CommissioningData, value: string) => {
     setData((prev) => ({ ...prev, [key]: value }));
