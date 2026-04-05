@@ -89,7 +89,7 @@ const StepCustomer = ({ data, setData, onComplete }: Props) => {
                   className="p-3 rounded-lg border cursor-pointer active:bg-muted/50 hover:bg-muted/30"
                   onClick={() => selectContact(c)}
                 >
-                  <p className="text-sm font-medium">{c.bedrijf || `${c.voornaam} ${c.achternaam}`}</p>
+                  <p className="text-sm font-medium">{getDisplayName(c)}</p>
                   <p className="text-xs text-muted-foreground">{c.plaats}</p>
                 </div>
               ))}

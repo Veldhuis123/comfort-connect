@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,6 +67,8 @@ import {
 import { generateKenplaatPDF } from "@/lib/kenplaatPdfExport";
 import { generateCommissioningPDF } from "@/lib/commissioningPdfExport";
 import type { CommissioningData } from "@/lib/installationTypes";
+import type { BRLReport } from "@/lib/brlTypes";
+import { getReportProgress } from "@/lib/brlTypes";
 
 const installationTypeLabels: Record<InstallationType, string> = {
   airco: "Airco",
@@ -130,6 +133,7 @@ const AdminInstallations = () => {
   const [faultReports, setFaultReports] = useState<FaultReport[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [cylinders, setCylinders] = useState<RefrigerantCylinder[]>([]);
+  const [brlReports, setBrlReports] = useState<BRLReport[]>([]);
   const [stats, setStats] = useState<InstallationStats>({
     totalInstallations: 0,
     maintenanceDue: 0,
@@ -216,7 +220,7 @@ const AdminInstallations = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [installationsData, customersData, techniciansData, faultsData, statsData, equipmentData, cylindersData] = await Promise.all([
+      const [installationsData, customersData, techniciansData, faultsData, statsData, equipmentData, cylindersData, brlData] = await Promise.all([
         installationsApi.getInstallations().catch((e) => { console.error('Installations error:', e); return []; }),
         installationsApi.getCustomers().catch((e) => { console.error('Customers error:', e); return []; }),
         installationsApi.getTechnicians().catch((e) => { console.error('Technicians error:', e); return []; }),
@@ -224,6 +228,7 @@ const AdminInstallations = () => {
         installationsApi.getStats().catch((e) => { console.error('Stats error:', e); return null; }),
         installationsApi.getEquipment().catch((e) => { console.error('Equipment error:', e); return []; }),
         installationsApi.getCylinders().catch((e) => { console.error('Cylinders error:', e); return []; }),
+        installationsApi.getBRLReports().catch((e) => { console.error('BRL reports error:', e); return []; }),
       ]);
       setInstallations(Array.isArray(installationsData) ? installationsData : []);
       setCustomers(Array.isArray(customersData) ? customersData : []);
@@ -232,6 +237,7 @@ const AdminInstallations = () => {
       setStats(statsData);
       setEquipment(Array.isArray(equipmentData) ? equipmentData : []);
       setCylinders(Array.isArray(cylindersData) ? cylindersData : []);
+      setBrlReports(Array.isArray(brlData) ? brlData : []);
     } catch (err) {
       console.error('FetchData error:', err);
       toast({ title: "Fout", description: "Kon gegevens niet laden", variant: "destructive" });
@@ -630,6 +636,10 @@ const AdminInstallations = () => {
           <TabsTrigger value="cylinders" className="text-xs sm:text-sm">
             <Cylinder className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Cilinders</span> ({cylinders?.length ?? 0})
+          </TabsTrigger>
+          <TabsTrigger value="brl-reports" className="text-xs sm:text-sm">
+            <FileText className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">BRL Rapporten</span> ({brlReports?.length ?? 0})
           </TabsTrigger>
         </TabsList>
 
@@ -1202,6 +1212,66 @@ const AdminInstallations = () => {
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* BRL Reports Tab */}
+        <TabsContent value="brl-reports">
+          <Card>
+            <CardHeader>
+              <div>
+                <CardTitle className="text-lg">BRL 100 Rapporten</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Alle inbedrijfstellingsrapporten vanuit de mobiele app en website</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p className="text-muted-foreground">Laden...</p>
+              ) : brlReports.length === 0 ? (
+                <p className="text-muted-foreground">Geen BRL rapporten gevonden</p>
+              ) : (
+                <div className="space-y-3">
+                  {brlReports.map((report) => {
+                    const progress = getReportProgress(report);
+                    const statusLabels: Record<string, string> = {
+                      concept: "Concept",
+                      bezig: "Bezig",
+                      voltooid: "Voltooid",
+                      verzonden: "Verzonden",
+                    };
+                    const statusColors: Record<string, string> = {
+                      concept: "bg-muted text-muted-foreground",
+                      bezig: "bg-blue-100 text-blue-800",
+                      voltooid: "bg-green-100 text-green-800",
+                      verzonden: "bg-purple-100 text-purple-800",
+                    };
+                    return (
+                      <div key={report.id} className="border rounded-lg p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <h4 className="font-semibold text-sm sm:text-base">{report.customer_data?.werkbon_number || "Geen werkbon"}</h4>
+                              <Badge className={statusColors[report.status] || "bg-muted"}>{statusLabels[report.status] || report.status}</Badge>
+                            </div>
+                            <p className="text-sm font-medium">{report.customer_data?.customer_name || "Geen klant"}</p>
+                            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
+                              {report.customer_data?.customer_city && (
+                                <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{report.customer_data.customer_city}</span>
+                              )}
+                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(report.updated_at).toLocaleDateString('nl-NL')}</span>
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <Progress value={progress} className="h-2 flex-1" />
+                              <span className="text-xs text-muted-foreground">{progress}%</span>
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -48,10 +48,17 @@ const StepVoorbereiding = ({ data, setData, checklist, setChecklist, technicianI
     }
   };
 
+  const getDisplayName = (contact: any) => {
+    if (contact.bedrijf) return contact.bedrijf;
+    if (contact.contactpersoon) return contact.contactpersoon;
+    if (contact.name) return contact.name;
+    return `${contact.voornaam || ""} ${contact.achternaam || ""}`.trim() || "Onbekend";
+  };
+
   const selectContact = (contact: any) => {
     setData({
       ...data,
-      customer_name: contact.bedrijf || `${contact.voornaam || ""} ${contact.achternaam || ""}`.trim(),
+      customer_name: getDisplayName(contact),
       customer_address: contact.adres || "",
       customer_postal: contact.postcode || "",
       customer_city: contact.plaats || "",
@@ -138,8 +145,8 @@ const StepVoorbereiding = ({ data, setData, checklist, setChecklist, technicianI
           {contacts.length > 0 && (
             <div className="max-h-48 overflow-y-auto space-y-1">
               {contacts.map((c, i) => (
-                <div key={i} className="p-3 rounded-lg border cursor-pointer active:bg-muted/50" onClick={() => selectContact(c)}>
-                  <p className="text-sm font-medium">{c.bedrijf || `${c.voornaam} ${c.achternaam}`}</p>
+                 <div key={i} className="p-3 rounded-lg border cursor-pointer active:bg-muted/50" onClick={() => selectContact(c)}>
+                   <p className="text-sm font-medium">{getDisplayName(c)}</p>
                   <p className="text-xs text-muted-foreground">{c.plaats}</p>
                 </div>
               ))}
