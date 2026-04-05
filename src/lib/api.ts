@@ -566,6 +566,20 @@ export interface ProductPricingUpdate {
   noise_outdoor?: number;
 }
 
+export interface Project {
+  id: number;
+  title: string;
+  description: string | null;
+  category: string;
+  location: string | null;
+  completion_date: string | null;
+  photos: string[];
+  is_visible: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ServerStatus {
   uptime: string;
   uptimeSeconds: number;
