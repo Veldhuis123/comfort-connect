@@ -232,6 +232,30 @@ export const api = {
 
   // Analytics
   getVisitorStats: () => apiRequest<VisitorStats>('/analytics/visitors'),
+
+  // Projects
+  getPublicProjects: () => apiRequest<Project[]>('/projects'),
+  getAdminProjects: () => apiRequest<Project[]>('/projects/admin/all'),
+  createProject: (data: Partial<Project>) =>
+    apiRequest<{ id: number }>('/projects', { method: 'POST', body: JSON.stringify(data) }),
+  updateProject: (id: number, data: Partial<Project>) =>
+    apiRequest('/projects/' + id, { method: 'PUT', body: JSON.stringify(data) }),
+  toggleProjectVisibility: (id: number) =>
+    apiRequest<{ is_visible: boolean }>(`/projects/${id}/toggle`, { method: 'PATCH' }),
+  deleteProject: (id: number) =>
+    apiRequest(`/projects/${id}`, { method: 'DELETE' }),
+  uploadProjectImage: async (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const token = getAuthToken();
+    const response = await fetch(`${API_URL}/projects/${id}/image`, {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!response.ok) throw new Error('Upload mislukt');
+    return response.json() as Promise<{ image_url: string; photos: string[] }>;
+  },
 };
 
 // Types
