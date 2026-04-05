@@ -24,6 +24,7 @@ interface Installation {
   lng?: number;
   status?: string;
   installation_type?: string;
+  has_fault?: boolean;
 }
 
 interface Props {
@@ -31,6 +32,7 @@ interface Props {
   loading?: boolean;
   className?: string;
   height?: string;
+  onInstallationClick?: (id: number | string) => void;
 }
 
 // Simple geocoding cache using localStorage
