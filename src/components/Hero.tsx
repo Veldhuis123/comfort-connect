@@ -22,8 +22,8 @@ const Hero = () => {
           // @ts-ignore
           fetchpriority="high"
           decoding="async"
-          width={1920}
-          height={1080}
+          width={1280}
+          height={720}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/75 to-primary/40" />
       </div>
