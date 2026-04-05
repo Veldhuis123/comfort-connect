@@ -637,6 +637,10 @@ const AdminInstallations = () => {
             <Cylinder className="w-4 h-4 sm:mr-2" />
             <span className="hidden sm:inline">Cilinders</span> ({cylinders?.length ?? 0})
           </TabsTrigger>
+          <TabsTrigger value="brl-reports" className="text-xs sm:text-sm">
+            <FileText className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">BRL Rapporten</span> ({brlReports?.length ?? 0})
+          </TabsTrigger>
         </TabsList>
 
         {/* Installations Tab */}
