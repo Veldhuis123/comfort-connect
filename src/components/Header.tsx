@@ -37,7 +37,7 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8" aria-label="Hoofdnavigatie">
             {navItems.map((item) => (
               item.isLink ? (
                 <Link
