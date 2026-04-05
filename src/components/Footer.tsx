@@ -61,9 +61,9 @@ const Footer = () => {
           {/* Contact */}
           <div>
             <h4 className="font-heading font-bold text-lg mb-4">Contact</h4>
-            <div className="space-y-2 text-primary-foreground/80">
-              <p><a href="tel:0613629947" className="hover:text-primary-foreground transition-colors">Tel: 06 - 1362 9947</a></p>
-              <p><a href="mailto:info@rv-installatie.nl" className="hover:text-primary-foreground transition-colors">E-mail: info@rv-installatie.nl</a></p>
+            <div className="space-y-2 text-primary-foreground/90">
+              <p><a href="tel:0613629947" className="hover:text-primary-foreground transition-colors py-1 inline-block">Tel: 06 - 1362 9947</a></p>
+              <p><a href="mailto:info@rv-installatie.nl" className="hover:text-primary-foreground transition-colors py-1 inline-block">E-mail: info@rv-installatie.nl</a></p>
               <p>Werkgebied: Regio Nederland</p>
             </div>
           </div>
