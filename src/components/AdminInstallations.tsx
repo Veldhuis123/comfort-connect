@@ -133,6 +133,7 @@ const AdminInstallations = () => {
   const [faultReports, setFaultReports] = useState<FaultReport[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [cylinders, setCylinders] = useState<RefrigerantCylinder[]>([]);
+  const [brlReports, setBrlReports] = useState<BRLReport[]>([]);
   const [stats, setStats] = useState<InstallationStats>({
     totalInstallations: 0,
     maintenanceDue: 0,
