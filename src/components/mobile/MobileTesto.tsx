@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Thermometer, Upload, Keyboard, Info } from "lucide-react";
+import { useState, lazy, Suspense } from "react";
+import { Thermometer, Upload, Keyboard, Info, Bluetooth } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import type { CommissioningData } from "@/lib/installationTypes";
+
+const TestoBLE = lazy(() => import("./TestoBLE"));
 
 interface Props {
   data: CommissioningData;
