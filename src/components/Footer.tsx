@@ -38,21 +38,21 @@ const Footer = () => {
           <div>
             <h4 className="font-heading font-bold text-lg mb-4">Snelle Links</h4>
             <nav className="space-y-2">
-              <a href={getHref("home")} className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+              <a href={getHref("home")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                 Home
               </a>
-              <a href={getHref("diensten")} className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+              <a href={getHref("diensten")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                 Diensten
               </a>
               {hasEnabledCalculators && (
-                <Link to="/calculators" className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+                <Link to="/calculators" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                   Calculatoren
                 </Link>
               )}
-              <a href={getHref("over")} className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+              <a href={getHref("over")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                 Over Mij
               </a>
-              <a href={getHref("contact")} className="block text-primary-foreground/70 hover:text-primary-foreground transition-colors">
+              <a href={getHref("contact")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                 Contact
               </a>
             </nav>
