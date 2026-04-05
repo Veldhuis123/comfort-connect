@@ -1222,6 +1222,66 @@ const AdminInstallations = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* BRL Reports Tab */}
+        <TabsContent value="brl-reports">
+          <Card>
+            <CardHeader>
+              <div>
+                <CardTitle className="text-lg">BRL 100 Rapporten</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Alle inbedrijfstellingsrapporten vanuit de mobiele app en website</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p className="text-muted-foreground">Laden...</p>
+              ) : brlReports.length === 0 ? (
+                <p className="text-muted-foreground">Geen BRL rapporten gevonden</p>
+              ) : (
+                <div className="space-y-3">
+                  {brlReports.map((report) => {
+                    const progress = getReportProgress(report);
+                    const statusLabels: Record<string, string> = {
+                      concept: "Concept",
+                      bezig: "Bezig",
+                      voltooid: "Voltooid",
+                      verzonden: "Verzonden",
+                    };
+                    const statusColors: Record<string, string> = {
+                      concept: "bg-muted text-muted-foreground",
+                      bezig: "bg-blue-100 text-blue-800",
+                      voltooid: "bg-green-100 text-green-800",
+                      verzonden: "bg-purple-100 text-purple-800",
+                    };
+                    return (
+                      <div key={report.id} className="border rounded-lg p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <h4 className="font-semibold text-sm sm:text-base">{report.customer_data?.werkbon_number || "Geen werkbon"}</h4>
+                              <Badge className={statusColors[report.status] || "bg-muted"}>{statusLabels[report.status] || report.status}</Badge>
+                            </div>
+                            <p className="text-sm font-medium">{report.customer_data?.customer_name || "Geen klant"}</p>
+                            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-1">
+                              {report.customer_data?.customer_city && (
+                                <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{report.customer_data.customer_city}</span>
+                              )}
+                              <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(report.updated_at).toLocaleDateString('nl-NL')}</span>
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <Progress value={progress} className="h-2 flex-1" />
+                              <span className="text-xs text-muted-foreground">{progress}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Installation Form Dialog */}
