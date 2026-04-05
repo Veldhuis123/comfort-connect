@@ -247,7 +247,37 @@ const AdminDashboardOverview = ({ stats, quotes, reviews, messages }: DashboardO
 
       {/* Server Status */}
       <ServerStatusWidget />
+
+      {/* Installatiekaart */}
+      <InstallationMapSection />
     </div>
+  );
+};
+
+const InstallationMapSection = () => {
+  const [installations, setInstallations] = useState<Installation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    installationsApi.getInstallations()
+      .then(data => setInstallations(data.filter(i => i.status === "actief")))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const mapData = installations.map(i => ({
+    id: i.id,
+    name: i.name,
+    customer_name: i.customer_name || "",
+    city: i.customer_city || "",
+    installation_type: i.installation_type,
+    status: i.status,
+  }));
+
+  return (
+    <Suspense fallback={<Card><CardContent className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></CardContent></Card>}>
+      <InstallationMap installations={mapData} loading={loading} height="350px" />
+    </Suspense>
   );
 };
 
