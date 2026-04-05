@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Users, FileText, Receipt,
   Star, MessageSquare, Euro, Settings,
   Download, BookOpen, LogOut, ChevronDown,
-  Snowflake, Thermometer, Package, Zap, Grid3X3, QrCode
+  Snowflake, Thermometer, Package, Zap, Grid3X3, QrCode, FolderOpen
 } from "lucide-react";
 import {
   Sidebar,
