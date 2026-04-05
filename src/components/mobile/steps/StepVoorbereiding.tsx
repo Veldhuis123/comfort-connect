@@ -145,8 +145,8 @@ const StepVoorbereiding = ({ data, setData, checklist, setChecklist, technicianI
           {contacts.length > 0 && (
             <div className="max-h-48 overflow-y-auto space-y-1">
               {contacts.map((c, i) => (
-                <div key={i} className="p-3 rounded-lg border cursor-pointer active:bg-muted/50" onClick={() => selectContact(c)}>
-                  <p className="text-sm font-medium">{c.bedrijf || `${c.voornaam} ${c.achternaam}`}</p>
+                 <div key={i} className="p-3 rounded-lg border cursor-pointer active:bg-muted/50" onClick={() => selectContact(c)}>
+                   <p className="text-sm font-medium">{getDisplayName(c)}</p>
                   <p className="text-xs text-muted-foreground">{c.plaats}</p>
                 </div>
               ))}
