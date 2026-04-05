@@ -149,20 +149,32 @@ const InstallationMap = ({ installations, loading = false, className = "", heigh
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {geocodedInstallations.map(inst => (
-              <Marker key={inst.id} position={[inst.lat, inst.lng]}>
-                <Popup>
-                  <div className="text-sm">
-                    <p className="font-semibold">{inst.name}</p>
-                    <p className="text-muted-foreground">{inst.customer_name}</p>
-                    {inst.address && <p>{inst.address}</p>}
-                    {inst.city && <p>{inst.city}</p>}
-                    {inst.installation_type && <p className="mt-1"><strong>Type:</strong> {inst.installation_type}</p>}
-                    {inst.status && <p><strong>Status:</strong> {inst.status}</p>}
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            {geocodedInstallations.map(inst => {
+              const isFault = inst.has_fault || inst.status === "storing";
+              return (
+                <Marker key={inst.id} position={[inst.lat, inst.lng]} icon={isFault ? redIcon : greenIcon}>
+                  <Popup>
+                    <div className="text-sm">
+                      <p className="font-semibold">{inst.name}</p>
+                      <p style={{ color: "#666" }}>{inst.customer_name}</p>
+                      {inst.address && <p>{inst.address}</p>}
+                      {inst.city && <p>{inst.city}</p>}
+                      {inst.installation_type && <p className="mt-1"><strong>Type:</strong> {inst.installation_type}</p>}
+                      {inst.status && <p><strong>Status:</strong> {inst.status}</p>}
+                      {isFault && <p style={{ color: "red", fontWeight: "bold" }}>⚠ Storing gemeld</p>}
+                      {onInstallationClick && (
+                        <button 
+                          onClick={() => onInstallationClick(inst.id)}
+                          style={{ marginTop: 4, color: "#2563eb", cursor: "pointer", background: "none", border: "none", padding: 0, textDecoration: "underline" }}
+                        >
+                          Bekijk details →
+                        </button>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
         </div>
       </CardContent>
