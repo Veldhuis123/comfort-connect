@@ -262,11 +262,11 @@ const InstallationMapSection = () => {
   useEffect(() => {
     Promise.all([
       installationsApi.getInstallations().catch(() => []),
-      installationsApi.getFaultReports().catch(() => []),
+      installationsApi.getAllFaultReports().catch(() => []),
     ]).then(([instData, faults]) => {
       setInstallations(instData.filter(i => i.status !== "verwijderd"));
-      const openFaultInstIds = new Set(
-        faults.filter((f: any) => f.status === "open" || f.status === "in_behandeling").map((f: any) => f.installation_id as number)
+      const openFaultInstIds = new Set<number>(
+        faults.filter((f: any) => f.status === "open" || f.status === "in_behandeling").map((f: any) => Number(f.installation_id))
       );
       setFaultIds(openFaultInstIds);
     }).finally(() => setLoading(false));
