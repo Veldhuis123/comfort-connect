@@ -150,6 +150,7 @@ const AdminInstallations = () => {
   const [showFGasForm, setShowFGasForm] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [selectedInstallation, setSelectedInstallation] = useState<Installation | null>(null);
+  const [selectedBrlReport, setSelectedBrlReport] = useState<BRLReport | null>(null);
   const [fgasLogs, setFgasLogs] = useState<FGasLog[]>([]);
   
   // Delete confirmations
