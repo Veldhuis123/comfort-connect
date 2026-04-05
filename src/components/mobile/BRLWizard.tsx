@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Check, Users, Wrench, Cpu, ClipboardCheck, Thermometer, Camera, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Check, ClipboardCheck, Settings, Wrench, Thermometer, FileCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { WIZARD_STEPS, type BRLReport, getReportProgress } from "@/lib/brlTypes";
 import { saveReport } from "@/lib/brlStorage";
 import { defaultChecklist, type BRLChecklist } from "@/lib/installationTypes";
 import type { BRLPhoto } from "@/components/mobile/MobilePhotoUpload";
-import StepCustomer from "./steps/StepCustomer";
-import StepTechnician from "./steps/StepTechnician";
-import StepEquipment from "./steps/StepEquipment";
-import StepChecklist from "./steps/StepChecklist";
-import StepMeasurements from "./steps/StepMeasurements";
-import StepPhotos from "./steps/StepPhotos";
-import StepReview from "./steps/StepReview";
+import StepVoorbereiding from "./steps/StepVoorbereiding";
+import StepGereedschap from "./steps/StepGereedschap";
+import StepMateriaal from "./steps/StepMateriaal";
+import StepBuitenunit from "./steps/StepBuitenunit";
+import StepBinnenunit from "./steps/StepBinnenunit";
+import StepLeidingwerk from "./steps/StepLeidingwerk";
+import StepVacuumVullen from "./steps/StepVacuumVullen";
+import StepOplevering from "./steps/StepOplevering";
 
-const stepIcons = [Users, Wrench, Cpu, ClipboardCheck, Thermometer, Camera, Send];
+const stepIcons = [ClipboardCheck, Settings, Wrench, Thermometer, Thermometer, Wrench, Thermometer, FileCheck];
 
 interface Props {
   report: BRLReport;
@@ -28,7 +28,6 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
   const [checklist, setChecklist] = useState<BRLChecklist>(initialReport.checklist || { ...defaultChecklist });
   const [photos, setPhotos] = useState<BRLPhoto[]>(initialReport.photos || []);
 
-  // Auto-save on changes
   useEffect(() => {
     const updated = { ...report, current_step: activeStep, checklist, photos };
     saveReport(updated);
@@ -43,7 +42,6 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
     updated.photos = photos;
     setReport(updated);
     onSave(updated);
-    
     if (stepIndex < WIZARD_STEPS.length - 1) {
       setActiveStep(stepIndex + 1);
     }
@@ -60,23 +58,27 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
 
   const progress = getReportProgress(report);
 
-  const handleBack = () => {
-    onBack();
-  };
-
   const renderStep = () => {
+    const commonProps = {
+      data: report.customer_data,
+      setData: (d: typeof report.customer_data) => updateReport({ customer_data: d }),
+    };
+
     switch (activeStep) {
       case 0:
         return (
-          <StepCustomer
-            data={report.customer_data}
-            setData={d => updateReport({ customer_data: d })}
+          <StepVoorbereiding
+            {...commonProps}
+            checklist={checklist}
+            setChecklist={setChecklist}
+            technicianId={report.technician_id}
+            onUpdateTechnician={(id) => updateReport({ technician_id: id })}
             onComplete={() => completeStep(0)}
           />
         );
       case 1:
         return (
-          <StepTechnician
+          <StepGereedschap
             technicianId={report.technician_id}
             selectedTools={report.selected_tools}
             onUpdate={(techId, toolIds) => updateReport({ technician_id: techId, selected_tools: toolIds })}
@@ -85,53 +87,60 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
         );
       case 2:
         return (
-          <StepEquipment
-            data={report.customer_data}
-            setData={d => updateReport({ customer_data: d })}
+          <StepMateriaal
+            {...commonProps}
+            checklist={checklist}
+            setChecklist={setChecklist}
             onComplete={() => completeStep(2)}
           />
         );
       case 3:
         return (
-          <StepChecklist
+          <StepBuitenunit
             checklist={checklist}
             setChecklist={setChecklist}
-            commissioningData={report.customer_data}
-            setCommissioningData={d => updateReport({ customer_data: d })}
             onComplete={() => completeStep(3)}
           />
         );
       case 4:
         return (
-          <StepMeasurements
-            data={report.customer_data}
-            setData={v => {
-              if (typeof v === 'function') {
-                setReport(prev => {
-                  const newData = v(prev.customer_data);
-                  return { ...prev, customer_data: newData };
-                });
-              } else {
-                updateReport({ customer_data: v });
-              }
-            }}
+          <StepBinnenunit
+            checklist={checklist}
+            setChecklist={setChecklist}
             onComplete={() => completeStep(4)}
           />
         );
       case 5:
         return (
-          <StepPhotos
-            photos={photos}
-            setPhotos={setPhotos}
+          <StepLeidingwerk
+            {...commonProps}
+            checklist={checklist}
+            setChecklist={setChecklist}
             onComplete={() => completeStep(5)}
           />
         );
       case 6:
         return (
-          <StepReview
+          <StepVacuumVullen
+            {...commonProps}
+            checklist={checklist}
+            setChecklist={setChecklist}
+            onComplete={() => completeStep(6)}
+          />
+        );
+      case 7:
+        return (
+          <StepOplevering
             report={{ ...report, checklist, photos }}
+            data={report.customer_data}
+            setData={(d: typeof report.customer_data) => updateReport({ customer_data: d })}
+            checklist={checklist}
+            setChecklist={setChecklist}
+            photos={photos}
+            setPhotos={setPhotos}
             onUpdateEmail={email => updateReport({ customer_email: email })}
             onMarkSent={() => updateReport({ status: "verzonden" })}
+            onComplete={() => completeStep(7)}
           />
         );
       default:
@@ -141,12 +150,11 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header with proper safe-area */}
       <header className="bg-primary text-primary-foreground shadow-md pt-safe-top" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)' }}>
         <div className="flex items-center gap-3 px-4 py-3">
           <button
             type="button"
-            onClick={handleBack}
+            onClick={onBack}
             aria-label="Terug naar overzicht"
             className="relative z-20 flex items-center justify-center h-11 w-11 rounded-xl text-primary-foreground hover:bg-primary-foreground/20 active:bg-primary-foreground/30 transition-colors shrink-0"
             style={{ WebkitTapHighlightColor: 'transparent' }}
@@ -155,7 +163,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold truncate">
-              {report.customer_data.customer_name || "Nieuw rapport"}
+              {report.customer_data.werkbon_number || report.customer_data.customer_name || "Nieuw rapport"}
             </h1>
             <div className="flex items-center gap-2 mt-1">
               <Progress value={progress} className="h-1.5 flex-1 bg-primary-foreground/20" />
@@ -164,8 +172,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
           </div>
         </div>
 
-        {/* Step indicators */}
-        <div className="flex px-3 pb-3 gap-2 overflow-x-auto">
+        <div className="flex px-2 pb-3 gap-1 overflow-x-auto">
           {WIZARD_STEPS.map((step, i) => {
             const Icon = stepIcons[i];
             const completed = report.steps_completed[i];
@@ -175,7 +182,7 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
                 key={step.id}
                 type="button"
                 onClick={() => setActiveStep(i)}
-                className={`flex flex-col items-center min-w-[58px] py-2 px-1 rounded-xl text-xs transition-colors ${
+                className={`flex flex-col items-center min-w-[52px] py-1.5 px-1 rounded-xl text-xs transition-colors ${
                   active
                     ? "bg-primary-foreground/20 text-primary-foreground"
                     : completed
@@ -189,14 +196,13 @@ const BRLWizard = ({ report: initialReport, onBack, onSave }: Props) => {
                     <Check className="h-3 w-3 absolute -top-1 -right-1 text-green-300" />
                   )}
                 </div>
-                <span className="mt-0.5 leading-tight text-center" style={{ fontSize: "9px" }}>{step.label}</span>
+                <span className="mt-0.5 leading-tight text-center whitespace-nowrap" style={{ fontSize: "8px" }}>{step.label}</span>
               </button>
             );
           })}
         </div>
       </header>
 
-      {/* Content */}
       <main className="p-4 pb-24">
         {renderStep()}
       </main>
