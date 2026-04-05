@@ -400,6 +400,14 @@ const AdminDashboard = () => {
           </Suspense>
         );
 
+      // Website
+      case "projects":
+        return (
+          <Suspense fallback={<div className="p-8 text-muted-foreground">Laden...</div>}>
+            <AdminProjects />
+          </Suspense>
+        );
+
       // Systeem
       case "settings":
       case "boekhouden":

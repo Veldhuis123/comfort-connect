@@ -43,6 +43,7 @@ const App = () => (
             <Route path="/installatie/:qrCode" element={<Suspense fallback={null}><InstallationPublic /></Suspense>} />
             <Route path="/offerte/:token" element={<Suspense fallback={null}><QuotePublic /></Suspense>} />
             <Route path="/brl" element={<Suspense fallback={null}><MobileBRL /></Suspense>} />
+            <Route path="/projecten" element={<Suspense fallback={null}><Projects /></Suspense>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
