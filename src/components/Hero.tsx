@@ -50,7 +50,7 @@ const Hero = () => {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
-            <Button size="lg" variant="secondary" asChild className="text-lg px-8 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
+            <Button size="lg" variant="secondary" asChild className="text-lg px-8 min-h-[48px] bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
               <a href="#contact">Vraag een Offerte Aan</a>
             </Button>
             <Button size="lg" variant="outline" asChild className="text-lg px-8 min-h-[48px] border-white/50 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm [&>a]:text-white">
