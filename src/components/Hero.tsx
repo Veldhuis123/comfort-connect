@@ -34,9 +34,9 @@ const Hero = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 bg-white/20 text-white px-4 py-2 rounded-full mb-6 backdrop-blur-sm border border-white/30">
+          <div className="inline-flex items-center gap-2 bg-white/25 text-white px-4 py-2 rounded-full mb-6 backdrop-blur-sm border border-white/40">
             <span className="w-2 h-2 bg-accent rounded-full animate-pulse" aria-hidden="true" />
-            <span className="text-sm font-medium">Beschikbaar in uw regio</span>
+            <span className="text-sm font-semibold">Beschikbaar in uw regio</span>
           </div>
 
           <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight mb-6">
