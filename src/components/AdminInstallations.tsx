@@ -1255,7 +1255,11 @@ const AdminInstallations = () => {
                       verzonden: "bg-purple-100 text-purple-800",
                     };
                     return (
-                      <div key={report.id} className="border rounded-lg p-3 sm:p-4">
+                      <div 
+                        key={report.id} 
+                        className="border rounded-lg p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => setSelectedBrlReport(report)}
+                      >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -1273,6 +1277,11 @@ const AdminInstallations = () => {
                               <Progress value={progress} className="h-2 flex-1" />
                               <span className="text-xs text-muted-foreground">{progress}%</span>
                             </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedBrlReport(report); }}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </div>
