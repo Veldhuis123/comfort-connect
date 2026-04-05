@@ -149,7 +149,16 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Google AdSense - loaded after page render -->
-    <script defer src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6502133061550483" crossorigin="anonymous"></script>
+    <!-- Google AdSense - loaded after interaction -->
+    <script>
+      window.addEventListener('scroll', function loadAds() {
+        var s = document.createElement('script');
+        s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6502133061550483';
+        s.crossOrigin = 'anonymous';
+        s.async = true;
+        document.body.appendChild(s);
+        window.removeEventListener('scroll', loadAds);
+      }, { once: true, passive: true });
+    </script>
   </body>
 </html>
