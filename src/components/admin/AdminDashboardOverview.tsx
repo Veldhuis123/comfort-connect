@@ -3,8 +3,11 @@ import { FileText, Star, MessageSquare, TrendingUp, Eye, ArrowUpRight, Calendar,
 import { QuoteStats, QuoteRequest, Review, ContactMessage, api } from "@/lib/api";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area } from "recharts";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import ServerStatusWidget from "./ServerStatusWidget";
+import { installationsApi, type Installation } from "@/lib/installationsApi";
+
+const InstallationMap = lazy(() => import("@/components/InstallationMap"));
 
 interface DashboardOverviewProps {
   stats: QuoteStats | null;
