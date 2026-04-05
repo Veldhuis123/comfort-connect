@@ -38,21 +38,21 @@ const Footer = () => {
           <div>
             <h4 className="font-heading font-bold text-lg mb-4">Snelle Links</h4>
             <nav className="space-y-2" aria-label="Footer navigatie">
-              <a href={getHref("home")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+              <a href={getHref("home")} className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                 Home
               </a>
-              <a href={getHref("diensten")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+              <a href={getHref("diensten")} className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                 Diensten
               </a>
               {hasEnabledCalculators && (
-                <Link to="/calculators" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+                <Link to="/calculators" className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                   Calculatoren
                 </Link>
               )}
-              <a href={getHref("over")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+              <a href={getHref("over")} className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                 Over Mij
               </a>
-              <a href={getHref("contact")} className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">
+              <a href={getHref("contact")} className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                 Contact
               </a>
             </nav>
