@@ -33,11 +33,11 @@ const Header = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <img src={logo} alt="R. Veldhuis Installatie" className="h-12 md:h-14 w-auto" width={192} height={103} />
+            <img src={logo} alt="R. Veldhuis Installatie - Terug naar home" className="h-12 md:h-14 w-auto" width={192} height={103} loading="eager" />
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-8" aria-label="Hoofdnavigatie">
             {navItems.map((item) => (
               item.isLink ? (
                 <Link
@@ -83,7 +83,7 @@ const Header = () => {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
-            <nav className="flex flex-col gap-4">
+            <nav className="flex flex-col gap-4" aria-label="Mobiele navigatie">
               {navItems.map((item) => (
                 item.isLink ? (
                   <Link

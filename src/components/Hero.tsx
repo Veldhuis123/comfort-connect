@@ -34,8 +34,8 @@ const Hero = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 bg-accent/20 text-accent px-4 py-2 rounded-full mb-6 backdrop-blur-sm border border-accent/30">
-            <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+          <div className="inline-flex items-center gap-2 bg-white/20 text-white px-4 py-2 rounded-full mb-6 backdrop-blur-sm border border-white/30">
+            <span className="w-2 h-2 bg-accent rounded-full animate-pulse" aria-hidden="true" />
             <span className="text-sm font-medium">Beschikbaar in uw regio</span>
           </div>
 
@@ -44,7 +44,7 @@ const Hero = () => {
             <span className="text-accent">Alle Installaties</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-2xl">
+          <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 max-w-2xl">
             R. Veldhuis Installatie biedt professionele installatie van airco, verwarming, 
             elektra, water en riolering. Vakmanschap waar u op kunt vertrouwen.
           </p>
@@ -54,7 +54,7 @@ const Hero = () => {
               <a href="#contact">Vraag een Offerte Aan</a>
             </Button>
             <Button size="lg" variant="outline" asChild className="text-lg px-8 border-white/50 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm [&>a]:text-white">
-              <a href="tel:0613629947" className="flex items-center gap-2">
+              <a href="tel:0613629947" className="flex items-center gap-2" aria-label="Bel ons op 06 1362 9947">
                 <Phone className="w-5 h-5" />
                 Bel Direct
               </a>
@@ -63,7 +63,7 @@ const Hero = () => {
 
           <div className="flex flex-wrap gap-6">
             {highlights.map((item) => (
-              <div key={item} className="flex items-center gap-2 text-primary-foreground/90 bg-primary-foreground/10 backdrop-blur-sm px-3 py-1 rounded-full border border-primary-foreground/10">
+              <div key={item} className="flex items-center gap-2 text-primary-foreground bg-primary-foreground/10 backdrop-blur-sm px-3 py-1 rounded-full border border-primary-foreground/20">
                 <CheckCircle2 className="w-5 h-5 text-accent" />
                 <span>{item}</span>
               </div>
