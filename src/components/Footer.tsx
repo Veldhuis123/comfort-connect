@@ -69,7 +69,7 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-primary-foreground/20 pt-8 text-center text-primary-foreground/60 text-sm">
+        <div className="border-t border-primary-foreground/20 pt-8 text-center text-primary-foreground/70 text-sm">
           <p>© {currentYear} R. Veldhuis Installatie. Alle rechten voorbehouden.</p>
         </div>
       </div>
