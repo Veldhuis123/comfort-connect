@@ -24,6 +24,7 @@ interface Installation {
   lng?: number;
   status?: string;
   installation_type?: string;
+  has_fault?: boolean;
 }
 
 interface Props {
@@ -31,6 +32,7 @@ interface Props {
   loading?: boolean;
   className?: string;
   height?: string;
+  onInstallationClick?: (id: number | string) => void;
 }
 
 // Simple geocoding cache using localStorage
@@ -62,7 +64,19 @@ const geocodeAddress = async (address: string, city: string): Promise<{ lat: num
   return null;
 };
 
-const InstallationMap = ({ installations, loading = false, className = "", height = "400px" }: Props) => {
+// Custom marker icons
+const greenIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
+const redIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
+});
+
+const InstallationMap = ({ installations, loading = false, className = "", height = "400px", onInstallationClick }: Props) => {
   const [geocodedInstallations, setGeocodedInstallations] = useState<(Installation & { lat: number; lng: number })[]>([]);
   const [geocoding, setGeocoding] = useState(false);
 
@@ -135,20 +149,32 @@ const InstallationMap = ({ installations, loading = false, className = "", heigh
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {geocodedInstallations.map(inst => (
-              <Marker key={inst.id} position={[inst.lat, inst.lng]}>
-                <Popup>
-                  <div className="text-sm">
-                    <p className="font-semibold">{inst.name}</p>
-                    <p className="text-muted-foreground">{inst.customer_name}</p>
-                    {inst.address && <p>{inst.address}</p>}
-                    {inst.city && <p>{inst.city}</p>}
-                    {inst.installation_type && <p className="mt-1"><strong>Type:</strong> {inst.installation_type}</p>}
-                    {inst.status && <p><strong>Status:</strong> {inst.status}</p>}
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            {geocodedInstallations.map(inst => {
+              const isFault = inst.has_fault || inst.status === "storing";
+              return (
+                <Marker key={inst.id} position={[inst.lat, inst.lng]} icon={isFault ? redIcon : greenIcon}>
+                  <Popup>
+                    <div className="text-sm">
+                      <p className="font-semibold">{inst.name}</p>
+                      <p style={{ color: "#666" }}>{inst.customer_name}</p>
+                      {inst.address && <p>{inst.address}</p>}
+                      {inst.city && <p>{inst.city}</p>}
+                      {inst.installation_type && <p className="mt-1"><strong>Type:</strong> {inst.installation_type}</p>}
+                      {inst.status && <p><strong>Status:</strong> {inst.status}</p>}
+                      {isFault && <p style={{ color: "red", fontWeight: "bold" }}>⚠ Storing gemeld</p>}
+                      {onInstallationClick && (
+                        <button 
+                          onClick={() => onInstallationClick(inst.id)}
+                          style={{ marginTop: 4, color: "#2563eb", cursor: "pointer", background: "none", border: "none", padding: 0, textDecoration: "underline" }}
+                        >
+                          Bekijk details →
+                        </button>
+                      )}
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
         </div>
       </CardContent>

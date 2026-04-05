@@ -88,7 +88,13 @@ const AdminDashboard = () => {
   };
 
   const handleToggleReview = async (id: number) => {
-    try { await api.toggleReviewVisibility(id); fetchData(); } catch { alert("Fout bij wijzigen zichtbaarheid"); }
+    try { 
+      await api.toggleReviewVisibility(id); 
+      fetchData(); 
+    } catch (err: any) { 
+      console.error('Toggle review error:', err);
+      alert("Fout bij wijzigen zichtbaarheid: " + (err?.message || "Onbekende fout")); 
+    }
   };
 
   const handleDeleteReview = async (id: number) => {

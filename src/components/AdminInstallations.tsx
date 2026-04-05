@@ -150,6 +150,7 @@ const AdminInstallations = () => {
   const [showFGasForm, setShowFGasForm] = useState(false);
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [selectedInstallation, setSelectedInstallation] = useState<Installation | null>(null);
+  const [selectedBrlReport, setSelectedBrlReport] = useState<BRLReport | null>(null);
   const [fgasLogs, setFgasLogs] = useState<FGasLog[]>([]);
   
   // Delete confirmations
@@ -1254,7 +1255,11 @@ const AdminInstallations = () => {
                       verzonden: "bg-purple-100 text-purple-800",
                     };
                     return (
-                      <div key={report.id} className="border rounded-lg p-3 sm:p-4">
+                      <div 
+                        key={report.id} 
+                        className="border rounded-lg p-3 sm:p-4 cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => setSelectedBrlReport(report)}
+                      >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -1272,6 +1277,11 @@ const AdminInstallations = () => {
                               <Progress value={progress} className="h-2 flex-1" />
                               <span className="text-xs text-muted-foreground">{progress}%</span>
                             </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedBrlReport(report); }}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -2174,6 +2184,85 @@ const AdminInstallations = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* BRL Report Detail Dialog */}
+      <Dialog open={selectedBrlReport !== null} onOpenChange={(open) => !open && setSelectedBrlReport(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>BRL Rapport - {selectedBrlReport?.customer_data?.werkbon_number || "Onbekend"}</DialogTitle>
+            <DialogDescription>Details van het inbedrijfstellingsrapport</DialogDescription>
+          </DialogHeader>
+          {selectedBrlReport && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Klant</label>
+                  <p className="font-medium">{selectedBrlReport.customer_data?.customer_name || "Niet opgegeven"}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Status</label>
+                  <p><Badge>{selectedBrlReport.status}</Badge></p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Adres</label>
+                  <p className="text-sm">{selectedBrlReport.customer_data?.customer_address || "-"} {selectedBrlReport.customer_data?.customer_postal || ""} {selectedBrlReport.customer_data?.customer_city || ""}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Datum</label>
+                  <p className="text-sm">{(selectedBrlReport.customer_data as any)?.installation_date || new Date(selectedBrlReport.created_at).toLocaleDateString('nl-NL')}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Voortgang</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Progress value={getReportProgress(selectedBrlReport)} className="h-3 flex-1" />
+                  <span className="text-sm font-medium">{getReportProgress(selectedBrlReport)}%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Stappen voltooid</label>
+                <div className="grid grid-cols-2 gap-1 mt-1">
+                  {["Voorbereiding", "Gereedschap", "Materiaal", "Buitenunit", "Binnenunit", "Leidingwerk", "Vacuüm & Vullen", "Oplevering"].map((step, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <div className={`w-3 h-3 rounded-full ${selectedBrlReport.steps_completed[i] ? "bg-green-500" : "bg-muted"}`} />
+                      {step}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {selectedBrlReport.customer_data?.brand && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Merk</label>
+                    <p className="text-sm">{selectedBrlReport.customer_data.brand}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Model</label>
+                    <p className="text-sm">{(selectedBrlReport.customer_data as any)?.model || "-"}</p>
+                  </div>
+                </div>
+              )}
+
+              {selectedBrlReport.photos && selectedBrlReport.photos.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Foto's ({selectedBrlReport.photos.length})</label>
+                  <p className="text-xs text-muted-foreground mt-1">{selectedBrlReport.photos.length} foto('s) bijgevoegd</p>
+                </div>
+              )}
+
+              {selectedBrlReport.customer_email && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Klant e-mail</label>
+                  <p className="text-sm">{selectedBrlReport.customer_email}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

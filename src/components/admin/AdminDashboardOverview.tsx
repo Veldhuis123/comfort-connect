@@ -256,13 +256,20 @@ const AdminDashboardOverview = ({ stats, quotes, reviews, messages }: DashboardO
 
 const InstallationMapSection = () => {
   const [installations, setInstallations] = useState<Installation[]>([]);
+  const [faultIds, setFaultIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    installationsApi.getInstallations()
-      .then(data => setInstallations(data.filter(i => i.status === "actief")))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      installationsApi.getInstallations().catch(() => []),
+      installationsApi.getAllFaultReports().catch(() => []),
+    ]).then(([instData, faults]) => {
+      setInstallations(instData.filter(i => i.status !== "verwijderd"));
+      const openFaultInstIds = new Set<number>(
+        faults.filter((f: any) => f.status === "open" || f.status === "in_behandeling").map((f: any) => Number(f.installation_id))
+      );
+      setFaultIds(openFaultInstIds);
+    }).finally(() => setLoading(false));
   }, []);
 
   const mapData = installations.map(i => ({
@@ -272,6 +279,7 @@ const InstallationMapSection = () => {
     city: i.customer_city || "",
     installation_type: i.installation_type,
     status: i.status,
+    has_fault: faultIds.has(i.id) || i.status === "storing",
   }));
 
   return (
