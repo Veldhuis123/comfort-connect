@@ -48,10 +48,17 @@ const StepVoorbereiding = ({ data, setData, checklist, setChecklist, technicianI
     }
   };
 
+  const getDisplayName = (contact: any) => {
+    if (contact.bedrijf) return contact.bedrijf;
+    if (contact.contactpersoon) return contact.contactpersoon;
+    if (contact.name) return contact.name;
+    return `${contact.voornaam || ""} ${contact.achternaam || ""}`.trim() || "Onbekend";
+  };
+
   const selectContact = (contact: any) => {
     setData({
       ...data,
-      customer_name: contact.bedrijf || `${contact.voornaam || ""} ${contact.achternaam || ""}`.trim(),
+      customer_name: getDisplayName(contact),
       customer_address: contact.adres || "",
       customer_postal: contact.postcode || "",
       customer_city: contact.plaats || "",
