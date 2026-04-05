@@ -64,7 +64,7 @@ const Hero = () => {
           <div className="flex flex-wrap gap-6">
             {highlights.map((item) => (
               <div key={item} className="flex items-center gap-2 text-primary-foreground bg-primary-foreground/10 backdrop-blur-sm px-3 py-1 rounded-full border border-primary-foreground/20">
-                <CheckCircle2 className="w-5 h-5 text-accent" />
+                <CheckCircle2 className="w-5 h-5 text-amber-300" />
                 <span>{item}</span>
               </div>
             ))}
