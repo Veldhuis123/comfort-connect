@@ -220,7 +220,7 @@ const AdminInstallations = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [installationsData, customersData, techniciansData, faultsData, statsData, equipmentData, cylindersData] = await Promise.all([
+      const [installationsData, customersData, techniciansData, faultsData, statsData, equipmentData, cylindersData, brlData] = await Promise.all([
         installationsApi.getInstallations().catch((e) => { console.error('Installations error:', e); return []; }),
         installationsApi.getCustomers().catch((e) => { console.error('Customers error:', e); return []; }),
         installationsApi.getTechnicians().catch((e) => { console.error('Technicians error:', e); return []; }),
@@ -228,6 +228,7 @@ const AdminInstallations = () => {
         installationsApi.getStats().catch((e) => { console.error('Stats error:', e); return null; }),
         installationsApi.getEquipment().catch((e) => { console.error('Equipment error:', e); return []; }),
         installationsApi.getCylinders().catch((e) => { console.error('Cylinders error:', e); return []; }),
+        installationsApi.getBRLReports().catch((e) => { console.error('BRL reports error:', e); return []; }),
       ]);
       setInstallations(Array.isArray(installationsData) ? installationsData : []);
       setCustomers(Array.isArray(customersData) ? customersData : []);
@@ -236,6 +237,7 @@ const AdminInstallations = () => {
       setStats(statsData);
       setEquipment(Array.isArray(equipmentData) ? equipmentData : []);
       setCylinders(Array.isArray(cylindersData) ? cylindersData : []);
+      setBrlReports(Array.isArray(brlData) ? brlData : []);
     } catch (err) {
       console.error('FetchData error:', err);
       toast({ title: "Fout", description: "Kon gegevens niet laden", variant: "destructive" });
