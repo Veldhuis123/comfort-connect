@@ -12,8 +12,8 @@ const normalizeReport = (report: Partial<BRLReport> & { id: string }): BRLReport
   status: report.status || "concept",
   current_step: typeof report.current_step === "number" ? report.current_step : 0,
   steps_completed: Array.isArray(report.steps_completed)
-    ? report.steps_completed
-    : [false, false, false, false, false, false, false],
+    ? report.steps_completed.length === 8 ? report.steps_completed : [...(report.steps_completed || []), ...Array(8).fill(false)].slice(0, 8)
+    : [false, false, false, false, false, false, false, false],
   customer_data: { ...defaultCommissioningData, ...(report.customer_data || {}) },
   technician_id: report.technician_id || "",
   selected_tools: Array.isArray(report.selected_tools) ? report.selected_tools : [],
