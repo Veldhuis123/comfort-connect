@@ -72,6 +72,7 @@ const AdminSidebar = ({
     { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "reviews", "messages"] },
     { label: "Airco", sections: ["airco-products", "airco-installations", "airco-calculator"] },
     { label: "Elektra", sections: ["elektra-groepenkasten", "elektra-configurator", "elektra-qrcodes"] },
+    { label: "Website", sections: ["projects"] },
     { label: "Systeem", sections: ["settings", "boekhouden", "wasco"] },
   ];
 
