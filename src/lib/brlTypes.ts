@@ -40,13 +40,14 @@ export interface BRLReport {
 }
 
 export const WIZARD_STEPS = [
-  { id: 0, label: "Klant", icon: "Users" },
-  { id: 1, label: "Monteur & Gereedschap", icon: "Wrench" },
-  { id: 2, label: "Apparatuur", icon: "Cpu" },
-  { id: 3, label: "BRL Checklist", icon: "ClipboardCheck" },
-  { id: 4, label: "Meetwaarden", icon: "Thermometer" },
-  { id: 5, label: "Foto's", icon: "Camera" },
-  { id: 6, label: "Controle & Verzenden", icon: "Send" },
+  { id: 0, label: "Voorbereiding", icon: "ClipboardCheck" },
+  { id: 1, label: "Gereedschap", icon: "Settings" },
+  { id: 2, label: "Materiaal", icon: "Wrench" },
+  { id: 3, label: "Buitenunit", icon: "Thermometer" },
+  { id: 4, label: "Binnenunit", icon: "Thermometer" },
+  { id: 5, label: "Leidingwerk", icon: "Wrench" },
+  { id: 6, label: "Vacuüm & Vullen", icon: "Thermometer" },
+  { id: 7, label: "Oplevering", icon: "FileCheck" },
 ] as const;
 
 export const isToolExpired = (tool: BRLTool): boolean => {
