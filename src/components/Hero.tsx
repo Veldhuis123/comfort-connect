@@ -44,7 +44,7 @@ const Hero = () => {
             <span className="text-accent">Alle Installaties</span>
           </h1>
 
-          <p className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-2xl">
+          <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 max-w-2xl">
             R. Veldhuis Installatie biedt professionele installatie van airco, verwarming, 
             elektra, water en riolering. Vakmanschap waar u op kunt vertrouwen.
           </p>
