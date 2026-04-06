@@ -24,18 +24,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/api";
 
-interface Relatie {
-  id: string;
-  code: string;
-  bedrijf: string;
-  contactpersoon: string;
-  email: string;
-  telefoon: string;
-  adres: string;
-  postcode: string;
-  plaats: string;
-}
-
 interface Artikel {
   id: string;
   code: string;
@@ -87,19 +75,6 @@ const EBoekhoudenSync = () => {
     }
   };
 
-  const fetchRelaties = async () => {
-    setIsLoading(true);
-    try {
-      const data = await apiRequest<Relatie[]>('/eboekhouden/relaties');
-      setRelaties(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error('Fetch relaties error:', error);
-      toast({ title: "Fout bij ophalen klanten", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const fetchArtikelen = async () => {
     setIsLoading(true);
     try {
@@ -121,29 +96,6 @@ const EBoekhoudenSync = () => {
     } catch (error) {
       console.error('Fetch facturen error:', error);
       toast({ title: "Fout bij ophalen facturen", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const addRelatie = async () => {
-    if (!newRelatie.bedrijf && !newRelatie.contactpersoon) {
-      toast({ title: "Vul bedrijf of contactpersoon in", variant: "destructive" });
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      await apiRequest('/eboekhouden/relaties', {
-        method: 'POST',
-        body: JSON.stringify(newRelatie),
-      });
-      toast({ title: "Klant toegevoegd aan e-Boekhouden!" });
-      setShowAddRelatie(false);
-      setNewRelatie({ bedrijf: '', contactpersoon: '', email: '', telefoon: '', adres: '', postcode: '', plaats: '' });
-      fetchRelaties();
-    } catch (error) {
-      toast({ title: "Fout bij toevoegen klant", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -194,7 +146,7 @@ const EBoekhoudenSync = () => {
             e-Boekhouden Integratie
           </CardTitle>
           <CardDescription>
-            Synchroniseer klanten, producten en facturen met e-Boekhouden.nl
+            Synchroniseer producten en facturen met e-Boekhouden.nl
           </CardDescription>
         </CardHeader>
         <CardContent>
