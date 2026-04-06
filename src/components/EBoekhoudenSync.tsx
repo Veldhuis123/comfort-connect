@@ -242,11 +242,8 @@ const EBoekhoudenSync = () => {
       </Card>
 
       {isConnected && (
-        <Tabs defaultValue="klanten">
-          <TabsList className="grid grid-cols-3 w-full max-w-md">
-            <TabsTrigger value="klanten" className="gap-2">
-              <Users className="w-4 h-4" /> Klanten
-            </TabsTrigger>
+        <Tabs defaultValue="producten">
+          <TabsList className="grid grid-cols-2 w-full max-w-sm">
             <TabsTrigger value="producten" className="gap-2">
               <Package className="w-4 h-4" /> Producten
             </TabsTrigger>
@@ -254,124 +251,6 @@ const EBoekhoudenSync = () => {
               <FileText className="w-4 h-4" /> Facturen
             </TabsTrigger>
           </TabsList>
-
-          {/* Klanten Tab */}
-          <TabsContent value="klanten" className="space-y-4">
-            <Card>
-              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <CardTitle className="text-lg">Klanten (Relaties)</CardTitle>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={fetchRelaties} disabled={isLoading}>
-                    <RefreshCw className={`w-4 h-4 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                    <span className="hidden sm:inline">Ophalen</span>
-                  </Button>
-                  <Dialog open={showAddRelatie} onOpenChange={setShowAddRelatie}>
-                    <DialogTrigger asChild>
-                      <Button size="sm">
-                        <Plus className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Toevoegen</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Klant Toevoegen aan e-Boekhouden</DialogTitle>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label>Bedrijf</Label>
-                            <Input 
-                              value={newRelatie.bedrijf} 
-                              onChange={e => setNewRelatie({...newRelatie, bedrijf: e.target.value})} 
-                            />
-                          </div>
-                          <div>
-                            <Label>Contactpersoon</Label>
-                            <Input 
-                              value={newRelatie.contactpersoon} 
-                              onChange={e => setNewRelatie({...newRelatie, contactpersoon: e.target.value})} 
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label>E-mail</Label>
-                            <Input 
-                              type="email"
-                              value={newRelatie.email} 
-                              onChange={e => setNewRelatie({...newRelatie, email: e.target.value})} 
-                            />
-                          </div>
-                          <div>
-                            <Label>Telefoon</Label>
-                            <Input 
-                              value={newRelatie.telefoon} 
-                              onChange={e => setNewRelatie({...newRelatie, telefoon: e.target.value})} 
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label>Adres</Label>
-                          <Input 
-                            value={newRelatie.adres} 
-                            onChange={e => setNewRelatie({...newRelatie, adres: e.target.value})} 
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label>Postcode</Label>
-                            <Input 
-                              value={newRelatie.postcode} 
-                              onChange={e => setNewRelatie({...newRelatie, postcode: e.target.value})} 
-                            />
-                          </div>
-                          <div>
-                            <Label>Plaats</Label>
-                            <Input 
-                              value={newRelatie.plaats} 
-                              onChange={e => setNewRelatie({...newRelatie, plaats: e.target.value})} 
-                            />
-                          </div>
-                        </div>
-                        <Button onClick={addRelatie} disabled={isLoading}>
-                          {isLoading ? 'Bezig...' : 'Toevoegen aan e-Boekhouden'}
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {relaties.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    Klik op "Ophalen" om klanten te laden uit e-Boekhouden
-                  </p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Bedrijf/Naam</TableHead>
-                        <TableHead>E-mail</TableHead>
-                        <TableHead>Telefoon</TableHead>
-                        <TableHead>Plaats</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {relaties.map(relatie => (
-                        <TableRow key={relatie.id}>
-                          <TableCell className="font-mono text-sm">{relatie.code}</TableCell>
-                          <TableCell>{relatie.bedrijf || relatie.contactpersoon}</TableCell>
-                          <TableCell>{relatie.email}</TableCell>
-                          <TableCell>{relatie.telefoon}</TableCell>
-                          <TableCell>{relatie.plaats}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* Producten Tab */}
           <TabsContent value="producten" className="space-y-4">
