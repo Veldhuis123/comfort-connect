@@ -67,13 +67,10 @@ const EBoekhoudenSync = () => {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [relaties, setRelaties] = useState<Relatie[]>([]);
   const [artikelen, setArtikelen] = useState<Artikel[]>([]);
   const [facturen, setFacturen] = useState<Factuur[]>([]);
   
-  const [newRelatie, setNewRelatie] = useState({ bedrijf: '', contactpersoon: '', email: '', telefoon: '', adres: '', postcode: '', plaats: '' });
   const [newArtikel, setNewArtikel] = useState({ code: '', omschrijving: '', groep: '', verkoopprijs: '' });
-  const [showAddRelatie, setShowAddRelatie] = useState(false);
   const [showAddArtikel, setShowAddArtikel] = useState(false);
 
   const testConnection = async () => {
