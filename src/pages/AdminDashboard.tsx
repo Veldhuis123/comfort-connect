@@ -409,9 +409,29 @@ const AdminDashboard = () => {
         );
 
       // Systeem
-      case "settings":
       case "boekhouden":
+        return (
+          <div>
+            <div className="mb-6">
+              <h1 className="font-heading text-2xl font-bold">e-Boekhouden</h1>
+              <p className="text-sm text-muted-foreground">Synchroniseer producten en facturen</p>
+            </div>
+            <EBoekhoudenSync />
+          </div>
+        );
+
       case "wasco":
+        return (
+          <div>
+            <div className="mb-6">
+              <h1 className="font-heading text-2xl font-bold">Wasco Sync</h1>
+              <p className="text-sm text-muted-foreground">Automatisch inkoopprijzen ophalen</p>
+            </div>
+            <WascoSync />
+          </div>
+        );
+
+      case "settings":
         return <AdminSettings />;
 
       default:

@@ -345,8 +345,8 @@ const AdminCustomers = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-bold">Klantbeheer</h1>
-          <p className="text-sm text-muted-foreground">Alle klanten uit e-Boekhouden</p>
+          <h1 className="font-heading text-2xl font-bold">Relaties</h1>
+          <p className="text-sm text-muted-foreground">Alle klanten — gesynchroniseerd met e-Boekhouden</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={openImportDialog}>
