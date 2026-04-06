@@ -72,8 +72,8 @@ const AdminSidebar = ({
     { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "messages"] },
     { label: "Airco", sections: ["airco-products", "airco-installations", "airco-calculator"] },
     { label: "Elektra", sections: ["elektra-groepenkasten", "elektra-configurator", "elektra-qrcodes"] },
-    { label: "Website", sections: ["projects", "reviews"] },
-    { label: "Systeem", sections: ["settings", "boekhouden", "wasco"] },
+    { label: "Website", sections: ["projects", "reviews", "settings"] },
+    { label: "Systeem", sections: ["boekhouden", "wasco"] },
   ];
 
   const isGroupActive = (sections: string[]) => sections.includes(activeSection);
@@ -203,6 +203,7 @@ const AdminSidebar = ({
                 <SidebarMenu>
                   <MenuItem section="projects" icon={FolderOpen} label="Projecten" />
                   <MenuItem section="reviews" icon={Star} label="Reviews" />
+                  <MenuItem section="settings" icon={Settings} label="Instellingen" />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -221,7 +222,6 @@ const AdminSidebar = ({
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <MenuItem section="settings" icon={Settings} label="Instellingen" />
                   <MenuItem section="boekhouden" icon={BookOpen} label="e-Boekhouden" />
                   <MenuItem section="wasco" icon={Download} label="Wasco Sync" />
                 </SidebarMenu>
