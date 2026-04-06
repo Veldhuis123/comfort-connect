@@ -203,6 +203,7 @@ const AdminSidebar = ({
                 <SidebarMenu>
                   <MenuItem section="projects" icon={FolderOpen} label="Projecten" />
                   <MenuItem section="reviews" icon={Star} label="Reviews" />
+                  <MenuItem section="settings" icon={Settings} label="Instellingen" />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
