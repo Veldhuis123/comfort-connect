@@ -68,7 +68,7 @@ const AdminSidebar = ({
   );
 
   const sectionGroups = [
-    { label: "Klantbeheer", sections: ["customers-overview"] },
+    { label: "Relaties", sections: ["customers-overview"] },
     { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "messages"] },
     { label: "Airco", sections: ["airco-products", "airco-installations", "airco-calculator"] },
     { label: "Elektra", sections: ["elektra-groepenkasten", "elektra-configurator", "elektra-qrcodes"] },
@@ -111,14 +111,14 @@ const AdminSidebar = ({
           <Collapsible defaultOpen={isGroupActive(sectionGroups[0].sections)}>
             <CollapsibleTrigger className="w-full">
               <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
-                {!collapsed && <span>Klantbeheer</span>}
+                {!collapsed && <span>Relaties</span>}
                 {!collapsed && <ChevronDown className="h-3 w-3" />}
               </SidebarGroupLabel>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <MenuItem section="customers-overview" icon={Users} label="Klanten" />
+                  <MenuItem section="customers-overview" icon={Users} label="Alle Relaties" />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
