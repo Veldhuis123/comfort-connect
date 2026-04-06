@@ -69,10 +69,10 @@ const AdminSidebar = ({
 
   const sectionGroups = [
     { label: "Klantbeheer", sections: ["customers-overview"] },
-    { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "reviews", "messages"] },
+    { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "messages"] },
     { label: "Airco", sections: ["airco-products", "airco-installations", "airco-calculator"] },
     { label: "Elektra", sections: ["elektra-groepenkasten", "elektra-configurator", "elektra-qrcodes"] },
-    { label: "Website", sections: ["projects"] },
+    { label: "Website", sections: ["projects", "reviews"] },
     { label: "Systeem", sections: ["settings", "boekhouden", "wasco"] },
   ];
 
