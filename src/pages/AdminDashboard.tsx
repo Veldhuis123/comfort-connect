@@ -14,6 +14,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminDashboardOverview from "@/components/admin/AdminDashboardOverview";
 import AdminSettings from "@/components/admin/AdminSettings";
+import EBoekhoudenSync from "@/components/EBoekhoudenSync";
+import WascoSync from "@/components/WascoSync";
 import AdminCustomers from "@/components/admin/AdminCustomers";
 import AdminProducts from "@/components/AdminProducts";
 import AdminInstallations from "@/components/AdminInstallations";
