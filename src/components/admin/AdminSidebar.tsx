@@ -111,7 +111,7 @@ const AdminSidebar = ({
           <Collapsible defaultOpen={isGroupActive(sectionGroups[0].sections)}>
             <CollapsibleTrigger className="w-full">
               <SidebarGroupLabel className="cursor-pointer flex items-center justify-between w-full hover:text-foreground transition-colors">
-                {!collapsed && <span>Klantbeheer</span>}
+                {!collapsed && <span>Relaties</span>}
                 {!collapsed && <ChevronDown className="h-3 w-3" />}
               </SidebarGroupLabel>
             </CollapsibleTrigger>
