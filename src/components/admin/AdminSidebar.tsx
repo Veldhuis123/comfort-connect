@@ -140,7 +140,6 @@ const AdminSidebar = ({
                   <MenuItem section="quotes" icon={FileText} label="Offerteaanvragen" badge={newQuotes} />
                   <MenuItem section="local-quotes" icon={Receipt} label="Lokale Offertes" />
                   <MenuItem section="pricing" icon={Euro} label="Prijsbeheer" />
-                  <MenuItem section="reviews" icon={Star} label="Reviews" />
                   <MenuItem section="messages" icon={MessageSquare} label="Berichten" badge={unreadMessages} />
                 </SidebarMenu>
               </SidebarGroupContent>
