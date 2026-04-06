@@ -72,8 +72,8 @@ const AdminSidebar = ({
     { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "messages"] },
     { label: "Airco", sections: ["airco-products", "airco-installations", "airco-calculator"] },
     { label: "Elektra", sections: ["elektra-groepenkasten", "elektra-configurator", "elektra-qrcodes"] },
-    { label: "Website", sections: ["projects", "reviews"] },
-    { label: "Systeem", sections: ["settings", "boekhouden", "wasco"] },
+    { label: "Website", sections: ["projects", "reviews", "settings"] },
+    { label: "Systeem", sections: ["boekhouden", "wasco"] },
   ];
 
   const isGroupActive = (sections: string[]) => sections.includes(activeSection);
