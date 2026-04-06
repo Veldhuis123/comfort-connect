@@ -222,7 +222,6 @@ const AdminSidebar = ({
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <MenuItem section="settings" icon={Settings} label="Instellingen" />
                   <MenuItem section="boekhouden" icon={BookOpen} label="e-Boekhouden" />
                   <MenuItem section="wasco" icon={Download} label="Wasco Sync" />
                 </SidebarMenu>
