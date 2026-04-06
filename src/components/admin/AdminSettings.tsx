@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
-import { Settings, Wind, Sun, Battery, Car, Wifi, Cable, Calculator, Loader2 } from "lucide-react";
+import { Calculator, Loader2, Wind, Sun, Battery, Car, Wifi, Cable } from "lucide-react";
 import { 
   CalculatorSettings, 
   defaultCalculatorSettings, 
@@ -10,8 +10,6 @@ import {
 } from "@/lib/calculatorSettings";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import EBoekhoudenSync from "@/components/EBoekhoudenSync";
-import WascoSync from "@/components/WascoSync";
 
 const AdminSettings = () => {
   const [calculatorSettings, setCalculatorSettings] = useState<CalculatorSettings>(defaultCalculatorSettings);
@@ -33,7 +31,6 @@ const AdminSettings = () => {
         [key]: { ...prev[key], [field]: value }
       };
       
-      // Debounce save to server
       setSaving(true);
       saveCalculatorSettings(newSettings)
         .then(() => {
@@ -60,23 +57,10 @@ const AdminSettings = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold">Instellingen</h1>
-        <p className="text-sm text-muted-foreground">Beheer systeemconfiguratie en koppelingen</p>
+        <h1 className="font-heading text-2xl font-bold">Website Instellingen</h1>
+        <p className="text-sm text-muted-foreground">Bepaal welke modules zichtbaar zijn op de website</p>
       </div>
 
-      {/* Koppelingen */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div>
-          <h2 className="font-heading text-lg font-semibold mb-3">e-Boekhouden</h2>
-          <EBoekhoudenSync />
-        </div>
-        <div>
-          <h2 className="font-heading text-lg font-semibold mb-3">Wasco Sync</h2>
-          <WascoSync />
-        </div>
-      </div>
-
-      {/* Calculator Toggles */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
