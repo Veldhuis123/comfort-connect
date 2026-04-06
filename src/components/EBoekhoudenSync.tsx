@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, Users, Package, FileText, CheckCircle, AlertCircle, ExternalLink, Plus } from "lucide-react";
+import { RefreshCw, Package, FileText, CheckCircle, AlertCircle, ExternalLink, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

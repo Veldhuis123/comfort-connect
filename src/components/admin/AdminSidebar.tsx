@@ -118,7 +118,7 @@ const AdminSidebar = ({
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <MenuItem section="customers-overview" icon={Users} label="Klanten" />
+                  <MenuItem section="customers-overview" icon={Users} label="Alle Relaties" />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
