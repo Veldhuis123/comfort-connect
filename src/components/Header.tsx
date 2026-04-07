@@ -67,7 +67,7 @@ const Header = () => {
               06 - 1362 9947
             </a>
             <Button variant="default" asChild>
-              <a href="#contact">Offerte Aanvragen</a>
+              <a href={isHomePage ? "#contact" : "/#contact"}>Offerte Aanvragen</a>
             </Button>
           </div>
 
@@ -111,7 +111,7 @@ const Header = () => {
                 06 - 1362 9947
               </a>
               <Button variant="default" className="w-full" asChild>
-                <a href="#contact">Offerte Aanvragen</a>
+                <a href={isHomePage ? "#contact" : "/#contact"}>Offerte Aanvragen</a>
               </Button>
             </nav>
           </div>
