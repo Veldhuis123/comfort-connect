@@ -69,10 +69,10 @@ const AdminSidebar = ({
 
   const sectionGroups = [
     { label: "Relaties", sections: ["customers-overview"] },
-    { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing", "messages"] },
+    { label: "Verkoop", sections: ["quotes", "local-quotes", "pricing"] },
     { label: "Airco", sections: ["airco-products", "airco-installations", "airco-calculator"] },
     { label: "Elektra", sections: ["elektra-groepenkasten", "elektra-configurator", "elektra-qrcodes"] },
-    { label: "Website", sections: ["projects", "reviews", "settings"] },
+    { label: "Website", sections: ["projects", "reviews", "messages", "settings"] },
     { label: "Systeem", sections: ["boekhouden", "wasco"] },
   ];
 
@@ -140,7 +140,6 @@ const AdminSidebar = ({
                   <MenuItem section="quotes" icon={FileText} label="Offerteaanvragen" badge={newQuotes} />
                   <MenuItem section="local-quotes" icon={Receipt} label="Lokale Offertes" />
                   <MenuItem section="pricing" icon={Euro} label="Prijsbeheer" />
-                  <MenuItem section="messages" icon={MessageSquare} label="Berichten" badge={unreadMessages} />
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -203,6 +202,7 @@ const AdminSidebar = ({
                 <SidebarMenu>
                   <MenuItem section="projects" icon={FolderOpen} label="Projecten" />
                   <MenuItem section="reviews" icon={Star} label="Reviews" />
+                  <MenuItem section="messages" icon={MessageSquare} label="Berichten" badge={unreadMessages} />
                   <MenuItem section="settings" icon={Settings} label="Instellingen" />
                 </SidebarMenu>
               </SidebarGroupContent>

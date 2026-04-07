@@ -49,6 +49,9 @@ const Footer = () => {
                   Calculatoren
                 </Link>
               )}
+              <Link to="/projecten" className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
+                Projecten
+              </Link>
               <a href={getHref("over")} className="block text-primary-foreground/90 hover:text-primary-foreground transition-colors py-1">
                 Over Mij
               </a>
