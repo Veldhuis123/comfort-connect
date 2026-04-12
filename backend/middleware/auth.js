@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
+const logger = require('../services/logger');
 
 const authMiddleware = (req, res, next) => {
-  // Check Authorization header first, then cookie
   const authHeader = req.headers.authorization;
   const cookieToken = req.cookies?.auth_token;
   
@@ -18,13 +18,11 @@ const authMiddleware = (req, res, next) => {
   }
 
   try {
-    // Verify with issuer and audience for additional security
     const decoded = jwt.verify(token, process.env.JWT_SECRET, {
       issuer: 'rv-installatie',
       audience: 'rv-admin'
     });
     
-    // Check token version if needed for invalidation
     if (decoded.v === undefined || decoded.v < 1) {
       return res.status(401).json({ error: 'Token is verlopen - log opnieuw in' });
     }
@@ -43,16 +41,13 @@ const authMiddleware = (req, res, next) => {
 };
 
 const adminMiddleware = (req, res, next) => {
-  // Always check from database for critical operations instead of trusting token
-  // For now, trust token but log for auditing
   if (req.user.role !== 'admin') {
-    console.warn(`Unauthorized admin access attempt by user ${req.user.id}`);
+    logger.warn('AUTH', 'Unauthorized admin access attempt', { userId: req.user.id });
     return res.status(403).json({ error: 'Geen admin rechten' });
   }
   next();
 };
 
-// Middleware to verify user is still active (for sensitive operations)
 const verifyActiveUser = (db) => async (req, res, next) => {
   try {
     const [users] = await db.query(
@@ -66,7 +61,7 @@ const verifyActiveUser = (db) => async (req, res, next) => {
     
     next();
   } catch (error) {
-    console.error('User verification error:', error.message);
+    logger.error('AUTH', 'User verification error', { error: error.message });
     return res.status(500).json({ error: 'Server fout' });
   }
 };
