@@ -69,6 +69,7 @@ import { generateCommissioningPDF } from "@/lib/commissioningPdfExport";
 import type { CommissioningData } from "@/lib/installationTypes";
 import type { BRLReport } from "@/lib/brlTypes";
 import { getReportProgress } from "@/lib/brlTypes";
+import { saveReport as saveBrlReport } from "@/lib/brlStorage";
 
 const installationTypeLabels: Record<InstallationType, string> = {
   airco: "Airco",
@@ -2264,12 +2265,14 @@ const AdminInstallations = () => {
                 <Button
                   className="w-full"
                   onClick={() => {
-                    // Save report to localStorage so the BRL page can pick it up
-                    const { saveReport } = require("@/lib/brlStorage");
-                    saveReport(selectedBrlReport);
+                    saveBrlReport(selectedBrlReport);
                     window.open(`/brl?report=${selectedBrlReport.id}`, '_blank');
                   }}
                 >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Rapport verder invullen
+                </Button>
+              </div>
                   <Edit className="w-4 h-4 mr-2" />
                   Rapport verder invullen
                 </Button>
