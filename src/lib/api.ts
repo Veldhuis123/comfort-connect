@@ -526,3 +526,88 @@ export interface LocalQuoteStats {
 
 export interface LocalQuotesResponse {
   quotes: LocalQuote[];
+}
+
+export interface InstallationSettingsResponse {
+  category: string;
+  settings: Record<string, { value: number; unit?: string; description?: string }>;
+}
+
+export interface CapacityPricing {
+  min_capacity: number;
+  max_capacity: number;
+  extra_hours: number;
+  extra_materials: number;
+  notes?: string;
+}
+
+export interface PipeDiameterPricing {
+  min_capacity: number;
+  max_capacity: number;
+  liquid_line: string;
+  suction_line: string;
+  price_per_meter: number;
+  notes?: string;
+}
+
+export interface PriceCalculationParams {
+  productId?: string;
+  category?: string;
+  pipeLength?: number;
+  needsElectricalGroup?: boolean;
+  needsCableDuct?: number;
+  needsCondensatePump?: boolean;
+  quantity?: number;
+}
+
+export interface PriceCalculationResult {
+  breakdown: {
+    product: { price: number; quantity: number; total: number };
+    labor: { hours: number; rate: number; travel: number; total: number };
+    materials: { pipes: number; pipePerMeter: number; pipeDiameter: { liquid: string; suction: string }; duct: number; electrical: number; pump: number; small: number; total: number };
+  };
+  totals: { subtotal_excl: number; vat_rate: number; vat_amount: number; total_incl: number };
+}
+
+export interface ProductPricingUpdate {
+  purchase_price?: number;
+  margin_percent?: number;
+  expected_hours?: number;
+}
+
+export interface ServerStatus {
+  uptime: string;
+  uptimeSeconds: number;
+  cpu: { cores: number; model: string; loadAvg: string[] };
+  memory: { total: string; used: string; free: string; percent: number };
+  disk: { total: string; used: string; available: string; percent: number } | null;
+  fail2ban: { currentlyBanned: number; totalBanned: number; currentlyFailed: number; totalFailed: number; bannedIPs: string[] } | null;
+  ufw: { active: boolean; rules: string[] } | null;
+  services: { name: string; status: string }[];
+  hostname: string;
+  platform: string;
+  timestamp: string;
+}
+
+export interface VisitorStats {
+  total: number;
+  totalVisitors: number;
+  today: number;
+  todayVisitors: number;
+  thisWeek: number;
+  thisMonth: number;
+  daily: { date: string; views: number; visitors?: number; requests?: number }[];
+}
+
+export interface Project {
+  id: number;
+  title: string;
+  description: string | null;
+  category: string;
+  location: string | null;
+  completion_date: string | null;
+  photos: string[] | string;
+  is_visible: boolean;
+  sort_order: number;
+  created_at: string;
+}
