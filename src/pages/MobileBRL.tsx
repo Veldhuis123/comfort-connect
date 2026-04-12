@@ -59,8 +59,17 @@ const MobileBRL = () => {
       const localReports = getReports();
       setReports(localReports);
 
+      // Save local reports to server; capture server-assigned werkbon numbers
       await Promise.all(
-        localReports.map((report) => installationsApi.saveBRLReport(report).catch(() => null)),
+        localReports.map(async (report) => {
+          try {
+            const result = await installationsApi.saveBRLReport(report);
+            if (result.werkbon_number && result.werkbon_number !== report.customer_data.werkbon_number) {
+              report.customer_data.werkbon_number = result.werkbon_number;
+              saveReport(report);
+            }
+          } catch { /* ignore */ }
+        }),
       );
 
       await syncReportsFromServer();
