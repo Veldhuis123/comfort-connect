@@ -194,10 +194,16 @@ const AdminProjects = () => {
                   accept="image/*"
                   multiple
                   className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      setFormFiles(prev => [...prev, ...Array.from(e.target.files!)]);
-                    }
+                  onChange={async (e) => {
+                    if (!e.target.files) return;
+                    const raw = Array.from(e.target.files);
+                    // Compress all images to prevent mobile crashes
+                    const compressed = await Promise.all(raw.map(f => compressImage(f)));
+                    const newPreviews = compressed.map(f => URL.createObjectURL(f));
+                    setFormFiles(prev => [...prev, ...compressed]);
+                    setFormPreviews(prev => [...prev, ...newPreviews]);
+                    // Reset input so same file can be re-selected
+                    if (formFileInputRef.current) formFileInputRef.current.value = '';
                   }}
                 />
                 <Button type="button" variant="outline" className="w-full" onClick={() => formFileInputRef.current?.click()}>
@@ -207,9 +213,13 @@ const AdminProjects = () => {
                   <div className="flex gap-2 flex-wrap mt-2">
                     {formFiles.map((file, i) => (
                       <div key={i} className="relative">
-                        <img src={URL.createObjectURL(file)} alt="" className="w-16 h-16 rounded object-cover border border-border" />
+                        <img src={formPreviews[i]} alt="" className="w-16 h-16 rounded object-cover border border-border" />
                         <button
-                          onClick={() => setFormFiles(prev => prev.filter((_, idx) => idx !== i))}
+                          onClick={() => {
+                            URL.revokeObjectURL(formPreviews[i]);
+                            setFormFiles(prev => prev.filter((_, idx) => idx !== i));
+                            setFormPreviews(prev => prev.filter((_, idx) => idx !== i));
+                          }}
                           className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
                         >
                           <X className="w-3 h-3" />
