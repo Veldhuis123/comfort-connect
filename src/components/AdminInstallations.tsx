@@ -70,7 +70,6 @@ import type { CommissioningData } from "@/lib/installationTypes";
 import type { BRLReport } from "@/lib/brlTypes";
 import { getReportProgress } from "@/lib/brlTypes";
 import { saveReport as saveBrlReport } from "@/lib/brlStorage";
-import BRLWizard from "./mobile/BRLWizard";
 
 const installationTypeLabels: Record<InstallationType, string> = {
   airco: "Airco",
