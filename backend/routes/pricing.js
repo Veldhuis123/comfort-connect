@@ -1,3 +1,4 @@
+const logger = require('../services/logger');
 const express = require('express');
 const db = require('../config/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
@@ -30,7 +31,7 @@ router.get('/settings/:category', async (req, res) => {
     
     res.json({ category, settings: settingsObj, raw: settings });
   } catch (error) {
-    console.error('Error fetching settings:', error);
+    logger.error('PRICING', 'Error fetching settings', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -58,7 +59,7 @@ router.put('/settings/:category', authMiddleware, adminMiddleware, async (req, r
     
     res.json({ message: 'Instellingen opgeslagen' });
   } catch (error) {
-    console.error('Error updating settings:', error);
+    logger.error('PRICING', 'Error updating settings', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -81,7 +82,7 @@ router.post('/settings/:category/:key', authMiddleware, adminMiddleware, async (
     
     res.json({ message: 'Instelling opgeslagen' });
   } catch (error) {
-    console.error('Error saving setting:', error);
+    logger.error('PRICING', 'Error saving setting', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -102,7 +103,7 @@ router.get('/capacity/:category', async (req, res) => {
     
     res.json(pricing);
   } catch (error) {
-    console.error('Error fetching capacity pricing:', error);
+    logger.error('PRICING', 'Error fetching capacity', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -130,7 +131,7 @@ router.put('/capacity/:category', authMiddleware, adminMiddleware, async (req, r
     
     res.json({ message: 'Capaciteitsprijzen opgeslagen' });
   } catch (error) {
-    console.error('Error updating capacity pricing:', error);
+    logger.error('PRICING', 'Error updating capacity', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -151,7 +152,7 @@ router.get('/pipes/:category', async (req, res) => {
     
     res.json(pricing);
   } catch (error) {
-    console.error('Error fetching pipe pricing:', error);
+    logger.error('PRICING', 'Error fetching pipes', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -179,7 +180,7 @@ router.put('/pipes/:category', authMiddleware, adminMiddleware, async (req, res)
     
     res.json({ message: 'Leidingprijzen opgeslagen' });
   } catch (error) {
-    console.error('Error updating pipe pricing:', error);
+    logger.error('PRICING', 'Error updating pipes', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -320,7 +321,7 @@ router.post('/calculate', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error calculating price:', error);
+    logger.error('PRICING', 'Error calculating price', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -381,7 +382,7 @@ router.patch('/product/:id', authMiddleware, adminMiddleware, async (req, res) =
     
     res.json({ message: 'Productprijzen bijgewerkt' });
   } catch (error) {
-    console.error('Error updating product pricing:', error);
+    logger.error('PRICING', 'Error updating product pricing', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -411,7 +412,7 @@ router.get('/product/:id', async (req, res) => {
     
     res.json(product);
   } catch (error) {
-    console.error('Error fetching product:', error);
+    logger.error('PRICING', 'Error fetching product', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
