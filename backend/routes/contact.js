@@ -4,6 +4,7 @@ const axios = require('axios');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
 const { sendContactNotification } = require('../services/email');
+const logger = require('../services/logger');
 
 const router = express.Router();
 
@@ -30,6 +31,7 @@ router.get('/', authMiddleware, async (req, res) => {
     const [messages] = await db.query(query, params);
     res.json(messages);
   } catch (error) {
+    logger.error('CONTACT', 'Error fetching messages', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -52,6 +54,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
     res.json(messages[0]);
   } catch (error) {
+    logger.error('CONTACT', 'Error fetching message', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -110,22 +113,19 @@ router.post('/', contactSubmitLimiter, async (req, res) => {
         const { success, score, action } = recaptchaResponse.data;
         
         if (!success) {
-          console.error('reCAPTCHA v3 failed:', recaptchaResponse.data['error-codes']);
+          logger.warn('RECAPTCHA', 'reCAPTCHA v3 failed', { errorCodes: recaptchaResponse.data['error-codes'] });
           return res.status(400).json({ error: 'reCAPTCHA verificatie mislukt' });
         }
 
-        // reCAPTCHA v3 returns a score from 0.0 to 1.0
-        // 1.0 = very likely human, 0.0 = very likely bot
-        // Threshold of 0.5 is recommended by Google
         const threshold = parseFloat(process.env.RECAPTCHA_SCORE_THRESHOLD || '0.5');
         if (score < threshold) {
-          console.warn(`reCAPTCHA v3 score too low: ${score} (threshold: ${threshold}), action: ${action}`);
+          logger.warn('RECAPTCHA', 'Score too low', { score, threshold, action });
           return res.status(400).json({ error: 'Spam detectie - probeer het opnieuw' });
         }
 
-        console.log(`reCAPTCHA v3 passed: score=${score}, action=${action}`);
+        logger.debug('RECAPTCHA', 'Passed', { score, action });
       } catch (recaptchaError) {
-        console.error('reCAPTCHA verification error:', recaptchaError.message);
+        logger.error('RECAPTCHA', 'Verification error', { error: recaptchaError.message });
         return res.status(500).json({ error: 'reCAPTCHA verificatie fout' });
       }
     }
@@ -143,7 +143,7 @@ router.post('/', contactSubmitLimiter, async (req, res) => {
       subject: sanitizedSubject, 
       message: sanitizedMessage 
     }).catch(err => {
-      console.error('Failed to send contact notification email:', err.message);
+      logger.error('EMAIL', 'Failed to send contact notification', { error: err.message });
     });
 
     res.status(201).json({ 
@@ -151,7 +151,7 @@ router.post('/', contactSubmitLimiter, async (req, res) => {
       message: 'Bericht verzonden' 
     });
   } catch (error) {
-    console.error('Contact message error:', error.message);
+    logger.error('CONTACT', 'Error creating message', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -166,6 +166,7 @@ router.patch('/:id/replied', authMiddleware, async (req, res) => {
     );
     res.json({ message: 'Gemarkeerd als beantwoord' });
   } catch (error) {
+    logger.error('CONTACT', 'Error marking as replied', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -177,6 +178,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     await db.query('DELETE FROM contact_messages WHERE id = ?', [id]);
     res.json({ message: 'Bericht verwijderd' });
   } catch (error) {
+    logger.error('CONTACT', 'Error deleting message', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -189,6 +191,7 @@ router.get('/stats/unread', authMiddleware, async (req, res) => {
     );
     res.json({ unread: result[0].count });
   } catch (error) {
+    logger.error('CONTACT', 'Error fetching unread count', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
