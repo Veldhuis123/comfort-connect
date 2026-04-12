@@ -2273,10 +2273,6 @@ const AdminInstallations = () => {
                   Rapport verder invullen
                 </Button>
               </div>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Rapport verder invullen
-                </Button>
-              </div>
             </div>
           )}
         </DialogContent>
