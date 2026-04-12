@@ -1,7 +1,32 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const router = express.Router();
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
+
+// Pre-configure multer for project images
+const projectUploadDir = path.join(__dirname, '..', 'uploads', 'projects');
+if (!fs.existsSync(projectUploadDir)) fs.mkdirSync(projectUploadDir, { recursive: true });
+
+const projectStorage = multer.diskStorage({
+  destination: projectUploadDir,
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, uniqueSuffix + ext);
+  }
+});
+
+const projectUpload = multer({
+  storage: projectStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) return cb(null, true);
+    cb(new Error('Alleen afbeeldingen zijn toegestaan'));
+  }
+}).single('image');
 
 // GET /api/projects - Public: visible projects
 router.get('/', async (req, res) => {
