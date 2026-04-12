@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { api, Project } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +8,37 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Trash2, Eye, EyeOff, Pencil, Upload, X, Image as ImageIcon, MapPin, Calendar
 } from "lucide-react";
+
+// Compress image before upload (prevents mobile crashes with huge photos)
+const compressImage = (file: File, maxWidth = 1920, quality = 0.8): Promise<File> =>
+  new Promise((resolve) => {
+    // Skip non-image or already small files
+    if (!file.type.startsWith('image/') || file.size < 500_000) {
+      resolve(file);
+      return;
+    }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size >= file.size) { resolve(file); return; }
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
