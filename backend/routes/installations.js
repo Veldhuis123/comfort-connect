@@ -45,7 +45,7 @@ router.get('/brl-reports', authMiddleware, async (req, res) => {
 
     res.json(rows.map(parseBrlReportRow));
   } catch (err) {
-    console.error('Error fetching BRL reports:', err);
+    logger.error('BRL', 'Error fetching reports', { error: err.message });
     res.status(500).json({ error: 'Kon BRL rapporten niet ophalen' });
   }
 });
@@ -111,7 +111,7 @@ router.put('/brl-reports/:reportId', authMiddleware, async (req, res) => {
 
     res.json({ success: true, id: reportId, werkbon_number: werkbonNumber });
   } catch (err) {
-    console.error('Error saving BRL report:', err);
+    logger.error('BRL', 'Error saving report', { error: err.message });
     res.status(500).json({ error: 'Kon BRL rapport niet opslaan' });
   }
 });
@@ -125,7 +125,7 @@ router.delete('/brl-reports/:reportId', authMiddleware, async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting BRL report:', err);
+    logger.error('BRL', 'Error deleting report', { error: err.message });
     res.status(500).json({ error: 'Kon BRL rapport niet verwijderen' });
   }
 });
@@ -138,7 +138,7 @@ router.get('/customers', authMiddleware, adminMiddleware, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching customers:', err);
+    logger.error('CUSTOMERS', 'Error fetching', { error: err.message });
     res.status(500).json({ error: 'Kon klanten niet ophalen' });
   }
 });
@@ -155,7 +155,7 @@ router.post('/customers', authMiddleware, adminMiddleware, async (req, res) => {
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
-    console.error('Error creating customer:', err);
+    logger.error('CUSTOMERS', 'Error creating', { error: err.message });
     res.status(500).json({ error: 'Kon klant niet aanmaken' });
   }
 });
@@ -174,7 +174,7 @@ router.put('/customers/:id', authMiddleware, adminMiddleware, async (req, res) =
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('Error updating customer:', err);
+    logger.error('CUSTOMERS', 'Error updating', { error: err.message });
     res.status(500).json({ error: 'Kon klant niet bijwerken' });
   }
 });
@@ -197,7 +197,7 @@ router.delete('/customers/:id', authMiddleware, adminMiddleware, async (req, res
     await pool.query('DELETE FROM customers WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting customer:', err);
+    logger.error('CUSTOMERS', 'Error deleting', { error: err.message });
     res.status(500).json({ error: 'Kon klant niet verwijderen' });
   }
 });
@@ -214,7 +214,7 @@ router.get('/technicians', authMiddleware, adminMiddleware, async (req, res) => 
     );
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching technicians:', err);
+    logger.error('TECHNICIANS', 'Error fetching', { error: err.message });
     res.status(500).json({ error: 'Kon monteurs niet ophalen' });
   }
 });
@@ -231,7 +231,7 @@ router.post('/technicians', authMiddleware, adminMiddleware, async (req, res) =>
     );
     res.status(201).json({ id: result.insertId });
   } catch (err) {
-    console.error('Error creating technician:', err);
+    logger.error('TECHNICIANS', 'Error creating', { error: err.message });
     res.status(500).json({ error: 'Kon monteur niet aanmaken' });
   }
 });
@@ -250,7 +250,7 @@ router.put('/technicians/:id', authMiddleware, adminMiddleware, async (req, res)
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('Error updating technician:', err);
+    logger.error('TECHNICIANS', 'Error updating', { error: err.message });
     res.status(500).json({ error: 'Kon monteur niet bijwerken' });
   }
 });
@@ -273,7 +273,7 @@ router.delete('/technicians/:id', authMiddleware, adminMiddleware, async (req, r
     await pool.query('DELETE FROM technicians WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting technician:', err);
+    logger.error('TECHNICIANS', 'Error deleting', { error: err.message });
     res.status(500).json({ error: 'Kon monteur niet verwijderen' });
   }
 });
@@ -290,7 +290,7 @@ router.get('/equipment', authMiddleware, adminMiddleware, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching equipment:', err);
+    logger.error('EQUIPMENT', 'Error fetching', { error: err.message });
     res.status(500).json({ error: 'Kon gereedschap niet ophalen' });
   }
 });
@@ -312,7 +312,7 @@ router.post('/equipment', authMiddleware, adminMiddleware, async (req, res) => {
     }, req);
     res.status(201).json({ id: result.insertId });
   } catch (err) {
-    console.error('Error creating equipment:', err);
+    logger.error('EQUIPMENT', 'Error creating', { error: err.message });
     res.status(500).json({ error: 'Kon gereedschap niet aanmaken' });
   }
 });
@@ -331,7 +331,7 @@ router.put('/equipment/:id', authMiddleware, adminMiddleware, async (req, res) =
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('Error updating equipment:', err);
+    logger.error('EQUIPMENT', 'Error updating', { error: err.message });
     res.status(500).json({ error: 'Kon gereedschap niet bijwerken' });
   }
 });
@@ -342,7 +342,7 @@ router.delete('/equipment/:id', authMiddleware, adminMiddleware, async (req, res
     await pool.query('DELETE FROM equipment WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting equipment:', err);
+    logger.error('EQUIPMENT', 'Error deleting', { error: err.message });
     res.status(500).json({ error: 'Kon gereedschap niet verwijderen' });
   }
 });
@@ -359,7 +359,7 @@ router.get('/cylinders', authMiddleware, adminMiddleware, async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching cylinders:', err);
+    logger.error('CYLINDERS', 'Error fetching', { error: err.message });
     res.status(500).json({ error: 'Kon cilinders niet ophalen' });
   }
 });
@@ -382,7 +382,7 @@ router.post('/cylinders', authMiddleware, adminMiddleware, async (req, res) => {
     }, req);
     res.status(201).json({ id: result.insertId });
   } catch (err) {
-    console.error('Error creating cylinder:', err);
+    logger.error('CYLINDERS', 'Error creating', { error: err.message });
     res.status(500).json({ error: 'Kon cilinder niet aanmaken' });
   }
 });
@@ -401,7 +401,7 @@ router.put('/cylinders/:id', authMiddleware, adminMiddleware, async (req, res) =
     logger.audit('CYLINDER_UPDATED', { cylinderId: id, status }, req);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error updating cylinder:', err);
+    logger.error('CYLINDERS', 'Error updating', { error: err.message });
     res.status(500).json({ error: 'Kon cilinder niet bijwerken' });
   }
 });
@@ -413,7 +413,7 @@ router.delete('/cylinders/:id', authMiddleware, adminMiddleware, async (req, res
     logger.audit('CYLINDER_DELETED', { cylinderId: req.params.id }, req);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting cylinder:', err);
+    logger.error('CYLINDERS', 'Error deleting', { error: err.message });
     res.status(500).json({ error: 'Kon cilinder niet verwijderen' });
   }
 });
@@ -435,7 +435,7 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching installations:', err);
+    logger.error('INSTALLATIONS', 'Error fetching', { error: err.message });
     res.status(500).json({ error: 'Kon installaties niet ophalen' });
   }
 });
@@ -456,7 +456,7 @@ router.get('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     }
     res.json(rows[0]);
   } catch (err) {
-    console.error('Error fetching installation:', err);
+    logger.error('INSTALLATIONS', 'Error fetching single', { error: err.message });
     res.status(500).json({ error: 'Kon installatie niet ophalen' });
   }
 });
@@ -488,7 +488,7 @@ router.get('/qr/:qrCode', async (req, res) => {
     
     res.json({ ...rows[0], recent_maintenance: maintenance });
   } catch (err) {
-    console.error('Error fetching installation by QR:', err);
+    logger.error('INSTALLATIONS', 'Error fetching by QR', { error: err.message });
     res.status(500).json({ error: 'Kon installatie niet ophalen' });
   }
 });
@@ -572,7 +572,7 @@ router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('Error updating installation:', err);
+    logger.error('INSTALLATIONS', 'Error updating', { error: err.message });
     res.status(500).json({ error: 'Kon installatie niet bijwerken' });
   }
 });
@@ -583,7 +583,7 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     await pool.query('DELETE FROM installations WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting installation:', err);
+    logger.error('INSTALLATIONS', 'Error deleting', { error: err.message });
     res.status(500).json({ error: 'Kon installatie niet verwijderen' });
   }
 });
@@ -604,7 +604,7 @@ router.get('/:id/fgas', authMiddleware, adminMiddleware, async (req, res) => {
     `, [req.params.id]);
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching F-gas logs:', err);
+    logger.error('FGAS', 'Error fetching logs', { error: err.message });
     res.status(500).json({ error: 'Kon F-gas logs niet ophalen' });
   }
 });
@@ -691,7 +691,7 @@ router.get('/:id/maintenance', authMiddleware, adminMiddleware, async (req, res)
     `, [req.params.id]);
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching maintenance records:', err);
+    logger.error('MAINTENANCE', 'Error fetching', { error: err.message });
     res.status(500).json({ error: 'Kon onderhoudshistorie niet ophalen' });
   }
 });
@@ -724,7 +724,7 @@ router.post('/:id/maintenance', authMiddleware, adminMiddleware, async (req, res
     
     res.status(201).json({ id: result.insertId });
   } catch (err) {
-    console.error('Error creating maintenance record:', err);
+    logger.error('MAINTENANCE', 'Error creating', { error: err.message });
     res.status(500).json({ error: 'Kon onderhoudsrecord niet aanmaken' });
   }
 });
@@ -821,7 +821,7 @@ router.post('/qr/:qrCode/fault', async (req, res) => {
       urgency: urgency || 'normaal'
     };
     sendFaultNotification(faultData, installation).catch(err => {
-      console.error('Failed to send fault notification email:', err.message);
+      logger.error('EMAIL', 'Failed to send fault notification', { error: err.message });
     });
     
     logger.audit('FAULT_REPORTED', {
@@ -833,7 +833,7 @@ router.post('/qr/:qrCode/fault', async (req, res) => {
     
     res.status(201).json({ id: result.insertId, message: 'Storingsmelding ontvangen' });
   } catch (err) {
-    console.error('Error creating fault report:', err);
+    logger.error('FAULTS', 'Error creating report', { error: err.message });
     res.status(500).json({ error: 'Kon storingsmelding niet versturen' });
   }
 });
@@ -855,7 +855,7 @@ router.get('/faults/all', authMiddleware, adminMiddleware, async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching fault reports:', err);
+    logger.error('FAULTS', 'Error fetching reports', { error: err.message });
     res.status(500).json({ error: 'Kon storingen niet ophalen' });
   }
 });
@@ -875,7 +875,7 @@ router.patch('/faults/:id', authMiddleware, adminMiddleware, async (req, res) =>
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('Error updating fault report:', err);
+    logger.error('FAULTS', 'Error updating report', { error: err.message });
     res.status(500).json({ error: 'Kon storing niet bijwerken' });
   }
 });
@@ -900,7 +900,7 @@ router.get('/stats/summary', authMiddleware, adminMiddleware, async (req, res) =
       totalCO2Equivalent: totalCO2[0].total || 0
     });
   } catch (err) {
-    console.error('Error fetching stats:', err);
+    logger.error('STATS', 'Error fetching', { error: err.message });
     res.status(500).json({ error: 'Kon statistieken niet ophalen' });
   }
 });
@@ -948,7 +948,7 @@ router.post('/equipment/check-calibration', authMiddleware, adminMiddleware, asy
       }))
     });
   } catch (err) {
-    console.error('Error checking equipment calibration:', err);
+    logger.error('EQUIPMENT', 'Error checking calibration', { error: err.message });
     res.status(500).json({ error: 'Kon kalibratie check niet uitvoeren' });
   }
 });
@@ -968,7 +968,7 @@ router.get('/equipment/expiring', authMiddleware, adminMiddleware, async (req, r
     
     res.json(expiringEquipment);
   } catch (err) {
-    console.error('Error fetching expiring equipment:', err);
+    logger.error('EQUIPMENT', 'Error fetching expiring', { error: err.message });
     res.status(500).json({ error: 'Kon verlopend gereedschap niet ophalen' });
   }
 });
