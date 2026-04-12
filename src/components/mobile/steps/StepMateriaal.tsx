@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { Check, ScanLine, X, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import type { CommissioningData, BRLChecklist } from "@/lib/installationTypes";
 
 interface Props {
@@ -21,38 +21,13 @@ interface Props {
 const brands = ["Daikin", "Mitsubishi Electric", "Mitsubishi Heavy", "Samsung", "LG", "Toshiba", "Panasonic", "Haier", "Gree", "Midea", "Anders"];
 
 const StepMateriaal = ({ data, setData, checklist, setChecklist, onComplete }: Props) => {
-  const { toast } = useToast();
-  const [scanning, setScanning] = useState(false);
-  const [scanTarget, setScanTarget] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const scanIntervalRef = useRef<number | null>(null);
-
   const updateField = (key: keyof CommissioningData, value: string) => { setData({ ...data, [key]: value }); };
 
-  const stopScanning = useCallback(() => {
-    if (scanIntervalRef.current) { clearInterval(scanIntervalRef.current); scanIntervalRef.current = null; }
-    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
-    setScanning(false); setScanTarget(null);
-  }, []);
+  const onDetected = useCallback((target: string, value: string) => {
+    updateField(target as keyof CommissioningData, value);
+  }, [data, setData]);
 
-  useEffect(() => { return () => { if (scanIntervalRef.current) clearInterval(scanIntervalRef.current); if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop()); }; }, []);
-
-  const startScanning = async (target: string) => {
-    setScanTarget(target); setScanning(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } });
-      streamRef.current = stream;
-      if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play(); }
-      if ('BarcodeDetector' in window) {
-        const detector = new (window as any).BarcodeDetector({ formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'data_matrix'] });
-        scanIntervalRef.current = window.setInterval(async () => {
-          if (!videoRef.current || videoRef.current.readyState < 2) return;
-          try { const barcodes = await detector.detect(videoRef.current); if (barcodes.length > 0) { updateField(target as keyof CommissioningData, barcodes[0].rawValue); toast({ title: "Gescand!", description: barcodes[0].rawValue }); stopScanning(); } } catch {}
-        }, 300);
-      } else { toast({ title: "Barcode scanner niet beschikbaar", description: "Voer het serienummer handmatig in." }); }
-    } catch { toast({ title: "Camera kon niet worden geopend", variant: "destructive" }); stopScanning(); }
-  };
+  const { scanning, videoRef, startScanning, stopScanning } = useBarcodeScanner(onDetected);
 
   const checklistItems = [
     { key: "equipment_checked" as const, label: "Apparatuur gecontroleerd op transportschade", desc: "Binnen- en buitenunit visueel geïnspecteerd" },
@@ -132,7 +107,6 @@ const StepMateriaal = ({ data, setData, checklist, setChecklist, onComplete }: P
         </CardContent>
       </Card>
 
-      {/* Checklist Materiaal */}
       <Card>
         <CardHeader className="p-4 pb-2"><CardTitle className="text-base">Checklist Materiaal</CardTitle></CardHeader>
         <CardContent className="px-4 pb-4 space-y-2">
