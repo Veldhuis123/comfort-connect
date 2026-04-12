@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { type SyntheticEvent, useEffect, useState } from "react";
 import { api, Project, getUploadUrl } from "@/lib/api";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -25,6 +25,17 @@ const Projects = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleProjectImageError = (event: SyntheticEvent<HTMLImageElement>) => {
+    const image = event.currentTarget;
+
+    if (image.dataset.fallbackApplied === "true") {
+      return;
+    }
+
+    image.dataset.fallbackApplied = "true";
+    image.src = "/placeholder.svg";
+  };
+
   const categories = ["alle", ...new Set(projects.map(p => p.category))];
   const filtered = filter === "alle" ? projects : projects.filter(p => p.category === filter);
 
@@ -42,7 +53,6 @@ const Projects = () => {
             </p>
           </div>
 
-          {/* Category filter */}
           {categories.length > 2 && (
             <div className="flex flex-wrap justify-center gap-2 mb-8">
               {categories.map(cat => (
@@ -70,11 +80,11 @@ const Projects = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map(project => {
-                const photos: string[] = typeof project.photos === 'string' ? JSON.parse(project.photos) : (project.photos || []);
+                const photos: string[] = typeof project.photos === "string" ? JSON.parse(project.photos) : (project.photos || []);
                 const mainPhoto = photos[0];
+
                 return (
                   <article key={project.id} className="group rounded-xl overflow-hidden border border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-                    {/* Image */}
                     <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                       {mainPhoto ? (
                         <img
@@ -82,6 +92,7 @@ const Projects = () => {
                           alt={project.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
+                          onError={handleProjectImageError}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -93,7 +104,6 @@ const Projects = () => {
                       </Badge>
                     </div>
 
-                    {/* Content */}
                     <div className="p-5">
                       <h2 className="font-heading font-bold text-lg text-foreground mb-2">{project.title}</h2>
                       {project.description && (
@@ -104,16 +114,21 @@ const Projects = () => {
                           <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{project.location}</span>
                         )}
                         {project.completion_date && (
-                          <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(project.completion_date).toLocaleDateString('nl-NL')}</span>
+                          <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(project.completion_date).toLocaleDateString("nl-NL")}</span>
                         )}
                       </div>
 
-                      {/* Additional photos */}
                       {photos.length > 1 && (
                         <div className="flex gap-1.5 mt-3">
                           {photos.slice(1, 4).map((photo, i) => (
                             <div key={i} className="w-12 h-12 rounded-md overflow-hidden border border-border">
-                              <img src={getUploadUrl(photo)} alt="" className="w-full h-full object-cover" loading="lazy" />
+                              <img
+                                src={getUploadUrl(photo)}
+                                alt=""
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={handleProjectImageError}
+                              />
                             </div>
                           ))}
                           {photos.length > 4 && (

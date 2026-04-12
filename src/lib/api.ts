@@ -2,19 +2,47 @@
 // In development: proxy via Vite, in production: via environment variable
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
+const UPLOAD_CACHE_BUSTER = 'uploads-fix-20260412';
+
+const appendUploadCacheBuster = (url: string): string => {
+  if (!url || !url.includes('/uploads/')) return url;
+
+  try {
+    const baseOrigin = API_URL.startsWith('http')
+      ? new URL(API_URL).origin
+      : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+
+    const resolvedUrl = new URL(url, baseOrigin);
+    resolvedUrl.searchParams.set('v', UPLOAD_CACHE_BUSTER);
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return resolvedUrl.toString();
+    }
+
+    return `${resolvedUrl.pathname}${resolvedUrl.search}${resolvedUrl.hash}`;
+  } catch {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=${UPLOAD_CACHE_BUSTER}`;
+  }
+};
+
 // Resolve upload paths — uploads are served from the same origin via Nginx
 // but stored as relative paths like /uploads/projects/xxx.jpg
 export const getUploadUrl = (path: string): string => {
   if (!path) return '';
+
+  let resolvedPath = path;
+
   // Already absolute URL
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  // If API_URL is a full URL (e.g. https://rv-installatie.nl/api), derive base
-  if (API_URL.startsWith('http')) {
-    const url = new URL(API_URL);
-    return `${url.origin}${path}`;
+  if (!path.startsWith('http://') && !path.startsWith('https://')) {
+    // If API_URL is a full URL (e.g. https://rv-installatie.nl/api), derive base
+    if (API_URL.startsWith('http')) {
+      const url = new URL(API_URL);
+      resolvedPath = `${url.origin}${path}`;
+    }
   }
-  // Relative — just return as-is (same origin)
-  return path;
+
+  return appendUploadCacheBuster(resolvedPath);
 };
 
 // Auth token management
@@ -498,131 +526,3 @@ export interface LocalQuoteStats {
 
 export interface LocalQuotesResponse {
   quotes: LocalQuote[];
-  stats: LocalQuoteStats;
-}
-
-// Pricing types
-export interface InstallationSetting {
-  value: number;
-  unit: string | null;
-  description: string | null;
-}
-
-export interface InstallationSettingsResponse {
-  category: string;
-  settings: Record<string, InstallationSetting>;
-  raw: Array<{
-    id: number;
-    category: string;
-    setting_key: string;
-    setting_value: number;
-    unit: string | null;
-    description: string | null;
-  }>;
-}
-
-export interface CapacityPricing {
-  id?: number;
-  category?: string;
-  min_capacity: number;
-  max_capacity: number;
-  extra_hours: number;
-  extra_materials: number;
-  notes?: string | null;
-}
-
-export interface PipeDiameterPricing {
-  id?: number;
-  category?: string;
-  min_capacity: number;
-  max_capacity: number;
-  liquid_line: string;
-  suction_line: string;
-  price_per_meter: number;
-  notes?: string | null;
-}
-
-export interface PriceCalculationParams {
-  productId?: string;
-  category?: string;
-  pipeLength?: number;
-  needsElectricalGroup?: boolean;
-  needsCableDuct?: number;
-  needsCondensatePump?: boolean;
-  quantity?: number;
-}
-
-export interface PriceCalculationResult {
-  breakdown: {
-    product: { price: number; quantity: number; total: number };
-    labor: { hours: number; rate: number; travel: number; total: number };
-    materials: { 
-      pipes: number; 
-      pipePerMeter: number;
-      pipeDiameter: { liquid: string; suction: string };
-      duct: number; 
-      electrical: number; 
-      pump: number; 
-      small: number; 
-      total: number;
-    };
-  };
-  totals: {
-    subtotal_excl: number;
-    vat_rate: number;
-    vat_amount: number;
-    total_incl: number;
-  };
-}
-
-export interface ProductPricingUpdate {
-  purchase_price?: number;
-  margin_percent?: number;
-  expected_hours?: number;
-  energy_label?: string;
-  cooling_capacity?: number;
-  heating_capacity?: number;
-  seer?: number;
-  scop?: number;
-  refrigerant?: string;
-  noise_indoor?: number;
-  noise_outdoor?: number;
-}
-
-export interface Project {
-  id: number;
-  title: string;
-  description: string | null;
-  category: string;
-  location: string | null;
-  completion_date: string | null;
-  photos: string[];
-  is_visible: boolean;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ServerStatus {
-  uptime: string;
-  uptimeSeconds: number;
-  cpu: { cores: number; model: string; loadAvg: string[] };
-  memory: { total: string; used: string; free: string; percent: number };
-  disk: { total: string; used: string; available: string; percent: number } | null;
-  fail2ban: { currentlyBanned: number; totalBanned: number; currentlyFailed: number; totalFailed: number; bannedIPs: string[] } | null;
-  ufw: { active: boolean; rules: string[] } | null;
-  services: { name: string; status: string }[];
-  hostname: string;
-  platform: string;
-  timestamp: string;
-}
-
-export interface VisitorStats {
-  total: number;
-  totalVisitors: number;
-  today: number;
-  todayVisitors: number;
-  thisWeek: number;
-  thisMonth: number;
-  daily: { date: string; views: number; visitors: number; requests: number }[];
-}
