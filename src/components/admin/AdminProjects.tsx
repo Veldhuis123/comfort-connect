@@ -9,36 +9,45 @@ import {
   Plus, Trash2, Eye, EyeOff, Pencil, Upload, X, Image as ImageIcon, MapPin, Calendar
 } from "lucide-react";
 
-// Compress image before upload (prevents mobile crashes with huge photos)
-const compressImage = (file: File, maxWidth = 1920, quality = 0.8): Promise<File> =>
-  new Promise((resolve) => {
-    // Skip non-image or already small files
-    if (!file.type.startsWith('image/') || file.size < 500_000) {
-      resolve(file);
-      return;
-    }
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxWidth / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob || blob.size >= file.size) { resolve(file); return; }
-          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-        },
-        'image/jpeg',
-        quality,
-      );
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
-    img.src = url;
-  });
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+// Compress image hard enough to stay below proxy/server limits on mobile
+const compressImage = async (file: File): Promise<File> => {
+  if (!file.type.startsWith('image/')) return file;
+
+  const makeCompressed = (maxWidth: number, quality: number) =>
+    new Promise<File>((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxWidth / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(file);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (!blob) return resolve(file);
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' }));
+        }, 'image/jpeg', quality);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(file);
+      };
+      img.src = url;
+    });
+
+  const attempts: Array<[number, number]> = [[1600, 0.75], [1280, 0.65], [960, 0.55], [800, 0.45]];
+  let current = file;
+  for (const [maxWidth, quality] of attempts) {
+    current = await makeCompressed(maxWidth, quality);
+    if (current.size <= MAX_UPLOAD_BYTES) return current;
+  }
+  return current;
+};
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -120,6 +129,9 @@ const AdminProjects = () => {
       for (const file of formFiles) {
         try {
           const compressed = await compressImage(file);
+          if (compressed.size > MAX_UPLOAD_BYTES) {
+            throw new Error('Foto blijft te groot na verkleinen. Kies een kleinere foto.');
+          }
           await api.uploadProjectImage(projectId, compressed);
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Onbekende uploadfout';
@@ -160,6 +172,9 @@ const AdminProjects = () => {
     try {
       const raw = fileInputRef.current.files[0];
       const file = await compressImage(raw);
+      if (file.size > MAX_UPLOAD_BYTES) {
+        throw new Error('Foto blijft te groot na verkleinen. Kies een kleinere foto.');
+      }
       await api.uploadProjectImage(projectId, file);
       fetchProjects();
     } catch (err) {
