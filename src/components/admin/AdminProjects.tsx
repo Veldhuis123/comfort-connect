@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { api, Project } from "@/lib/api";
+import { api, Project, getUploadUrl } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -331,7 +331,7 @@ const AdminProjects = () => {
                       <div className="flex gap-2 flex-wrap mt-2">
                         {photos.map((photo, i) => (
                           <div key={i} className="relative w-20 h-20 rounded-md overflow-hidden border border-border group">
-                            <img src={photo} alt={`Project foto ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                            <img src={getUploadUrl(photo)} alt={`Project foto ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
                             <button
                               onClick={() => handleRemovePhoto(project, i)}
                               className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
