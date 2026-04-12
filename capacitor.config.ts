@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'BRL 100 App',
   webDir: 'dist',
   server: {
-    url: 'https://www.rv-installatie.nl/brl',
+    url: 'https://rv-installatie.nl/brl',
     cleartext: true
   }
 };
