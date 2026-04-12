@@ -18,21 +18,38 @@ export const defaultCalculatorSettings: CalculatorSettings = {
   schema: { enabled: true, name: "Installatie" },
 };
 
+// In-flight promise dedup — prevents multiple parallel requests
+let inflightPromise: Promise<CalculatorSettings> | null = null;
+
 // Fetch settings from server (public endpoint)
 export const fetchCalculatorSettings = async (): Promise<CalculatorSettings> => {
-  try {
-    const data = await apiRequest<CalculatorSettings>('/settings/calculators');
-    return {
-      airco: { ...defaultCalculatorSettings.airco, ...data.airco },
-      pv: { ...defaultCalculatorSettings.pv, ...data.pv },
-      battery: { ...defaultCalculatorSettings.battery, ...data.battery },
-      unifi: { ...defaultCalculatorSettings.unifi, ...data.unifi },
-      charging: { ...defaultCalculatorSettings.charging, ...data.charging },
-      schema: { ...defaultCalculatorSettings.schema, ...data.schema },
-    };
-  } catch {
-    return defaultCalculatorSettings;
-  }
+  // Return cached if already fetched
+  if (cacheReady) return cachedSettings;
+
+  // Dedup: reuse in-flight request
+  if (inflightPromise) return inflightPromise;
+
+  inflightPromise = (async () => {
+    try {
+      const data = await apiRequest<CalculatorSettings>('/settings/calculators');
+      cachedSettings = {
+        airco: { ...defaultCalculatorSettings.airco, ...data.airco },
+        pv: { ...defaultCalculatorSettings.pv, ...data.pv },
+        battery: { ...defaultCalculatorSettings.battery, ...data.battery },
+        unifi: { ...defaultCalculatorSettings.unifi, ...data.unifi },
+        charging: { ...defaultCalculatorSettings.charging, ...data.charging },
+        schema: { ...defaultCalculatorSettings.schema, ...data.schema },
+      };
+      cacheReady = true;
+      return cachedSettings;
+    } catch {
+      return defaultCalculatorSettings;
+    } finally {
+      inflightPromise = null;
+    }
+  })();
+
+  return inflightPromise;
 };
 
 // Save settings to server (admin only)
@@ -41,16 +58,22 @@ export const saveCalculatorSettings = async (settings: CalculatorSettings): Prom
     method: 'PUT',
     body: JSON.stringify(settings),
   });
+  // Update cache after save
+  cachedSettings = settings;
+  cacheReady = true;
 };
 
 // Legacy compat - sync read from cache
 let cachedSettings: CalculatorSettings = defaultCalculatorSettings;
+let cacheReady = false;
 
 export const getCachedCalculatorSettings = (): CalculatorSettings => cachedSettings;
 
 export const refreshCalculatorSettings = async (): Promise<CalculatorSettings> => {
-  cachedSettings = await fetchCalculatorSettings();
-  return cachedSettings;
+  // Force refresh: reset cache
+  cacheReady = false;
+  inflightPromise = null;
+  return fetchCalculatorSettings();
 };
 
 // Deprecated — kept for backward compat during migration
