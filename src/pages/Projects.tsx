@@ -78,7 +78,7 @@ const Projects = () => {
                     <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                       {mainPhoto ? (
                         <img
-                          src={mainPhoto}
+                          src={getUploadUrl(mainPhoto)}
                           alt={project.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
@@ -113,7 +113,7 @@ const Projects = () => {
                         <div className="flex gap-1.5 mt-3">
                           {photos.slice(1, 4).map((photo, i) => (
                             <div key={i} className="w-12 h-12 rounded-md overflow-hidden border border-border">
-                              <img src={photo} alt="" className="w-full h-full object-cover" loading="lazy" />
+                              <img src={getUploadUrl(photo)} alt="" className="w-full h-full object-cover" loading="lazy" />
                             </div>
                           ))}
                           {photos.length > 4 && (
