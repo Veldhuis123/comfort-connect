@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,9 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  CheckCircle2, Circle, ChevronRight, ChevronLeft, 
-  ClipboardCheck, Thermometer, Wrench, FileCheck, 
+import {
+  CheckCircle2, Circle, ChevronRight, ChevronLeft,
+  ClipboardCheck, Thermometer, Wrench, FileCheck,
   AlertTriangle, QrCode, FileText, Settings
 } from "lucide-react";
 import {
@@ -28,6 +28,7 @@ import {
   REFRIGERANT_OPTIONS,
   InstallationType,
 } from "@/lib/installationsApi";
+import type { BRLReport } from "@/lib/brlTypes";
 import { generateCommissioningPDF } from "@/lib/commissioningPdfExport";
 import {
   type ToolRegistration,
@@ -39,7 +40,6 @@ import {
 } from "@/lib/installationTypes";
 import { CustomerSelector } from "./CustomerSelector";
 
-// Re-export types for backwards compatibility
 export type { ToolRegistration, CommissioningData, BRLChecklist };
 
 interface AircoInstallationWizardProps {
@@ -51,6 +51,9 @@ interface AircoInstallationWizardProps {
   onCancel: () => void;
   onCustomerCreated?: () => void;
   onCylinderUpdated?: () => void;
+  initialReport?: BRLReport;
+  onReportSave?: (report: BRLReport) => void;
+  onReportComplete?: (report: BRLReport) => void;
 }
 
 const steps = [
@@ -73,6 +76,73 @@ const installationTypeLabels: Record<InstallationType, string> = {
   overig: "Overig",
 };
 
+const createDefaultInstallationData = (): CreateInstallation => ({
+  customer_id: 0,
+  name: "",
+  installation_type: "airco",
+  brand: "",
+  model: "",
+  refrigerant_type: "R32",
+  refrigerant_gwp: REFRIGERANT_GWP["R32"],
+  refrigerant_charge_kg: 0,
+  installation_date: new Date().toISOString().split("T")[0],
+});
+
+const normalizePhone = (phone?: string | null) => (phone || "").replace(/\s+/g, "").trim();
+
+const findMatchingCustomerId = (customers: Customer[], report: BRLReport): number => {
+  const customerName = report.customer_data.customer_name?.trim().toLowerCase();
+  const customerContact = report.customer_data.customer_contact?.trim().toLowerCase();
+  const customerPhone = normalizePhone(report.customer_data.customer_phone);
+
+  const match = customers.find((customer) => {
+    const companyName = customer.company_name?.trim().toLowerCase();
+    const contactName = customer.contact_name?.trim().toLowerCase();
+    return (
+      (!!customerName && (companyName === customerName || contactName === customerName)) ||
+      (!!customerContact && contactName === customerContact) ||
+      (!!customerPhone && normalizePhone(customer.phone) === customerPhone)
+    );
+  });
+
+  return match?.id || 0;
+};
+
+const findMatchingTechnicianId = (technicians: Technician[], report: BRLReport): number | undefined => {
+  const numericId = Number(report.technician_id);
+  if (Number.isFinite(numericId) && technicians.some((technician) => technician.id === numericId)) {
+    return numericId;
+  }
+
+  const technicianName = report.customer_data.technician_name?.trim().toLowerCase();
+  const match = technicians.find((technician) => technician.name.trim().toLowerCase() === technicianName);
+  return match?.id;
+};
+
+const createInstallationDataFromReport = (
+  report: BRLReport,
+  customers: Customer[],
+  technicians: Technician[],
+): CreateInstallation => {
+  const refrigerantType = report.customer_data.refrigerant_type || "R32";
+  const standardCharge = parseFloat(report.customer_data.standard_charge || "0") || 0;
+  const additionalCharge = parseFloat(report.customer_data.additional_charge || "0") || 0;
+
+  return {
+    customer_id: findMatchingCustomerId(customers, report),
+    name: report.customer_data.installation_number || report.customer_data.customer_name || "",
+    installation_type: "airco",
+    brand: report.customer_data.brand || "",
+    model: report.customer_data.model_outdoor || "",
+    serial_number: report.customer_data.serial_outdoor || "",
+    refrigerant_type: refrigerantType,
+    refrigerant_gwp: REFRIGERANT_GWP[refrigerantType] || REFRIGERANT_GWP["R32"],
+    refrigerant_charge_kg: standardCharge + additionalCharge,
+    installation_date: report.customer_data.commissioning_date || report.customer_data.date || new Date().toISOString().split("T")[0],
+    installed_by_technician_id: findMatchingTechnicianId(technicians, report),
+  };
+};
+
 export const AircoInstallationWizard = ({
   customers,
   technicians,
@@ -82,26 +152,26 @@ export const AircoInstallationWizard = ({
   onCancel,
   onCustomerCreated,
   onCylinderUpdated,
+  initialReport,
+  onReportSave,
+  onReportComplete,
 }: AircoInstallationWizardProps) => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [checklist, setChecklist] = useState<BRLChecklist>(defaultChecklist);
-  const [commissioningData, setCommissioningData] = useState<CommissioningData>(defaultCommissioningData);
+  const isEditingReport = Boolean(initialReport);
+  const initialStep = initialReport ? Math.min(Math.max(initialReport.current_step + 1, 1), steps.length) : 1;
+  const [currentStep, setCurrentStep] = useState(initialStep);
+  const [checklist, setChecklist] = useState<BRLChecklist>(
+    initialReport ? { ...defaultChecklist, ...initialReport.checklist } : defaultChecklist,
+  );
+  const [commissioningData, setCommissioningData] = useState<CommissioningData>(
+    initialReport ? { ...defaultCommissioningData, ...initialReport.customer_data } : defaultCommissioningData,
+  );
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [generatedQrCode, setGeneratedQrCode] = useState<string | null>(null);
   const [selectedCylinderId, setSelectedCylinderId] = useState<number | null>(null);
   const [cylinderUsageKg, setCylinderUsageKg] = useState<number>(0);
-  
-  const [installationData, setInstallationData] = useState<CreateInstallation>({
-    customer_id: 0,
-    name: "",
-    installation_type: "airco",
-    brand: "",
-    model: "",
-    refrigerant_type: "R32",
-    refrigerant_gwp: REFRIGERANT_GWP["R32"],
-    refrigerant_charge_kg: 0,
-    installation_date: new Date().toISOString().split("T")[0],
-  });
+  const [installationData, setInstallationData] = useState<CreateInstallation>(
+    initialReport ? createInstallationDataFromReport(initialReport, customers, technicians) : createDefaultInstallationData(),
+  );
 
   const updateChecklist = (key: keyof BRLChecklist, value: boolean | string) => {
     setChecklist((prev) => ({ ...prev, [key]: value }));
@@ -118,13 +188,12 @@ export const AircoInstallationWizard = ({
     }));
   };
 
-  // Synchroniseer klant/monteur data
   const syncCustomerData = (customerId: number) => {
     const customer = customers.find((c) => c.id === customerId);
     if (customer) {
       setCommissioningData((prev) => ({
         ...prev,
-        customer_name: customer.company_name || "",
+        customer_name: customer.company_name || customer.contact_name || "",
         customer_contact: customer.contact_name,
         customer_address: `${customer.address_street || ""} ${customer.address_number || ""}`.trim(),
         customer_postal: customer.address_postal || "",
@@ -141,7 +210,7 @@ export const AircoInstallationWizard = ({
       setCommissioningData((prev) => ({
         ...prev,
         technician_name: technician.name,
-        technician_certificate: technician.fgas_certificate_number || "",
+        technician_certificate: technician.fgas_certificate_number || technician.brl_certificate_number || "",
       }));
     }
     setInstallationData((prev) => ({ ...prev, installed_by_technician_id: technicianId }));
@@ -150,7 +219,7 @@ export const AircoInstallationWizard = ({
   const getStepCompletion = (step: number): number => {
     const stepChecks: Record<number, (keyof BRLChecklist)[]> = {
       1: ["customer_informed", "location_inspected", "electrical_capacity_checked", "condensate_drain_planned"],
-      2: [], // Gereedschap - geen checklist items, alleen data entry
+      2: [],
       3: ["equipment_checked", "refrigerant_verified", "tools_calibrated", "safety_equipment_present"],
       4: ["outdoor_location_suitable", "outdoor_mounted_level", "outdoor_clearance_ok", "outdoor_vibration_dampened"],
       5: ["indoor_location_suitable", "indoor_mounted_level", "indoor_airflow_ok", "condensate_connected"],
@@ -158,14 +227,13 @@ export const AircoInstallationWizard = ({
       7: ["vacuum_achieved", "vacuum_held", "refrigerant_charged", "charge_recorded"],
       8: ["cooling_tested", "heating_tested", "controls_explained", "documentation_handed"],
     };
-    
-    // Voor stap 2 (gereedschap), check of minstens 1 gereedschap is ingevuld
+
     if (step === 2) {
       const tools = commissioningData.tools;
       const hasTools = tools.manometer_serial || tools.vacuum_pump_serial || tools.leak_detector_serial;
       return hasTools ? 100 : 0;
     }
-    
+
     const checks = stepChecks[step] || [];
     const completed = checks.filter((key) => checklist[key] === true).length;
     return checks.length > 0 ? Math.round((completed / checks.length) * 100) : 0;
@@ -173,35 +241,97 @@ export const AircoInstallationWizard = ({
 
   const isStepComplete = (step: number): boolean => getStepCompletion(step) === 100;
 
+  const buildReportFromWizardState = (): BRLReport | null => {
+    if (!initialReport) return null;
+
+    const selectedTechnician = technicians.find((technician) => technician.id === installationData.installed_by_technician_id);
+    const mergedCommissioningData: CommissioningData = {
+      ...commissioningData,
+      brand: installationData.brand,
+      model_outdoor: commissioningData.model_outdoor || installationData.model,
+      serial_outdoor: commissioningData.serial_outdoor || installationData.serial_number || "",
+      refrigerant_type: installationData.refrigerant_type || commissioningData.refrigerant_type || "R32",
+      commissioning_date: installationData.installation_date || commissioningData.commissioning_date,
+      installation_number: installationData.name || commissioningData.installation_number,
+      technician_name: selectedTechnician?.name || commissioningData.technician_name,
+      technician_certificate:
+        selectedTechnician?.fgas_certificate_number ||
+        selectedTechnician?.brl_certificate_number ||
+        commissioningData.technician_certificate,
+    };
+
+    const stepsCompleted = steps.map((step) => getStepCompletion(step.id) === 100);
+    const completedCount = stepsCompleted.filter(Boolean).length;
+
+    return {
+      ...initialReport,
+      updated_at: new Date().toISOString(),
+      current_step: currentStep - 1,
+      status: stepsCompleted.every(Boolean) ? "voltooid" : completedCount > 0 ? "bezig" : "concept",
+      steps_completed: stepsCompleted,
+      technician_id: installationData.installed_by_technician_id
+        ? String(installationData.installed_by_technician_id)
+        : initialReport.technician_id,
+      checklist,
+      customer_data: mergedCommissioningData,
+    };
+  };
+
+  useEffect(() => {
+    if (!isEditingReport) return;
+    const updatedReport = buildReportFromWizardState();
+    if (updatedReport) {
+      onReportSave?.(updatedReport);
+    }
+  }, [currentStep, checklist, commissioningData, installationData]);
+
   const canComplete = (): boolean => {
-    if (!installationData.customer_id || !installationData.name || 
-        !installationData.brand || !installationData.model ||
-        !installationData.refrigerant_charge_kg || !installationData.installed_by_technician_id) {
+    const hasCustomer = isEditingReport ? Boolean(installationData.customer_id || commissioningData.customer_name) : Boolean(installationData.customer_id);
+    const hasInstallationName = Boolean(installationData.name || commissioningData.installation_number);
+    const hasModel = Boolean(installationData.model || commissioningData.model_outdoor);
+
+    if (
+      !hasCustomer ||
+      !hasInstallationName ||
+      !installationData.brand ||
+      !hasModel ||
+      !installationData.refrigerant_charge_kg ||
+      !installationData.installed_by_technician_id
+    ) {
       return false;
     }
+
     return steps.every((_, i) => isStepComplete(i + 1));
   };
 
   const handleGeneratePDF = async () => {
-    // Combineer alle data
     const fullCommissioningData: CommissioningData = {
       ...commissioningData,
       brand: installationData.brand,
-      model_outdoor: installationData.model,
-      serial_outdoor: installationData.serial_number || "",
+      model_outdoor: commissioningData.model_outdoor || installationData.model,
+      serial_outdoor: commissioningData.serial_outdoor || installationData.serial_number || "",
       refrigerant_type: installationData.refrigerant_type || "R32",
       standard_charge: String(installationData.refrigerant_charge_kg || 0),
       commissioning_date: installationData.installation_date || new Date().toISOString().split("T")[0],
+      installation_number: installationData.name || commissioningData.installation_number,
     };
 
-    const { qrCodeDataUrl } = await generateCommissioningPDF(fullCommissioningData, installationData.name);
+    const { qrCodeDataUrl } = await generateCommissioningPDF(fullCommissioningData, installationData.name || commissioningData.installation_number);
     setGeneratedQrCode(qrCodeDataUrl);
     setShowPdfPreview(true);
   };
 
   const handleComplete = () => {
-    onComplete({ 
-      ...installationData, 
+    if (isEditingReport) {
+      const updatedReport = buildReportFromWizardState();
+      if (updatedReport) {
+        onReportComplete?.(updatedReport);
+      }
+      return;
+    }
+
+    onComplete({
+      ...installationData,
       brl_checklist: checklist,
       commissioning_data: commissioningData,
       selected_cylinder_id: selectedCylinderId || undefined,
