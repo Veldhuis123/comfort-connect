@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { createNewReport, deleteReport, getReports, mergeReports, saveReport, sa
 import { installationsApi } from "@/lib/installationsApi";
 import { useSearchParams } from "react-router-dom";
 
+const SYNC_INTERVAL_MS = 8000;
+
 const MobileBRL = () => {
   const { isAuthenticated, isLoading, login, logout } = useAuth();
   const [reports, setReports] = useState<BRLReport[]>([]);
@@ -20,6 +22,10 @@ const MobileBRL = () => {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+
+  // Sync lock to prevent concurrent syncs causing duplicates
+  const syncingRef = useRef(false);
+  const bootstrappedRef = useRef(false);
 
   const activeReportId = searchParams.get("report");
 
@@ -39,8 +45,12 @@ const MobileBRL = () => {
     setSearchParams({});
   }, [setSearchParams]);
 
+  /**
+   * Pull remote reports and merge with local — guarded by syncingRef
+   */
   const syncReportsFromServer = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || syncingRef.current) return;
+    syncingRef.current = true;
 
     try {
       const remoteReports = await installationsApi.getBRLReports();
@@ -48,42 +58,61 @@ const MobileBRL = () => {
       saveReports(merged);
       setReports(merged);
     } catch {
+      // Offline or error — just use local data
       setReports(getReports());
+    } finally {
+      syncingRef.current = false;
     }
   }, [isAuthenticated]);
 
+  /**
+   * Initial bootstrap: push local → server (collect werkbon numbers), then pull.
+   * Runs exactly once per auth session.
+   */
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
 
-    const bootstrapSync = async () => {
+    const bootstrap = async () => {
       const localReports = getReports();
       setReports(localReports);
 
-      // Save local reports to server; capture server-assigned werkbon numbers
-      await Promise.all(
+      // Push each local report to server; capture server-assigned werkbon numbers
+      const updatedLocals = await Promise.all(
         localReports.map(async (report) => {
           try {
             const result = await installationsApi.saveBRLReport(report);
             if (result.werkbon_number && result.werkbon_number !== report.customer_data.werkbon_number) {
-              report.customer_data.werkbon_number = result.werkbon_number;
-              saveReport(report);
+              const updated = {
+                ...report,
+                customer_data: { ...report.customer_data, werkbon_number: result.werkbon_number },
+              };
+              saveReport(updated);
+              return updated;
             }
-          } catch { /* ignore */ }
+          } catch { /* offline — skip */ }
+          return report;
         }),
       );
 
+      // Update state with werkbon numbers before full sync
+      setReports(updatedLocals);
+
+      // Now pull from server to get any reports from other devices
       await syncReportsFromServer();
     };
 
-    void bootstrapSync();
+    void bootstrap();
   }, [isAuthenticated, syncReportsFromServer]);
 
+  // Close wizard if report was deleted
   useEffect(() => {
     if (activeReportId && !activeReport && reports.length > 0) {
       closeWizard();
     }
   }, [activeReport, activeReportId, closeWizard, reports.length]);
 
+  // Periodic sync + visibility/focus sync
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -97,7 +126,7 @@ const MobileBRL = () => {
       if (document.visibilityState === "visible") {
         void syncReportsFromServer();
       }
-    }, 8000);
+    }, SYNC_INTERVAL_MS);
 
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", refresh);
@@ -176,7 +205,17 @@ const MobileBRL = () => {
     const report = createNewReport();
     saveReport(report);
     setReports(getReports());
-    void installationsApi.saveBRLReport(report).catch(() => null);
+    // Fire-and-forget: save to server & capture werkbon number
+    void installationsApi.saveBRLReport(report).then((result) => {
+      if (result.werkbon_number) {
+        const updated = {
+          ...report,
+          customer_data: { ...report.customer_data, werkbon_number: result.werkbon_number },
+        };
+        saveReport(updated);
+        setReports(prev => prev.map(r => r.id === updated.id ? updated : r));
+      }
+    }).catch(() => null);
     openWizard(report.id);
   };
 
@@ -193,7 +232,17 @@ const MobileBRL = () => {
   const handleSave = (updated: BRLReport) => {
     saveReport(updated);
     setReports(prev => prev.map(r => r.id === updated.id ? updated : r));
-    void installationsApi.saveBRLReport(updated).catch(() => null);
+    // Save to server & capture werkbon number if assigned
+    void installationsApi.saveBRLReport(updated).then((result) => {
+      if (result.werkbon_number && result.werkbon_number !== updated.customer_data.werkbon_number) {
+        const withWerkbon = {
+          ...updated,
+          customer_data: { ...updated.customer_data, werkbon_number: result.werkbon_number },
+        };
+        saveReport(withWerkbon);
+        setReports(prev => prev.map(r => r.id === withWerkbon.id ? withWerkbon : r));
+      }
+    }).catch(() => null);
   };
 
   const handleBack = () => {
