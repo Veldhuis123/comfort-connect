@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { api, Project } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +8,37 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Trash2, Eye, EyeOff, Pencil, Upload, X, Image as ImageIcon, MapPin, Calendar
 } from "lucide-react";
+
+// Compress image before upload (prevents mobile crashes with huge photos)
+const compressImage = (file: File, maxWidth = 1920, quality = 0.8): Promise<File> =>
+  new Promise((resolve) => {
+    // Skip non-image or already small files
+    if (!file.type.startsWith('image/') || file.size < 500_000) {
+      resolve(file);
+      return;
+    }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size >= file.size) { resolve(file); return; }
+          resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -47,9 +78,15 @@ const AdminProjects = () => {
 
   useEffect(() => { fetchProjects(); }, []);
 
+  // Store preview URLs separately so we can revoke them
+  const [formPreviews, setFormPreviews] = useState<string[]>([]);
+
   const resetForm = () => {
     setForm({ title: "", description: "", category: "airco", location: "", completion_date: "", is_visible: true, sort_order: 0 });
     setEditingProject(null);
+    // Clean up object URLs to prevent memory leaks
+    formPreviews.forEach(u => URL.revokeObjectURL(u));
+    setFormPreviews([]);
     setFormFiles([]);
   };
 
@@ -101,7 +138,8 @@ const AdminProjects = () => {
     if (!fileInputRef.current?.files?.length) return;
     setUploading(true);
     try {
-      const file = fileInputRef.current.files[0];
+      const raw = fileInputRef.current.files[0];
+      const file = await compressImage(raw);
       await api.uploadProjectImage(projectId, file);
       fetchProjects();
     } catch { alert("Fout bij uploaden foto"); }
@@ -157,10 +195,16 @@ const AdminProjects = () => {
                   accept="image/*"
                   multiple
                   className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      setFormFiles(prev => [...prev, ...Array.from(e.target.files!)]);
-                    }
+                  onChange={async (e) => {
+                    if (!e.target.files) return;
+                    const raw = Array.from(e.target.files);
+                    // Compress all images to prevent mobile crashes
+                    const compressed = await Promise.all(raw.map(f => compressImage(f)));
+                    const newPreviews = compressed.map(f => URL.createObjectURL(f));
+                    setFormFiles(prev => [...prev, ...compressed]);
+                    setFormPreviews(prev => [...prev, ...newPreviews]);
+                    // Reset input so same file can be re-selected
+                    if (formFileInputRef.current) formFileInputRef.current.value = '';
                   }}
                 />
                 <Button type="button" variant="outline" className="w-full" onClick={() => formFileInputRef.current?.click()}>
@@ -170,9 +214,13 @@ const AdminProjects = () => {
                   <div className="flex gap-2 flex-wrap mt-2">
                     {formFiles.map((file, i) => (
                       <div key={i} className="relative">
-                        <img src={URL.createObjectURL(file)} alt="" className="w-16 h-16 rounded object-cover border border-border" />
+                        <img src={formPreviews[i]} alt="" className="w-16 h-16 rounded object-cover border border-border" />
                         <button
-                          onClick={() => setFormFiles(prev => prev.filter((_, idx) => idx !== i))}
+                          onClick={() => {
+                            URL.revokeObjectURL(formPreviews[i]);
+                            setFormFiles(prev => prev.filter((_, idx) => idx !== i));
+                            setFormPreviews(prev => prev.filter((_, idx) => idx !== i));
+                          }}
                           className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
                         >
                           <X className="w-3 h-3" />
