@@ -69,6 +69,7 @@ import { generateCommissioningPDF } from "@/lib/commissioningPdfExport";
 import type { CommissioningData } from "@/lib/installationTypes";
 import type { BRLReport } from "@/lib/brlTypes";
 import { getReportProgress } from "@/lib/brlTypes";
+import { saveReport as saveBrlReport } from "@/lib/brlStorage";
 
 const installationTypeLabels: Record<InstallationType, string> = {
   airco: "Airco",
@@ -2259,6 +2260,19 @@ const AdminInstallations = () => {
                   <p className="text-sm">{selectedBrlReport.customer_email}</p>
                 </div>
               )}
+
+              <div className="pt-2 border-t">
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    saveBrlReport(selectedBrlReport);
+                    window.open(`/brl?report=${selectedBrlReport.id}`, '_blank');
+                  }}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Rapport verder invullen
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
