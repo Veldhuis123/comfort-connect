@@ -46,19 +46,6 @@ export const deleteReport = (id: string) => {
   saveReports(getReports().filter(r => r.id !== id));
 };
 
-const generateWerkbonNumber = (): string => {
-  const year = new Date().getFullYear();
-  const existing = getReports();
-  const yearPrefix = `WB-${year}-`;
-  const existingNumbers = existing
-    .map(r => r.customer_data.werkbon_number)
-    .filter(n => n.startsWith(yearPrefix))
-    .map(n => parseInt(n.replace(yearPrefix, ""), 10))
-    .filter(n => !isNaN(n));
-  const next = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
-  return `${yearPrefix}${String(next).padStart(3, "0")}`;
-};
-
 export const createNewReport = (): BRLReport => ({
   id: crypto.randomUUID(),
   created_at: new Date().toISOString(),
@@ -66,7 +53,7 @@ export const createNewReport = (): BRLReport => ({
   status: "concept",
   current_step: 0,
   steps_completed: [false, false, false, false, false, false, false, false],
-  customer_data: { ...defaultCommissioningData, werkbon_number: generateWerkbonNumber() },
+  customer_data: { ...defaultCommissioningData, werkbon_number: "" },
   technician_id: "",
   selected_tools: [],
   checklist: { ...defaultChecklist },
