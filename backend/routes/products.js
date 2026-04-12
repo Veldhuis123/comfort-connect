@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../config/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const logger = require('../services/logger');
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024 // 10MB
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
@@ -44,21 +45,14 @@ const upload = multer({
 
 // Valid categories
 const validCategories = [
-  'airco', 
-  'unifi_router', 
-  'unifi_switch', 
-  'unifi_accesspoint', 
-  'unifi_camera', 
-  'battery', 
-  'charger',
-  'solar'
+  'airco', 'unifi_router', 'unifi_switch', 'unifi_accesspoint', 
+  'unifi_camera', 'battery', 'charger', 'solar'
 ];
 
 // ============================================
 // PUBLIC ENDPOINTS
 // ============================================
 
-// Get all active products (optionally filter by category)
 router.get('/', async (req, res) => {
   try {
     const { category } = req.query;
@@ -67,7 +61,6 @@ router.get('/', async (req, res) => {
     const params = [];
     
     if (category) {
-      // Support multiple categories (comma-separated)
       const categories = category.split(',').filter(c => validCategories.includes(c));
       if (categories.length > 0) {
         query += ` AND category IN (${categories.map(() => '?').join(',')})`;
@@ -79,7 +72,6 @@ router.get('/', async (req, res) => {
     
     const [products] = await db.query(query, params);
     
-    // Parse JSON fields
     const parsedProducts = products.map(p => ({
       ...p,
       specs: typeof p.specs === 'string' ? JSON.parse(p.specs) : p.specs,
@@ -88,19 +80,15 @@ router.get('/', async (req, res) => {
     
     res.json(parsedProducts);
   } catch (error) {
-    console.error('Error fetching products:', error);
+    logger.error('PRODUCTS', 'Error fetching products', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
 
-// Get single product by ID
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [products] = await db.query(
-      'SELECT * FROM products WHERE id = ?',
-      [id]
-    );
+    const [products] = await db.query('SELECT * FROM products WHERE id = ?', [id]);
     
     if (products.length === 0) {
       return res.status(404).json({ error: 'Product niet gevonden' });
@@ -112,16 +100,15 @@ router.get('/:id', async (req, res) => {
     
     res.json(product);
   } catch (error) {
-    console.error('Error fetching product:', error);
+    logger.error('PRODUCTS', 'Error fetching product', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
 
 // ============================================
-// ADMIN ENDPOINTS (require authentication)
+// ADMIN ENDPOINTS
 // ============================================
 
-// Get all products (including inactive) - admin
 router.get('/admin/all', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { category } = req.query;
@@ -146,30 +133,23 @@ router.get('/admin/all', authMiddleware, adminMiddleware, async (req, res) => {
     
     res.json(parsedProducts);
   } catch (error) {
-    console.error('Error fetching admin products:', error);
+    logger.error('PRODUCTS', 'Error fetching admin products', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
 
-// Create new product - admin
 router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { 
-      id, name, brand, category, base_price, 
-      description, specs, features, is_active, sort_order 
-    } = req.body;
+    const { id, name, brand, category, base_price, description, specs, features, is_active, sort_order } = req.body;
     
-    // Validate required fields
     if (!id || !name || !brand || !category || base_price === undefined) {
       return res.status(400).json({ error: 'Vereiste velden ontbreken' });
     }
     
-    // Validate category
     if (!validCategories.includes(category)) {
       return res.status(400).json({ error: 'Ongeldige categorie' });
     }
     
-    // Check if ID already exists
     const [existing] = await db.query('SELECT id FROM products WHERE id = ?', [id]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Product ID bestaat al' });
@@ -178,90 +158,59 @@ router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
     await db.query(
       `INSERT INTO products (id, name, brand, category, base_price, description, specs, features, is_active, sort_order) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
-        name,
-        brand,
-        category,
-        base_price,
-        description || null,
-        JSON.stringify(specs || {}),
-        JSON.stringify(features || []),
-        is_active !== false,
-        sort_order || 0
-      ]
+      [id, name, brand, category, base_price, description || null,
+       JSON.stringify(specs || {}), JSON.stringify(features || []),
+       is_active !== false, sort_order || 0]
     );
     
     res.status(201).json({ message: 'Product aangemaakt', id });
   } catch (error) {
-    console.error('Error creating product:', error);
+    logger.error('PRODUCTS', 'Error creating product', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
 
-// Update product - admin
 router.put('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      name, brand, category, base_price, 
-      description, specs, features, is_active, sort_order 
-    } = req.body;
+    const { name, brand, category, base_price, description, specs, features, is_active, sort_order } = req.body;
     
-    // Check if product exists
     const [existing] = await db.query('SELECT id FROM products WHERE id = ?', [id]);
     if (existing.length === 0) {
       return res.status(404).json({ error: 'Product niet gevonden' });
     }
     
-    // Validate category if provided
     if (category && !validCategories.includes(category)) {
       return res.status(400).json({ error: 'Ongeldige categorie' });
     }
     
     await db.query(
       `UPDATE products SET 
-        name = COALESCE(?, name),
-        brand = COALESCE(?, brand),
-        category = COALESCE(?, category),
-        base_price = COALESCE(?, base_price),
-        description = COALESCE(?, description),
-        specs = COALESCE(?, specs),
-        features = COALESCE(?, features),
-        is_active = COALESCE(?, is_active),
+        name = COALESCE(?, name), brand = COALESCE(?, brand),
+        category = COALESCE(?, category), base_price = COALESCE(?, base_price),
+        description = COALESCE(?, description), specs = COALESCE(?, specs),
+        features = COALESCE(?, features), is_active = COALESCE(?, is_active),
         sort_order = COALESCE(?, sort_order)
        WHERE id = ?`,
-      [
-        name,
-        brand,
-        category,
-        base_price,
-        description,
-        specs ? JSON.stringify(specs) : null,
-        features ? JSON.stringify(features) : null,
-        is_active,
-        sort_order,
-        id
-      ]
+      [name, brand, category, base_price, description,
+       specs ? JSON.stringify(specs) : null, features ? JSON.stringify(features) : null,
+       is_active, sort_order, id]
     );
     
     res.json({ message: 'Product bijgewerkt' });
   } catch (error) {
-    console.error('Error updating product:', error);
+    logger.error('PRODUCTS', 'Error updating product', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
 
-// Delete product - admin
 router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Get product to check for image
     const [products] = await db.query('SELECT image_url FROM products WHERE id = ?', [id]);
     
     if (products.length > 0 && products[0].image_url) {
-      // Try to delete image file
       const imagePath = products[0].image_url;
       if (imagePath.startsWith('/uploads/') && fs.existsSync('.' + imagePath)) {
         fs.unlinkSync('.' + imagePath);
@@ -272,34 +221,26 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     
     res.json({ message: 'Product verwijderd' });
   } catch (error) {
-    console.error('Error deleting product:', error);
+    logger.error('PRODUCTS', 'Error deleting product', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
 
-// Toggle product active status - admin
 router.patch('/:id/toggle', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     
-    await db.query(
-      'UPDATE products SET is_active = NOT is_active WHERE id = ?',
-      [id]
-    );
+    await db.query('UPDATE products SET is_active = NOT is_active WHERE id = ?', [id]);
     
     const [products] = await db.query('SELECT is_active FROM products WHERE id = ?', [id]);
     
-    res.json({ 
-      message: 'Status bijgewerkt', 
-      is_active: products[0]?.is_active 
-    });
+    res.json({ message: 'Status bijgewerkt', is_active: products[0]?.is_active });
   } catch (error) {
-    console.error('Error toggling product:', error);
+    logger.error('PRODUCTS', 'Error toggling product', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
 
-// Upload product image - admin
 router.post('/:id/image', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -309,43 +250,31 @@ router.post('/:id/image', authMiddleware, adminMiddleware, upload.single('image'
       return res.status(400).json({ error: 'Geen afbeelding geüpload' });
     }
     
-    // Check if product exists
     const [products] = await db.query('SELECT id, image_url FROM products WHERE id = ?', [id]);
     if (products.length === 0) {
-      // Delete uploaded file
       fs.unlinkSync(file.path);
       return res.status(404).json({ error: 'Product niet gevonden' });
     }
     
-    // Delete old image if exists
     const oldImage = products[0].image_url;
     if (oldImage && oldImage.startsWith('/uploads/') && fs.existsSync('.' + oldImage)) {
       fs.unlinkSync('.' + oldImage);
     }
     
-    // Update product with new image path
     const imageUrl = `/uploads/products/${file.filename}`;
-    await db.query(
-      'UPDATE products SET image_url = ? WHERE id = ?',
-      [imageUrl, id]
-    );
+    await db.query('UPDATE products SET image_url = ? WHERE id = ?', [imageUrl, id]);
     
-    res.json({ 
-      message: 'Afbeelding geüpload', 
-      image_url: imageUrl 
-    });
+    res.json({ message: 'Afbeelding geüpload', image_url: imageUrl });
   } catch (error) {
-    console.error('Error uploading product image:', error);
+    logger.error('PRODUCTS', 'Error uploading image', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
 
-// Delete product image - admin
 router.delete('/:id/image', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Get current image
     const [products] = await db.query('SELECT image_url FROM products WHERE id = ?', [id]);
     if (products.length === 0) {
       return res.status(404).json({ error: 'Product niet gevonden' });
@@ -356,20 +285,18 @@ router.delete('/:id/image', authMiddleware, adminMiddleware, async (req, res) =>
       fs.unlinkSync('.' + imageUrl);
     }
     
-    // Clear image_url in database
     await db.query('UPDATE products SET image_url = NULL WHERE id = ?', [id]);
     
     res.json({ message: 'Afbeelding verwijderd' });
   } catch (error) {
-    console.error('Error deleting product image:', error);
+    logger.error('PRODUCTS', 'Error deleting image', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
 
-// Update sort order for multiple products - admin
 router.patch('/sort', authMiddleware, adminMiddleware, async (req, res) => {
   try {
-    const { products } = req.body; // Array of { id, sort_order }
+    const { products } = req.body;
     
     if (!Array.isArray(products)) {
       return res.status(400).json({ error: 'Ongeldige data' });
@@ -383,7 +310,7 @@ router.patch('/sort', authMiddleware, adminMiddleware, async (req, res) => {
     
     res.json({ message: 'Volgorde bijgewerkt' });
   } catch (error) {
-    console.error('Error updating sort order:', error);
+    logger.error('PRODUCTS', 'Error updating sort order', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
