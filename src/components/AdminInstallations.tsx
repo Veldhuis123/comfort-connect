@@ -2259,6 +2259,21 @@ const AdminInstallations = () => {
                   <p className="text-sm">{selectedBrlReport.customer_email}</p>
                 </div>
               )}
+
+              <div className="pt-2 border-t">
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    // Save report to localStorage so the BRL page can pick it up
+                    const { saveReport } = require("@/lib/brlStorage");
+                    saveReport(selectedBrlReport);
+                    window.open(`/brl?report=${selectedBrlReport.id}`, '_blank');
+                  }}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Rapport verder invullen
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
