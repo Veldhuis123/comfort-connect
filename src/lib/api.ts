@@ -258,7 +258,10 @@ export const api = {
       body: formData,
       credentials: 'include',
     });
-    if (!response.ok) throw new Error('Upload mislukt');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Upload mislukt (${response.status})`);
+    }
     return response.json() as Promise<{ image_url: string; photos: string[] }>;
   },
 };
