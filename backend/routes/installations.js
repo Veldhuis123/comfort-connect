@@ -55,6 +55,28 @@ router.put('/brl-reports/:reportId', authMiddleware, async (req, res) => {
   const report = { ...req.body, id: reportId };
 
   try {
+    // Auto-generate werkbon number server-side if empty
+    let werkbonNumber = report.customer_data?.werkbon_number || null;
+    if (!werkbonNumber) {
+      const year = new Date().getFullYear();
+      const prefix = `WB-${year}-`;
+      const [maxRows] = await pool.query(
+        `SELECT workbon_number FROM brl_reports
+         WHERE workbon_number LIKE ? AND deleted_at IS NULL
+         ORDER BY workbon_number DESC LIMIT 1`,
+        [`${prefix}%`]
+      );
+      let next = 1;
+      if (maxRows.length > 0 && maxRows[0].workbon_number) {
+        const num = parseInt(maxRows[0].workbon_number.replace(prefix, ''), 10);
+        if (!isNaN(num)) next = num + 1;
+      }
+      werkbonNumber = `${prefix}${String(next).padStart(3, '0')}`;
+      // Write back into report data so it persists in JSON
+      if (!report.customer_data) report.customer_data = {};
+      report.customer_data.werkbon_number = werkbonNumber;
+    }
+
     await pool.query(
       `INSERT INTO brl_reports (
         report_uuid,
@@ -80,12 +102,14 @@ router.put('/brl-reports/:reportId', authMiddleware, async (req, res) => {
         req.user.id,
         req.user.id,
         report.customer_data?.customer_name || null,
-        report.customer_data?.werkbon_number || null,
+        werkbonNumber,
         report.status || 'concept',
         typeof report.current_step === 'number' ? report.current_step : 0,
         JSON.stringify(report),
       ]
     );
+
+    res.json({ success: true, id: reportId, werkbon_number: werkbonNumber });
 
     res.json({ success: true, id: reportId });
   } catch (err) {
