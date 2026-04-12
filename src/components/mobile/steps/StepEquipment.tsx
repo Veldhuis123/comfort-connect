@@ -22,8 +22,8 @@ const StepEquipment = ({ data, setData, onComplete }: Props) => {
   };
 
   const onDetected = useCallback((target: string, value: string) => {
-    setData(prev => ({ ...prev, [target]: value }));
-  }, [setData]);
+    updateField(target as keyof CommissioningData, value);
+  }, [data, setData]);
 
   const { scanning, videoRef, startScanning, stopScanning } = useBarcodeScanner(onDetected);
 

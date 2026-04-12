@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 export function useBarcodeScanner(onDetected: (target: string, value: string) => void) {
   const { toast } = useToast();
   const [scanning, setScanning] = useState(false);
-  const [scanTarget, setScanTarget] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
@@ -20,7 +19,6 @@ export function useBarcodeScanner(onDetected: (target: string, value: string) =>
       streamRef.current = null;
     }
     setScanning(false);
-    setScanTarget(null);
   }, []);
 
   useEffect(() => {
@@ -31,9 +29,7 @@ export function useBarcodeScanner(onDetected: (target: string, value: string) =>
   }, []);
 
   const startScanning = useCallback(async (target: string) => {
-    setScanTarget(target);
     setScanning(true);
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
@@ -67,5 +63,5 @@ export function useBarcodeScanner(onDetected: (target: string, value: string) =>
     }
   }, [onDetected, toast, stopScanning]);
 
-  return { scanning, scanTarget, videoRef, startScanning, stopScanning };
+  return { scanning, videoRef, startScanning, stopScanning };
 }

@@ -24,8 +24,8 @@ const StepMateriaal = ({ data, setData, checklist, setChecklist, onComplete }: P
   const updateField = (key: keyof CommissioningData, value: string) => { setData({ ...data, [key]: value }); };
 
   const onDetected = useCallback((target: string, value: string) => {
-    setData(prev => ({ ...prev, [target]: value }));
-  }, [setData]);
+    updateField(target as keyof CommissioningData, value);
+  }, [data, setData]);
 
   const { scanning, videoRef, startScanning, stopScanning } = useBarcodeScanner(onDetected);
 
