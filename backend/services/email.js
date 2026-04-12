@@ -1,26 +1,25 @@
 const nodemailer = require('nodemailer');
+const logger = require('./logger');
 
-// Create transporter with detailed logging
+// Create transporter
 const createTransporter = () => {
   const config = {
     host: process.env.SMTP_HOST || 'smtp.transip.email',
     port: parseInt(process.env.SMTP_PORT) || 465,
-    secure: process.env.SMTP_SECURE !== 'false', // Default to true for TransIP
+    secure: process.env.SMTP_SECURE !== 'false',
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
-    // Enable debug logging
-    logger: process.env.NODE_ENV !== 'production',
-    debug: process.env.NODE_ENV !== 'production',
+    logger: false,
+    debug: false,
   };
 
-  console.log('📧 SMTP Config:', {
+  logger.info('EMAIL', 'SMTP transporter created', {
     host: config.host,
     port: config.port,
     secure: config.secure,
-    user: config.auth.user ? config.auth.user.substring(0, 5) + '...' : 'NOT SET',
-    pass: config.auth.pass ? '***SET***' : 'NOT SET'
+    userConfigured: !!config.auth.user,
   });
 
   return nodemailer.createTransport(config);
@@ -28,19 +27,15 @@ const createTransporter = () => {
 
 // Send email
 const sendEmail = async ({ to, subject, html, text }) => {
-  // Check if SMTP is configured
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.error('❌ SMTP not configured: SMTP_USER or SMTP_PASS missing');
+    logger.warn('EMAIL', 'SMTP not configured');
     return { success: false, error: 'SMTP not configured' };
   }
 
   try {
     const transporter = createTransporter();
     
-    // Verify connection first
-    console.log('📧 Verifying SMTP connection...');
     await transporter.verify();
-    console.log('✅ SMTP connection verified');
     
     const mailOptions = {
       from: process.env.EMAIL_FROM || 'R. Veldhuis Installatie <info@rv-installatie.nl>',
@@ -50,13 +45,11 @@ const sendEmail = async ({ to, subject, html, text }) => {
       text,
     };
 
-    console.log('📧 Sending email to:', to, 'Subject:', subject);
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully:', info.messageId);
+    logger.info('EMAIL', 'Email sent', { to, subject, messageId: info.messageId });
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('❌ Email error:', error.code, '-', error.message);
-    console.error('❌ Full error:', error);
+    logger.error('EMAIL', 'Send failed', { to, subject, errorCode: error.code, error: error.message });
     return { success: false, error: error.message };
   }
 };

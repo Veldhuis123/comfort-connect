@@ -1,6 +1,8 @@
 const express = require('express');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 
+const logger = require('../services/logger');
+
 const router = express.Router();
 
 // e-Boekhouden REST API v1 configuration
@@ -103,8 +105,6 @@ router.get('/test', authMiddleware, adminMiddleware, async (req, res) => {
     }
 
     // Try to create session first
-    console.log('Testing e-Boekhouden connection...');
-    console.log('API Token present:', !!apiToken, 'Length:', apiToken.length);
     
     const sessionResponse = await fetch(`${EBOEKHOUDEN_API_URL}/session`, {
       method: 'POST',
@@ -118,8 +118,6 @@ router.get('/test', authMiddleware, adminMiddleware, async (req, res) => {
     });
 
     const sessionData = await sessionResponse.json().catch(() => ({}));
-    console.log('Session response status:', sessionResponse.status);
-    console.log('Session response:', JSON.stringify(sessionData));
 
     if (!sessionResponse.ok) {
       return res.status(500).json({ 
@@ -152,7 +150,6 @@ router.get('/test', authMiddleware, adminMiddleware, async (req, res) => {
     });
 
     const testData = await testResponse.json().catch(() => ({}));
-    console.log('Test API call status:', testResponse.status);
 
     if (!testResponse.ok) {
       return res.status(500).json({ 
@@ -168,10 +165,9 @@ router.get('/test', authMiddleware, adminMiddleware, async (req, res) => {
       relaties: testData.count || 0
     });
   } catch (error) {
-    console.error('e-Boekhouden test error:', error);
+    logger.error('EBOEKHOUDEN', 'Test connection error', { error: error.message });
     res.status(500).json({ 
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -184,7 +180,7 @@ router.get('/administraties', authMiddleware, adminMiddleware, async (req, res) 
     const administrations = await apiRequest('GET', '/administration');
     res.json(administrations);
   } catch (error) {
-    console.error('Get administraties error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching administraties', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -195,7 +191,6 @@ router.get('/administraties', authMiddleware, adminMiddleware, async (req, res) 
 
 // Get all relations (customers) - WITH FULL DETAILS
 router.get('/relaties', authMiddleware, adminMiddleware, async (req, res) => {
-  console.log('=== GET /relaties called ===');
   try {
     const { limit = 100, offset = 0, name, code, type } = req.query;
     
@@ -204,9 +199,7 @@ router.get('/relaties', authMiddleware, adminMiddleware, async (req, res) => {
     if (code) endpoint += `&code=${encodeURIComponent(code)}`;
     if (type) endpoint += `&type=${type}`; // B = Bedrijf, P = Persoon
     
-    console.log('Fetching from e-Boekhouden:', endpoint);
     const data = await apiRequest('GET', endpoint);
-    console.log('e-Boekhouden response items count:', Array.isArray(data) ? data.length : (data.items?.length || 'unknown'));
     
     // Handle both array and object with items property
     const items = Array.isArray(data) ? data : (data.items || data.data || []);
@@ -224,7 +217,6 @@ router.get('/relaties', authMiddleware, adminMiddleware, async (req, res) => {
           
           // Log first detail for debugging
           if (i === 0 && batch.indexOf(item) === 0) {
-            console.log('First relation detail:', JSON.stringify(detail, null, 2));
           }
           
           // API velden: phoneNumber, mobilePhoneNumber, emailAddress
@@ -257,7 +249,7 @@ router.get('/relaties', authMiddleware, adminMiddleware, async (req, res) => {
             actief: detail.inactive !== true
           };
         } catch (err) {
-          console.error(`Failed to fetch details for relation ${item.id}:`, err.message);
+          logger.warn('EBOEKHOUDEN', `Failed to fetch relation ${item.id}`, { error: err.message });
           // Return basic info if detail fetch fails
           return {
             id: item.id,
@@ -283,7 +275,7 @@ router.get('/relaties', authMiddleware, adminMiddleware, async (req, res) => {
     
     res.json(allDetails);
   } catch (error) {
-    console.error('Get relaties error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching relaties', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -312,7 +304,7 @@ router.get('/relaties/:id', authMiddleware, adminMiddleware, async (req, res) =>
       notities: data.note
     });
   } catch (error) {
-    console.error('Get relatie error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching relatie', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -369,7 +361,7 @@ router.post('/relaties', authMiddleware, adminMiddleware, async (req, res) => {
       message: 'Relatie toegevoegd aan e-Boekhouden' 
     });
   } catch (error) {
-    console.error('Add relatie error:', error);
+    logger.error('EBOEKHOUDEN', 'Error adding relatie', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -414,7 +406,7 @@ router.patch('/relaties/:id', authMiddleware, adminMiddleware, async (req, res) 
     
     res.json({ success: true, message: 'Relatie bijgewerkt' });
   } catch (error) {
-    console.error('Update relatie error:', error);
+    logger.error('EBOEKHOUDEN', 'Error updating relatie', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -450,7 +442,7 @@ router.get('/producten', authMiddleware, adminMiddleware, async (req, res) => {
     
     res.json(products);
   } catch (error) {
-    console.error('Get producten error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching producten', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -461,7 +453,7 @@ router.get('/producten/groepen', authMiddleware, adminMiddleware, async (req, re
     const data = await apiRequest('GET', '/product/groups');
     res.json(data);
   } catch (error) {
-    console.error('Get product groepen error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching product groepen', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -484,7 +476,7 @@ router.get('/producten/:id', authMiddleware, adminMiddleware, async (req, res) =
       actief: data.isActive
     });
   } catch (error) {
-    console.error('Get product error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching product', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -546,7 +538,7 @@ router.post('/producten', authMiddleware, adminMiddleware, async (req, res) => {
       message: 'Product toegevoegd aan e-Boekhouden' 
     });
   } catch (error) {
-    console.error('Add product error:', error);
+    logger.error('EBOEKHOUDEN', 'Error adding product', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -583,7 +575,7 @@ router.patch('/producten/:id', authMiddleware, adminMiddleware, async (req, res)
     
     res.json({ success: true, message: 'Product bijgewerkt' });
   } catch (error) {
-    console.error('Update product error:', error);
+    logger.error('EBOEKHOUDEN', 'Error updating product', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -618,7 +610,7 @@ router.get('/offertes', authMiddleware, adminMiddleware, async (req, res) => {
     
     res.json(quotes);
   } catch (error) {
-    console.error('Get offertes error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching offertes', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -747,7 +739,6 @@ router.post('/offertes', authMiddleware, adminMiddleware, async (req, res) => {
       );
     }
 
-    console.log(`Quote ${quoteNumber} saved locally (ID: ${quoteId})`);
     
     res.json({ 
       success: true, 
@@ -759,7 +750,7 @@ router.post('/offertes', authMiddleware, adminMiddleware, async (req, res) => {
       message: 'Offerte lokaal opgeslagen. Je kunt deze later overnemen in e-Boekhouden.' 
     });
   } catch (error) {
-    console.error('Add offerte error:', error);
+    logger.error('EBOEKHOUDEN', 'Error adding offerte', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -797,7 +788,7 @@ router.get('/facturen', authMiddleware, adminMiddleware, async (req, res) => {
     
     res.json(invoices);
   } catch (error) {
-    console.error('Get facturen error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching facturen', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -826,7 +817,7 @@ router.get('/facturen/:id', authMiddleware, adminMiddleware, async (req, res) =>
       })) || []
     });
   } catch (error) {
-    console.error('Get factuur error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching factuur', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -837,7 +828,7 @@ router.get('/facturen/openstaand/all', authMiddleware, adminMiddleware, async (r
     const data = await apiRequest('GET', '/mutation/invoice/outstanding');
     res.json(data);
   } catch (error) {
-    console.error('Get openstaande facturen error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching outstanding', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -898,7 +889,7 @@ router.post('/facturen', authMiddleware, adminMiddleware, async (req, res) => {
       message: 'Factuur toegevoegd aan e-Boekhouden' 
     });
   } catch (error) {
-    console.error('Add factuur error:', error);
+    logger.error('EBOEKHOUDEN', 'Error adding factuur', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -927,7 +918,7 @@ router.get('/grootboek', authMiddleware, adminMiddleware, async (req, res) => {
     
     res.json(ledgers);
   } catch (error) {
-    console.error('Get grootboek error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching grootboek', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -938,7 +929,7 @@ router.get('/grootboek/:id/saldo', authMiddleware, adminMiddleware, async (req, 
     const data = await apiRequest('GET', `/ledger/${req.params.id}/balance`);
     res.json(data);
   } catch (error) {
-    console.error('Get grootboek saldo error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching saldo', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -953,7 +944,7 @@ router.get('/kostplaatsen', authMiddleware, adminMiddleware, async (req, res) =>
     const data = await apiRequest('GET', '/costcenter');
     res.json(data);
   } catch (error) {
-    console.error('Get kostplaatsen error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching kostplaatsen', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -974,7 +965,7 @@ router.post('/kostplaatsen', authMiddleware, adminMiddleware, async (req, res) =
     
     res.json({ success: true, id: result.id, message: 'Kostplaats toegevoegd' });
   } catch (error) {
-    console.error('Add kostplaats error:', error);
+    logger.error('EBOEKHOUDEN', 'Error adding kostplaats', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -989,7 +980,7 @@ router.get('/eenheden', authMiddleware, adminMiddleware, async (req, res) => {
     const data = await apiRequest('GET', '/unit');
     res.json(data);
   } catch (error) {
-    console.error('Get eenheden error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching eenheden', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1004,7 +995,7 @@ router.get('/sjablonen/facturen', authMiddleware, adminMiddleware, async (req, r
     const data = await apiRequest('GET', '/invoicetemplate');
     res.json(data);
   } catch (error) {
-    console.error('Get factuur sjablonen error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching factuur sjablonen', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1015,7 +1006,7 @@ router.get('/sjablonen/email', authMiddleware, adminMiddleware, async (req, res)
     const data = await apiRequest('GET', '/emailtemplate');
     res.json(data);
   } catch (error) {
-    console.error('Get email sjablonen error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching email sjablonen', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1038,7 +1029,7 @@ router.get('/boekingen', authMiddleware, adminMiddleware, async (req, res) => {
     const data = await apiRequest('GET', endpoint);
     res.json(data);
   } catch (error) {
-    console.error('Get boekingen error:', error);
+    logger.error('EBOEKHOUDEN', 'Error fetching boekingen', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1082,7 +1073,7 @@ router.post('/boekingen', authMiddleware, adminMiddleware, async (req, res) => {
     
     res.json({ success: true, id: result.id, message: 'Boeking toegevoegd' });
   } catch (error) {
-    console.error('Add boeking error:', error);
+    logger.error('EBOEKHOUDEN', 'Error adding boeking', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1137,7 +1128,7 @@ router.post('/sync/quote/:quoteId', authMiddleware, async (req, res) => {
       message: 'Klant gesynchroniseerd naar e-Boekhouden'
     });
   } catch (error) {
-    console.error('Sync quote error:', error);
+    logger.error('EBOEKHOUDEN', 'Error syncing quote', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1256,7 +1247,6 @@ router.post('/local-quotes', authMiddleware, async (req, res) => {
       );
     }
 
-    console.log(`Manual quote ${quoteNumber} created (ID: ${quoteId})`);
     
     res.status(201).json({ 
       success: true, 
@@ -1265,7 +1255,7 @@ router.post('/local-quotes', authMiddleware, async (req, res) => {
       message: 'Offerte aangemaakt' 
     });
   } catch (error) {
-    console.error('Create local quote error:', error);
+    logger.error('QUOTES_LOCAL', 'Error creating', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1310,7 +1300,7 @@ router.get('/local-quotes', authMiddleware, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Get local quotes error:', error);
+    logger.error('QUOTES_LOCAL', 'Error fetching', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1337,7 +1327,7 @@ router.get('/local-quotes/:id', authMiddleware, async (req, res) => {
     
     res.json({ ...quotes[0], items });
   } catch (error) {
-    console.error('Get local quote error:', error);
+    logger.error('QUOTES_LOCAL', 'Error fetching single', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1372,7 +1362,7 @@ router.patch('/local-quotes/:id/status', authMiddleware, async (req, res) => {
     
     res.json({ success: true, message: 'Status bijgewerkt' });
   } catch (error) {
-    console.error('Update local quote status error:', error);
+    logger.error('QUOTES_LOCAL', 'Error updating status', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1400,7 +1390,7 @@ router.patch('/local-quotes/:id', authMiddleware, async (req, res) => {
     
     res.json({ success: true, message: 'Offerte bijgewerkt' });
   } catch (error) {
-    console.error('Update local quote error:', error);
+    logger.error('QUOTES_LOCAL', 'Error updating', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1416,7 +1406,7 @@ router.delete('/local-quotes/:id', authMiddleware, async (req, res) => {
     
     res.json({ success: true, message: 'Offerte verwijderd' });
   } catch (error) {
-    console.error('Delete local quote error:', error);
+    logger.error('QUOTES_LOCAL', 'Error deleting', { error: error.message });
     res.status(500).json({ error: error.message });
   }
 });
@@ -1458,7 +1448,7 @@ router.get('/local-quotes/public/:token', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Public quote fetch error:', error);
+    logger.error('QUOTES_LOCAL', 'Error fetching public', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -1501,7 +1491,7 @@ router.post('/local-quotes/public/:token/accept', async (req, res) => {
 
     res.json({ success: true, message: 'Offerte geaccepteerd' });
   } catch (error) {
-    console.error('Quote accept error:', error);
+    logger.error('QUOTES_LOCAL', 'Error accepting', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });

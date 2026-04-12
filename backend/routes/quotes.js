@@ -3,13 +3,14 @@ const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const { sendQuoteNotification, sendQuoteConfirmation } = require('../services/email');
+const logger = require('../services/logger');
 
 const router = express.Router();
 
 // Strikte rate limiter voor publieke offerte aanvragen
 const quoteSubmitLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 uur
-  max: 5, // max 5 offertes per uur per IP
+  windowMs: 60 * 60 * 1000,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Te veel offerteaanvragen. Probeer het later opnieuw.' },
@@ -30,6 +31,7 @@ router.get('/', authMiddleware, adminMiddleware, async (req, res) => {
     const [quotes] = await db.query(query, params);
     res.json(quotes);
   } catch (error) {
+    logger.error('QUOTES', 'Error fetching quotes', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -55,6 +57,7 @@ router.get('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 
     res.json({ ...quotes[0], photos });
   } catch (error) {
+    logger.error('QUOTES', 'Error fetching quote', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -63,19 +66,10 @@ router.get('/:id', authMiddleware, adminMiddleware, async (req, res) => {
 router.post('/', quoteSubmitLimiter, async (req, res) => {
   try {
     const {
-      customer_name,
-      customer_email,
-      customer_phone,
-      rooms,
-      total_size,
-      total_capacity,
-      selected_airco_id,
-      selected_airco_name,
-      selected_airco_brand,
-      estimated_price,
-      pipe_color,
-      pipe_length,
-      additional_notes
+      customer_name, customer_email, customer_phone,
+      rooms, total_size, total_capacity,
+      selected_airco_id, selected_airco_name, selected_airco_brand,
+      estimated_price, pipe_color, pipe_length, additional_notes
     } = req.body;
 
     // Input validation
@@ -118,31 +112,18 @@ router.post('/', quoteSubmitLimiter, async (req, res) => {
        selected_airco_brand, estimated_price, pipe_color, pipe_length, sanitizedNotes]
     );
 
-    // Send email notification (don't wait for it, don't fail if email fails)
     const quoteData = {
-      id: result.insertId,
-      customer_name,
-      customer_email,
-      customer_phone,
-      rooms,
-      total_size,
-      total_capacity,
-      selected_airco_id,
-      selected_airco_name,
-      selected_airco_brand,
-      estimated_price,
-      pipe_color,
-      pipe_length,
-      additional_notes
+      id: result.insertId, customer_name, customer_email, customer_phone,
+      rooms, total_size, total_capacity, selected_airco_id, selected_airco_name,
+      selected_airco_brand, estimated_price, pipe_color, pipe_length, additional_notes
     };
     
     sendQuoteNotification(quoteData).catch(err => {
-      console.error('Failed to send quote notification email:', err.message);
+      logger.error('EMAIL', 'Failed to send quote notification', { error: err.message });
     });
 
-    // Send confirmation email to customer
     sendQuoteConfirmation(quoteData).catch(err => {
-      console.error('Failed to send quote confirmation email to customer:', err.message);
+      logger.error('EMAIL', 'Failed to send quote confirmation', { error: err.message });
     });
 
     res.status(201).json({ 
@@ -150,7 +131,7 @@ router.post('/', quoteSubmitLimiter, async (req, res) => {
       message: 'Offerteaanvraag ontvangen' 
     });
   } catch (error) {
-    console.error('Quote creation error:', error);
+    logger.error('QUOTES', 'Error creating quote', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -168,6 +149,7 @@ router.patch('/:id/status', authMiddleware, adminMiddleware, async (req, res) =>
 
     res.json({ message: 'Status bijgewerkt' });
   } catch (error) {
+    logger.error('QUOTES', 'Error updating status', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -179,6 +161,7 @@ router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
     await db.query('DELETE FROM quote_requests WHERE id = ?', [id]);
     res.json({ message: 'Offerte verwijderd' });
   } catch (error) {
+    logger.error('QUOTES', 'Error deleting quote', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -203,6 +186,7 @@ router.get('/stats/summary', authMiddleware, adminMiddleware, async (req, res) =
       }, {})
     });
   } catch (error) {
+    logger.error('QUOTES', 'Error fetching stats', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });

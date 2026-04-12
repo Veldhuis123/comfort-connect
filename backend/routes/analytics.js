@@ -1,5 +1,6 @@
 const express = require('express');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const logger = require('../services/logger');
 
 const router = express.Router();
 
@@ -48,21 +49,19 @@ router.get('/visitors', authMiddleware, adminMiddleware, async (req, res) => {
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      console.error('Cloudflare API error:', response.status, text);
+      logger.error('ANALYTICS', 'Cloudflare API error', { status: response.status });
       return res.status(502).json({ error: 'Cloudflare API fout' });
     }
 
     const data = await response.json();
 
     if (data.errors && data.errors.length > 0) {
-      console.error('Cloudflare GraphQL errors:', data.errors);
+      logger.error('ANALYTICS', 'Cloudflare GraphQL errors', { errors: data.errors });
       return res.status(502).json({ error: 'Cloudflare query fout' });
     }
 
     const groups = data.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
 
-    // Build daily data
     const daily = groups.map(g => ({
       date: new Date(g.dimensions.date).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short' }),
       rawDate: g.dimensions.date,
@@ -71,12 +70,10 @@ router.get('/visitors', authMiddleware, adminMiddleware, async (req, res) => {
       requests: g.sum.requests || 0,
     }));
 
-    // Calculate totals
     const todayData = daily.find(d => d.rawDate === today);
     const totalViews = daily.reduce((s, d) => s + d.views, 0);
     const totalVisitors = daily.reduce((s, d) => s + d.visitors, 0);
 
-    // This week (last 7 days)
     const sevenDaysAgo = new Date(now);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const weekStart = sevenDaysAgo.toISOString().split('T')[0];
@@ -94,7 +91,7 @@ router.get('/visitors', authMiddleware, adminMiddleware, async (req, res) => {
       daily: daily.map(({ rawDate, ...rest }) => rest),
     });
   } catch (error) {
-    console.error('Analytics error:', error);
+    logger.error('ANALYTICS', 'Error fetching analytics', { error: error.message });
     res.status(500).json({ error: 'Kon analytics niet ophalen' });
   }
 });

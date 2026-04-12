@@ -5,13 +5,14 @@ const fs = require('fs');
 const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const logger = require('../services/logger');
 
 const router = express.Router();
 
 // Rate limiting for public upload endpoint
 const uploadLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // max 10 uploads per IP per 15 min
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   message: { error: 'Te veel uploads. Probeer het later opnieuw.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -27,7 +28,6 @@ if (!fs.existsSync(uploadDir)) {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const category = req.body.category || 'general';
-    // Sanitize category to prevent path traversal
     const safeCategory = category.replace(/[^a-zA-Z0-9_-]/g, '');
     const dir = path.join(uploadDir, safeCategory);
     if (!fs.existsSync(dir)) {
@@ -37,7 +37,6 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    // Sanitize original filename extension
     const ext = path.extname(file.originalname).toLowerCase();
     cb(null, uniqueSuffix + ext);
   }
@@ -46,7 +45,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024 // 10MB
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
@@ -60,19 +59,17 @@ const upload = multer({
   }
 });
 
-// Upload photos for quote request (public but protected by rate limiting and quote verification)
+// Upload photos for quote request
 router.post('/quote/:quoteId', uploadLimiter, upload.array('photos', 10), async (req, res) => {
   try {
     const { quoteId } = req.params;
     const { category } = req.body;
     const files = req.files;
 
-    // Validate quoteId is a number
     if (!/^\d+$/.test(quoteId)) {
       return res.status(400).json({ error: 'Ongeldig offerte ID' });
     }
 
-    // Verify the quote exists and was recently created (within last hour)
     const [quotes] = await db.query(
       'SELECT id, created_at FROM quote_requests WHERE id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)',
       [quoteId]
@@ -95,6 +92,8 @@ router.post('/quote/:quoteId', uploadLimiter, upload.array('photos', 10), async 
 
     await Promise.all(insertPromises);
 
+    logger.info('UPLOAD', `${files.length} photo(s) uploaded for quote ${quoteId}`, { quoteId, count: files.length });
+
     res.status(201).json({ 
       message: `${files.length} foto(s) geüpload`,
       files: files.map(f => ({
@@ -103,7 +102,7 @@ router.post('/quote/:quoteId', uploadLimiter, upload.array('photos', 10), async 
       }))
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    logger.error('UPLOAD', 'Upload error', { error: error.message });
     res.status(500).json({ error: 'Upload mislukt' });
   }
 });
@@ -113,25 +112,23 @@ router.delete('/:photoId', authMiddleware, adminMiddleware, async (req, res) => 
   try {
     const { photoId } = req.params;
 
-    // Get file path
     const [photos] = await db.query(
       'SELECT file_path FROM quote_photos WHERE id = ?',
       [photoId]
     );
 
     if (photos.length > 0) {
-      // Delete file from disk
       const filePath = photos[0].file_path;
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
     }
 
-    // Delete from database
     await db.query('DELETE FROM quote_photos WHERE id = ?', [photoId]);
 
     res.json({ message: 'Foto verwijderd' });
   } catch (error) {
+    logger.error('UPLOAD', 'Error deleting photo', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });

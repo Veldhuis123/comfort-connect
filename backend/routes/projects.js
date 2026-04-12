@@ -5,6 +5,7 @@ const fs = require('fs');
 const router = express.Router();
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
+const logger = require('../services/logger');
 
 // Pre-configure multer for project images
 const projectUploadDir = path.join(__dirname, '..', 'uploads', 'projects');
@@ -21,7 +22,7 @@ const projectStorage = multer.diskStorage({
 
 const projectUpload = multer({
   storage: projectStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) return cb(null, true);
     cb(new Error('Alleen afbeeldingen zijn toegestaan'));
@@ -36,7 +37,7 @@ router.get('/', async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching projects:', err);
+    logger.error('PROJECTS', 'Error fetching public projects', { error: err.message });
     res.status(500).json({ error: 'Kon projecten niet ophalen' });
   }
 });
@@ -47,7 +48,7 @@ router.get('/admin/all', authMiddleware, async (req, res) => {
     const [rows] = await db.query('SELECT * FROM projects ORDER BY sort_order ASC, created_at DESC');
     res.json(rows);
   } catch (err) {
-    console.error('Error fetching admin projects:', err);
+    logger.error('PROJECTS', 'Error fetching admin projects', { error: err.message });
     res.status(500).json({ error: 'Kon projecten niet ophalen' });
   }
 });
@@ -62,7 +63,7 @@ router.post('/', authMiddleware, async (req, res) => {
     );
     res.json({ id: result.insertId });
   } catch (err) {
-    console.error('Error creating project:', err);
+    logger.error('PROJECTS', 'Error creating project', { error: err.message });
     res.status(500).json({ error: 'Kon project niet aanmaken' });
   }
 });
@@ -77,7 +78,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     );
     res.json({ success: true });
   } catch (err) {
-    console.error('Error updating project:', err);
+    logger.error('PROJECTS', 'Error updating project', { error: err.message });
     res.status(500).json({ error: 'Kon project niet bijwerken' });
   }
 });
@@ -91,7 +92,7 @@ router.patch('/:id/toggle', authMiddleware, async (req, res) => {
     await db.query('UPDATE projects SET is_visible = ? WHERE id = ?', [newVisibility, req.params.id]);
     res.json({ is_visible: newVisibility });
   } catch (err) {
-    console.error('Error toggling project:', err);
+    logger.error('PROJECTS', 'Error toggling visibility', { error: err.message });
     res.status(500).json({ error: 'Kon zichtbaarheid niet wijzigen' });
   }
 });
@@ -102,7 +103,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     await db.query('DELETE FROM projects WHERE id = ?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting project:', err);
+    logger.error('PROJECTS', 'Error deleting project', { error: err.message });
     res.status(500).json({ error: 'Kon project niet verwijderen' });
   }
 });
@@ -111,7 +112,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 router.post('/:id/image', authMiddleware, (req, res) => {
   projectUpload(req, res, async (err) => {
     if (err) {
-      console.error('Multer upload error:', err.message);
+      logger.error('PROJECTS', 'Upload error', { error: err.message });
       const msg = err.code === 'LIMIT_FILE_SIZE' 
         ? 'Bestand te groot (max 10MB)' 
         : err.message || 'Upload mislukt';
@@ -131,7 +132,7 @@ router.post('/:id/image', authMiddleware, (req, res) => {
       await db.query('UPDATE projects SET photos = ? WHERE id = ?', [JSON.stringify(photos), req.params.id]);
       res.json({ image_url: imageUrl, photos });
     } catch (dbErr) {
-      console.error('DB error after upload:', dbErr);
+      logger.error('PROJECTS', 'DB error after upload', { error: dbErr.message });
       res.status(500).json({ error: 'Foto geüpload maar opslaan in database mislukt' });
     }
   });

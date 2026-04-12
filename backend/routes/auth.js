@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
-
+const logger = require('../services/logger');
 const router = express.Router();
 
 // Rate limiting specifically for login attempts (stricter than general API limit)
@@ -69,7 +69,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     if (!user || !validPassword) {
       // Log failed attempt (for monitoring suspicious activity)
-      console.warn(`Failed login attempt for email: ${email.substring(0, 3)}***`);
+      logger.warn('AUTH', 'Failed login attempt', { email: email.substring(0, 3) + '***' });
       return res.status(401).json({ error: 'Ongeldige inloggegevens' });
     }
 
@@ -118,7 +118,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error.message);
+    logger.error('AUTH', 'Login error', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -144,7 +144,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     // Return fresh data from database, not from token
     res.json(users[0]);
   } catch (error) {
-    console.error('Get user error:', error.message);
+    logger.error('AUTH', 'Get user error', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -198,7 +198,7 @@ router.put('/password', authMiddleware, async (req, res) => {
     
     res.json({ message: 'Wachtwoord gewijzigd. Log opnieuw in.' });
   } catch (error) {
-    console.error('Password change error:', error.message);
+    logger.error('AUTH', 'Password change error', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });
@@ -242,7 +242,7 @@ router.post('/refresh', authMiddleware, async (req, res) => {
 
     res.json({ token, user });
   } catch (error) {
-    console.error('Token refresh error:', error.message);
+    logger.error('AUTH', 'Token refresh error', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
   }
 });

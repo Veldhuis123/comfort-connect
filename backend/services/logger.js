@@ -20,13 +20,32 @@ const formatTimestamp = () => {
 };
 
 const formatLog = (level, category, message, data = {}) => {
+  // Remove undefined values for cleaner logs
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   return JSON.stringify({
     timestamp: formatTimestamp(),
     level,
     category,
     message,
-    ...data
+    ...clean
   });
+};
+
+/**
+ * Extract source info from request (app vs website, IP, user-agent)
+ */
+const extractSource = (req) => {
+  if (!req) return {};
+  const ua = req.headers?.['user-agent'] || '';
+  const isApp = /capacitor|ionic|mobile-app/i.test(ua) || req.headers?.['x-source'] === 'app';
+  return {
+    source: isApp ? 'app' : 'web',
+    ip: req.ip || req.connection?.remoteAddress,
+    userId: req.user?.id,
+    requestId: req.requestId,
+  };
 };
 
 const logger = {
@@ -57,10 +76,14 @@ const logger = {
   /**
    * Audit log - ALWAYS logged regardless of level
    * Used for BRL 100 compliance tracking
+   * @param {string} action - Action name
+   * @param {object} data - Data to log
+   * @param {object} [req] - Express request object for source tracking
    */
-  audit: (action, data) => {
+  audit: (action, data, req) => {
     console.log(formatLog('AUDIT', 'COMPLIANCE', action, {
       ...data,
+      ...extractSource(req),
       audit_id: `AUD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     }));
   },
@@ -87,7 +110,7 @@ const logger = {
   },
   
   /**
-   * Request logging middleware
+   * Request logging middleware with source detection
    */
   requestMiddleware: (req, res, next) => {
     const start = Date.now();
@@ -95,14 +118,15 @@ const logger = {
     
     req.requestId = requestId;
     
+    const sourceInfo = extractSource(req);
+    
     // Log request
     logger.info('HTTP', `${req.method} ${req.path}`, {
       requestId,
       method: req.method,
       path: req.path,
       query: Object.keys(req.query).length > 0 ? req.query : undefined,
-      userId: req.user?.id,
-      ip: req.ip || req.connection?.remoteAddress
+      ...sourceInfo,
     });
     
     // Log response
@@ -113,7 +137,8 @@ const logger = {
       logFn('HTTP', `${req.method} ${req.path} ${res.statusCode}`, {
         requestId,
         statusCode: res.statusCode,
-        duration: `${duration}ms`
+        duration: `${duration}ms`,
+        source: sourceInfo.source,
       });
     });
     
