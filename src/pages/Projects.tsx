@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { api, Project } from "@/lib/api";
+import { api, Project, getUploadUrl } from "@/lib/api";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";

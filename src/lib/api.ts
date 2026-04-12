@@ -2,6 +2,21 @@
 // In development: proxy via Vite, in production: via environment variable
 export const API_URL = import.meta.env.VITE_API_URL || '/api';
 
+// Resolve upload paths — uploads are served from the same origin via Nginx
+// but stored as relative paths like /uploads/projects/xxx.jpg
+export const getUploadUrl = (path: string): string => {
+  if (!path) return '';
+  // Already absolute URL
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  // If API_URL is a full URL (e.g. https://rv-installatie.nl/api), derive base
+  if (API_URL.startsWith('http')) {
+    const url = new URL(API_URL);
+    return `${url.origin}${path}`;
+  }
+  // Relative — just return as-is (same origin)
+  return path;
+};
+
 // Auth token management
 export const getAuthToken = (): string | null => {
   return localStorage.getItem('auth_token');
