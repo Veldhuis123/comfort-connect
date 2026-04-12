@@ -1734,20 +1734,20 @@ export const AircoInstallationWizard = ({
           <ChevronLeft className="w-4 h-4 mr-2" />
           {currentStep === 1 ? "Annuleren" : "Vorige"}
         </Button>
-        
+
         {currentStep < steps.length ? (
           <Button onClick={() => setCurrentStep(currentStep + 1)}>
             Volgende
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
         ) : (
-          <Button 
+          <Button
             onClick={handleComplete}
             disabled={!canComplete()}
             className="bg-green-600 hover:bg-green-700"
           >
             <CheckCircle2 className="w-4 h-4 mr-2" />
-            Installatie Afronden
+            {isEditingReport ? "Rapport opslaan" : "Installatie Afronden"}
           </Button>
         )}
       </div>
