@@ -70,6 +70,7 @@ import type { CommissioningData } from "@/lib/installationTypes";
 import type { BRLReport } from "@/lib/brlTypes";
 import { getReportProgress } from "@/lib/brlTypes";
 import { saveReport as saveBrlReport } from "@/lib/brlStorage";
+import BRLWizard from "./mobile/BRLWizard";
 
 const installationTypeLabels: Record<InstallationType, string> = {
   airco: "Airco",
@@ -152,6 +153,7 @@ const AdminInstallations = () => {
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [selectedInstallation, setSelectedInstallation] = useState<Installation | null>(null);
   const [selectedBrlReport, setSelectedBrlReport] = useState<BRLReport | null>(null);
+  const [editingBrlReport, setEditingBrlReport] = useState<BRLReport | null>(null);
   const [fgasLogs, setFgasLogs] = useState<FGasLog[]>([]);
   
   // Delete confirmations
@@ -2265,8 +2267,8 @@ const AdminInstallations = () => {
                 <Button
                   className="w-full"
                   onClick={() => {
-                    saveBrlReport(selectedBrlReport);
-                    window.open(`/brl?report=${selectedBrlReport.id}`, '_blank');
+                    setEditingBrlReport(selectedBrlReport);
+                    setSelectedBrlReport(null);
                   }}
                 >
                   <Edit className="w-4 h-4 mr-2" />
@@ -2277,6 +2279,24 @@ const AdminInstallations = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* BRL Wizard inline editing */}
+      {editingBrlReport && (
+        <div className="fixed inset-0 z-50 bg-background overflow-auto">
+          <BRLWizard
+            report={editingBrlReport}
+            onBack={() => {
+              setEditingBrlReport(null);
+              // Refresh BRL reports list
+              fetchData();
+            }}
+            onSave={(updated) => {
+              saveBrlReport(updated);
+              setEditingBrlReport(updated);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };
