@@ -116,15 +116,15 @@ const AdminProjects = () => {
         projectId = result.id;
       }
 
-      // Upload photos one by one — don't abort on individual failure
       const failedUploads: string[] = [];
       for (const file of formFiles) {
         try {
           const compressed = await compressImage(file);
           await api.uploadProjectImage(projectId, compressed);
         } catch (err) {
-          console.error('Photo upload failed:', file.name, err);
-          failedUploads.push(file.name);
+          const message = err instanceof Error ? err.message : 'Onbekende uploadfout';
+          console.error('Photo upload failed:', file.name, message);
+          failedUploads.push(`${file.name}: ${message}`);
         }
       }
 
@@ -133,11 +133,12 @@ const AdminProjects = () => {
       fetchProjects();
 
       if (failedUploads.length > 0) {
-        alert(`Project opgeslagen, maar ${failedUploads.length} foto('s) konden niet geüpload worden: ${failedUploads.join(', ')}. Probeer ze opnieuw te uploaden.`);
+        alert(`Project opgeslagen, maar deze upload(s) mislukten:\n\n${failedUploads.join('\n')}`);
       }
-    } catch (err: any) {
-      console.error('Save project error:', err);
-      alert(`Fout bij opslaan project: ${err?.message || 'Onbekende fout'}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Onbekende fout';
+      console.error('Save project error:', message);
+      alert(`Fout bij opslaan project: ${message}`);
     } finally {
       setUploading(false);
     }
@@ -161,7 +162,10 @@ const AdminProjects = () => {
       const file = await compressImage(raw);
       await api.uploadProjectImage(projectId, file);
       fetchProjects();
-    } catch { alert("Fout bij uploaden foto"); }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Onbekende uploadfout';
+      alert(`Fout bij uploaden foto: ${message}`);
+    }
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
