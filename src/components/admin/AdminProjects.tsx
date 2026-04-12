@@ -105,6 +105,7 @@ const AdminProjects = () => {
   };
 
   const handleSave = async () => {
+    setUploading(true);
     try {
       let projectId: number;
       if (editingProject) {
@@ -114,14 +115,32 @@ const AdminProjects = () => {
         const result = await api.createProject(form);
         projectId = result.id;
       }
-      // Upload selected photos
+
+      // Upload photos one by one — don't abort on individual failure
+      const failedUploads: string[] = [];
       for (const file of formFiles) {
-        await api.uploadProjectImage(projectId, file);
+        try {
+          const compressed = await compressImage(file);
+          await api.uploadProjectImage(projectId, compressed);
+        } catch (err) {
+          console.error('Photo upload failed:', file.name, err);
+          failedUploads.push(file.name);
+        }
       }
+
       setShowForm(false);
       resetForm();
       fetchProjects();
-    } catch { alert("Fout bij opslaan project"); }
+
+      if (failedUploads.length > 0) {
+        alert(`Project opgeslagen, maar ${failedUploads.length} foto('s) konden niet geüpload worden: ${failedUploads.join(', ')}. Probeer ze opnieuw te uploaden.`);
+      }
+    } catch (err: any) {
+      console.error('Save project error:', err);
+      alert(`Fout bij opslaan project: ${err?.message || 'Onbekende fout'}`);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDelete = async (id: number) => {
