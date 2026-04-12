@@ -138,7 +138,8 @@ const AdminProjects = () => {
     if (!fileInputRef.current?.files?.length) return;
     setUploading(true);
     try {
-      const file = fileInputRef.current.files[0];
+      const raw = fileInputRef.current.files[0];
+      const file = await compressImage(raw);
       await api.uploadProjectImage(projectId, file);
       fetchProjects();
     } catch { alert("Fout bij uploaden foto"); }
