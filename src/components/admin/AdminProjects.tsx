@@ -78,9 +78,15 @@ const AdminProjects = () => {
 
   useEffect(() => { fetchProjects(); }, []);
 
+  // Store preview URLs separately so we can revoke them
+  const [formPreviews, setFormPreviews] = useState<string[]>([]);
+
   const resetForm = () => {
     setForm({ title: "", description: "", category: "airco", location: "", completion_date: "", is_visible: true, sort_order: 0 });
     setEditingProject(null);
+    // Clean up object URLs to prevent memory leaks
+    formPreviews.forEach(u => URL.revokeObjectURL(u));
+    setFormPreviews([]);
     setFormFiles([]);
   };
 
