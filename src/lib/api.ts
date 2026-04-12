@@ -526,6 +526,7 @@ export interface LocalQuoteStats {
 
 export interface LocalQuotesResponse {
   quotes: LocalQuote[];
+  stats?: LocalQuoteStats;
 }
 
 export interface InstallationSettingsResponse {
