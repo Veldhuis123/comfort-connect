@@ -338,7 +338,7 @@ export const installationsApi = {
   // BRL reports
   getBRLReports: () => apiRequest<BRLReport[]>('/installations/brl-reports'),
   saveBRLReport: (report: BRLReport) =>
-    apiRequest<{ success: boolean; id: string }>('/installations/brl-reports/' + report.id, {
+    apiRequest<{ success: boolean; id: string; werkbon_number?: string }>('/installations/brl-reports/' + report.id, {
       method: 'PUT',
       body: JSON.stringify(report),
     }),
