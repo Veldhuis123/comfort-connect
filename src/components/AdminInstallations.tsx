@@ -2318,22 +2318,28 @@ const AdminInstallations = () => {
         </DialogContent>
       </Dialog>
 
-      {/* BRL Wizard inline editing */}
       {editingBrlReport && (
-        <div className="fixed inset-0 z-50 bg-background overflow-auto">
-          <BRLWizard
-            report={editingBrlReport}
-            onBack={() => {
-              setEditingBrlReport(null);
-              // Refresh BRL reports list
-              fetchData();
-            }}
-            onSave={(updated) => {
-              saveBrlReport(updated);
-              setEditingBrlReport(updated);
-            }}
-          />
-        </div>
+        <Dialog open={!!editingBrlReport} onOpenChange={(open) => !open && setEditingBrlReport(null)}>
+          <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto p-0">
+            <DialogHeader className="sr-only">
+              <DialogTitle>BRL rapport verder invullen</DialogTitle>
+              <DialogDescription>Admin wizard voor bestaand BRL rapport</DialogDescription>
+            </DialogHeader>
+            <AircoInstallationWizard
+              customers={customers}
+              technicians={technicians}
+              equipment={equipment}
+              cylinders={cylinders}
+              initialReport={editingBrlReport}
+              onReportSave={(updated) => { void persistEditingBrlReport(updated); }}
+              onReportComplete={(updated) => { void persistEditingBrlReport(updated, true); }}
+              onComplete={handleAircoWizardComplete}
+              onCancel={() => setEditingBrlReport(null)}
+              onCustomerCreated={fetchData}
+              onCylinderUpdated={fetchData}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
