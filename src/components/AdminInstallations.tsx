@@ -70,7 +70,6 @@ import type { CommissioningData } from "@/lib/installationTypes";
 import type { BRLReport } from "@/lib/brlTypes";
 import { getReportProgress } from "@/lib/brlTypes";
 import { saveReport as saveBrlReport } from "@/lib/brlStorage";
-import BRLWizard from "./mobile/BRLWizard";
 
 const installationTypeLabels: Record<InstallationType, string> = {
   airco: "Airco",
@@ -490,19 +489,16 @@ const AdminInstallations = () => {
   const handleAircoWizardComplete = async (data: CreateInstallation & { brl_checklist: any; commissioning_data?: CommissioningData; selected_cylinder_id?: number; cylinder_usage_kg?: number }) => {
     try {
       const { brl_checklist, commissioning_data, selected_cylinder_id, cylinder_usage_kg, ...installationData } = data;
-      // Store BRL checklist in notes for now
       const notes = `BRL 100 Checklist voltooid op ${new Date().toLocaleDateString('nl-NL')}`;
       const result = await installationsApi.createInstallation({ ...installationData, notes });
-      
-      // Update cylinder stock if refrigerant was added from a cylinder
+
       if (selected_cylinder_id && cylinder_usage_kg && cylinder_usage_kg > 0) {
         const cylinder = cylinders.find(c => c.id === selected_cylinder_id);
         if (cylinder) {
           const newWeight = cylinder.current_weight_kg - cylinder_usage_kg;
           const availableKg = newWeight - cylinder.tare_weight_kg;
           let newStatus = cylinder.status;
-          
-          // Determine new status based on remaining content
+
           if (availableKg <= 0) {
             newStatus = 'leeg';
           } else if (availableKg < cylinder.cylinder_size_kg * 0.1) {
@@ -510,15 +506,14 @@ const AdminInstallations = () => {
           } else {
             newStatus = 'in_gebruik';
           }
-          
+
           await installationsApi.updateCylinder(selected_cylinder_id, {
             current_weight_kg: Math.max(cylinder.tare_weight_kg, newWeight),
             status: newStatus,
           });
         }
       }
-      
-      // Generate PDF with correct QR code now that we have the installation qr_code
+
       if (commissioning_data && result.qr_code) {
         const fullCommissioningData = {
           ...commissioning_data,
@@ -535,11 +530,54 @@ const AdminInstallations = () => {
       } else {
         toast({ title: "Installatie succesvol aangemaakt", description: "BRL 100 checklist voltooid" });
       }
-      
+
       setShowAircoWizard(false);
       fetchData();
     } catch (err) {
       toast({ title: "Fout", description: "Kon installatie niet aanmaken", variant: "destructive" });
+    }
+  };
+
+  const upsertBrlReport = (updated: BRLReport) => {
+    setBrlReports((prev) => {
+      const exists = prev.some((report) => report.id === updated.id);
+      const next = exists
+        ? prev.map((report) => (report.id === updated.id ? updated : report))
+        : [updated, ...prev];
+
+      return next.sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+      );
+    });
+  };
+
+  const persistEditingBrlReport = async (updated: BRLReport, closeAfter = false) => {
+    saveBrlReport(updated);
+    upsertBrlReport(updated);
+    setEditingBrlReport(closeAfter ? null : updated);
+
+    try {
+      const result = await installationsApi.saveBRLReport(updated);
+      if (result.werkbon_number && result.werkbon_number !== updated.customer_data.werkbon_number) {
+        const withWerkbon = {
+          ...updated,
+          customer_data: {
+            ...updated.customer_data,
+            werkbon_number: result.werkbon_number,
+          },
+        };
+        saveBrlReport(withWerkbon);
+        upsertBrlReport(withWerkbon);
+        if (!closeAfter) {
+          setEditingBrlReport(withWerkbon);
+        }
+      }
+
+      if (closeAfter) {
+        fetchData();
+      }
+    } catch {
+      toast({ title: "Opslaan mislukt", description: "Het BRL rapport kon niet worden opgeslagen.", variant: "destructive" });
     }
   };
 
@@ -2280,22 +2318,28 @@ const AdminInstallations = () => {
         </DialogContent>
       </Dialog>
 
-      {/* BRL Wizard inline editing */}
       {editingBrlReport && (
-        <div className="fixed inset-0 z-50 bg-background overflow-auto">
-          <BRLWizard
-            report={editingBrlReport}
-            onBack={() => {
-              setEditingBrlReport(null);
-              // Refresh BRL reports list
-              fetchData();
-            }}
-            onSave={(updated) => {
-              saveBrlReport(updated);
-              setEditingBrlReport(updated);
-            }}
-          />
-        </div>
+        <Dialog open={!!editingBrlReport} onOpenChange={(open) => !open && setEditingBrlReport(null)}>
+          <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto p-0">
+            <DialogHeader className="sr-only">
+              <DialogTitle>BRL rapport verder invullen</DialogTitle>
+              <DialogDescription>Admin wizard voor bestaand BRL rapport</DialogDescription>
+            </DialogHeader>
+            <AircoInstallationWizard
+              customers={customers}
+              technicians={technicians}
+              equipment={equipment}
+              cylinders={cylinders}
+              initialReport={editingBrlReport}
+              onReportSave={(updated) => { void persistEditingBrlReport(updated); }}
+              onReportComplete={(updated) => { void persistEditingBrlReport(updated, true); }}
+              onComplete={handleAircoWizardComplete}
+              onCancel={() => setEditingBrlReport(null)}
+              onCustomerCreated={fetchData}
+              onCylinderUpdated={fetchData}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
