@@ -108,47 +108,33 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 });
 
 // POST /api/projects/:id/image - Upload project image
-router.post('/:id/image', authMiddleware, async (req, res) => {
-  try {
-    // Use multer from upload route pattern
-    const multer = require('multer');
-    const path = require('path');
-    const fs = require('fs');
-    
-    const uploadDir = path.join(__dirname, '..', 'uploads', 'projects');
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-    
-    const storage = multer.diskStorage({
-      destination: uploadDir,
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-      }
-    });
-    
-    const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }).single('image');
-    
-    upload(req, res, async (err) => {
-      if (err) return res.status(400).json({ error: 'Upload mislukt' });
-      if (!req.file) return res.status(400).json({ error: 'Geen bestand' });
-      
+router.post('/:id/image', authMiddleware, (req, res) => {
+  projectUpload(req, res, async (err) => {
+    if (err) {
+      console.error('Multer upload error:', err.message);
+      const msg = err.code === 'LIMIT_FILE_SIZE' 
+        ? 'Bestand te groot (max 10MB)' 
+        : err.message || 'Upload mislukt';
+      return res.status(400).json({ error: msg });
+    }
+    if (!req.file) return res.status(400).json({ error: 'Geen bestand ontvangen' });
+
+    try {
       const imageUrl = `/uploads/projects/${req.file.filename}`;
-      
-      // Add to photos array
       const [rows] = await db.query('SELECT photos FROM projects WHERE id = ?', [req.params.id]);
       if (rows.length === 0) return res.status(404).json({ error: 'Project niet gevonden' });
-      
+
       let photos = [];
       try { photos = JSON.parse(rows[0].photos || '[]'); } catch { photos = []; }
       photos.push(imageUrl);
-      
+
       await db.query('UPDATE projects SET photos = ? WHERE id = ?', [JSON.stringify(photos), req.params.id]);
       res.json({ image_url: imageUrl, photos });
-    });
-  } catch (err) {
-    console.error('Error uploading project image:', err);
-    res.status(500).json({ error: 'Upload mislukt' });
-  }
+    } catch (dbErr) {
+      console.error('DB error after upload:', dbErr);
+      res.status(500).json({ error: 'Foto geüpload maar opslaan in database mislukt' });
+    }
+  });
 });
 
 module.exports = router;
