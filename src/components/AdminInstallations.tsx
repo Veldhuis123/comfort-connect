@@ -2288,7 +2288,7 @@ const AdminInstallations = () => {
             onBack={() => {
               setEditingBrlReport(null);
               // Refresh BRL reports list
-              loadBrlReports();
+              fetchData();
             }}
             onSave={(updated) => {
               saveBrlReport(updated);
