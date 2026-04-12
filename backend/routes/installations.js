@@ -110,8 +110,6 @@ router.put('/brl-reports/:reportId', authMiddleware, async (req, res) => {
     );
 
     res.json({ success: true, id: reportId, werkbon_number: werkbonNumber });
-
-    res.json({ success: true, id: reportId });
   } catch (err) {
     console.error('Error saving BRL report:', err);
     res.status(500).json({ error: 'Kon BRL rapport niet opslaan' });
