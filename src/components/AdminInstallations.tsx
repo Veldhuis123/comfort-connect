@@ -2279,6 +2279,24 @@ const AdminInstallations = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* BRL Wizard inline editing */}
+      {editingBrlReport && (
+        <div className="fixed inset-0 z-50 bg-background overflow-auto">
+          <BRLWizard
+            report={editingBrlReport}
+            onBack={() => {
+              setEditingBrlReport(null);
+              // Refresh BRL reports list
+              loadBrlReports();
+            }}
+            onSave={(updated) => {
+              saveBrlReport(updated);
+              setEditingBrlReport(updated);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };
