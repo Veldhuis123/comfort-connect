@@ -1,6 +1,23 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const Sentry = require('@sentry/node');
+
+// Initialize Sentry as early as possible
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'production',
+    tracesSampleRate: 0.1,
+    // Filter noisy/expected errors
+    beforeSend(event, hint) {
+      const err = hint?.originalException;
+      const status = err?.status || err?.statusCode;
+      if (status && status >= 400 && status < 500) return null; // skip client errors
+      return event;
+    },
+  });
+}
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
