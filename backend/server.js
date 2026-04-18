@@ -128,6 +128,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Sentry error handler must be before any other error middleware
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
 // Error handling
 app.use((err, req, res, next) => {
   logger.error('SERVER', 'Unhandled error', { 
@@ -136,6 +141,16 @@ app.use((err, req, res, next) => {
     requestId: req.requestId 
   });
   res.status(500).json({ error: 'Er is iets misgegaan!' });
+});
+
+// Capture uncaught exceptions and unhandled rejections
+process.on('uncaughtException', (err) => {
+  logger.error('SERVER', 'Uncaught exception', { error: err.message, stack: err.stack });
+  if (process.env.SENTRY_DSN) Sentry.captureException(err);
+});
+process.on('unhandledRejection', (reason) => {
+  logger.error('SERVER', 'Unhandled rejection', { reason: String(reason) });
+  if (process.env.SENTRY_DSN) Sentry.captureException(reason);
 });
 
 // Start server
