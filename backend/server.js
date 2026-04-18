@@ -128,10 +128,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Tijdelijke Sentry test endpoint - VERWIJDEREN na succesvolle test
-app.get('/api/sentry-test', (req, res, next) => {
-  next(new Error('Sentry backend test - ' + new Date().toISOString()));
-});
 
 // Sentry error handler must be before any other error middleware
 if (process.env.SENTRY_DSN) {
