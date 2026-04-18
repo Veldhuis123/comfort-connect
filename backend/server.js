@@ -1,6 +1,23 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const Sentry = require('@sentry/node');
+
+// Initialize Sentry as early as possible
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'production',
+    tracesSampleRate: 0.1,
+    // Filter noisy/expected errors
+    beforeSend(event, hint) {
+      const err = hint?.originalException;
+      const status = err?.status || err?.statusCode;
+      if (status && status >= 400 && status < 500) return null; // skip client errors
+      return event;
+    },
+  });
+}
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
@@ -111,6 +128,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Sentry error handler must be before any other error middleware
+if (process.env.SENTRY_DSN) {
+  Sentry.setupExpressErrorHandler(app);
+}
+
 // Error handling
 app.use((err, req, res, next) => {
   logger.error('SERVER', 'Unhandled error', { 
@@ -119,6 +141,16 @@ app.use((err, req, res, next) => {
     requestId: req.requestId 
   });
   res.status(500).json({ error: 'Er is iets misgegaan!' });
+});
+
+// Capture uncaught exceptions and unhandled rejections
+process.on('uncaughtException', (err) => {
+  logger.error('SERVER', 'Uncaught exception', { error: err.message, stack: err.stack });
+  if (process.env.SENTRY_DSN) Sentry.captureException(err);
+});
+process.on('unhandledRejection', (reason) => {
+  logger.error('SERVER', 'Unhandled rejection', { reason: String(reason) });
+  if (process.env.SENTRY_DSN) Sentry.captureException(reason);
 });
 
 // Start server
