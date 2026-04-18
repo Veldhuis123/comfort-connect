@@ -19,10 +19,32 @@
 
 set -euo pipefail
 
-NGINX_CONF="/etc/nginx/sites-available/rv-installatie.nl"
+# Auto-detect Nginx config: probeer eerst override via $1, dan bekende paden,
+# dan fallback: zoek in sites-available naar bestand dat 'rv-installatie.nl' bevat
+NGINX_CONF="${1:-}"
+if [[ -z "$NGINX_CONF" ]]; then
+  for candidate in \
+    /etc/nginx/sites-available/rv-installatie \
+    /etc/nginx/sites-available/rv-installatie.nl \
+    /etc/nginx/sites-available/comfort-connect \
+    /etc/nginx/sites-available/default; do
+    if [[ -f "$candidate" ]]; then
+      NGINX_CONF="$candidate"
+      break
+    fi
+  done
+fi
+if [[ -z "$NGINX_CONF" || ! -f "$NGINX_CONF" ]]; then
+  # Laatste poging: grep naar server_name rv-installatie.nl
+  FOUND=$(grep -rlE 'server_name[[:space:]]+[^;]*rv-installatie\.nl' /etc/nginx/sites-available/ 2>/dev/null | head -1 || true)
+  if [[ -n "$FOUND" ]]; then
+    NGINX_CONF="$FOUND"
+  fi
+fi
+
 BACKUP_DIR="/etc/nginx/backups"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-BACKUP_FILE="${BACKUP_DIR}/$(basename ${NGINX_CONF}).${TIMESTAMP}.bak"
+BACKUP_FILE="${BACKUP_DIR}/$(basename "${NGINX_CONF:-unknown}").${TIMESTAMP}.bak"
 
 # Marker line so we can find & replace our own CSP block on re-runs
 CSP_MARKER="# === MANAGED CSP HEADER (install-csp.sh) ==="
@@ -52,11 +74,17 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-if [[ ! -f "$NGINX_CONF" ]]; then
-  echo "❌ Nginx config niet gevonden: $NGINX_CONF"
-  echo "   Pas NGINX_CONF bovenaan dit script aan als je config elders staat."
+if [[ -z "$NGINX_CONF" || ! -f "$NGINX_CONF" ]]; then
+  echo "❌ Nginx config niet automatisch gevonden."
+  echo "   Beschikbare configs in /etc/nginx/sites-available/:"
+  ls -1 /etc/nginx/sites-available/ 2>/dev/null | sed 's/^/     /'
+  echo ""
+  echo "   Geef het pad expliciet mee:"
+  echo "     sudo bash $0 /etc/nginx/sites-available/JOUW-CONFIG"
   exit 1
 fi
+
+echo "📄 Gebruikt config: $NGINX_CONF"
 
 mkdir -p "$BACKUP_DIR"
 cp "$NGINX_CONF" "$BACKUP_FILE"
