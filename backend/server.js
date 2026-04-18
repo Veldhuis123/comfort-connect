@@ -129,8 +129,8 @@ app.get('/api/health', (req, res) => {
 });
 
 // Tijdelijke Sentry test endpoint - VERWIJDEREN na succesvolle test
-app.get('/api/sentry-test', (req, res) => {
-  throw new Error('Sentry backend test - ' + new Date().toISOString());
+app.get('/api/sentry-test', (req, res, next) => {
+  next(new Error('Sentry backend test - ' + new Date().toISOString()));
 });
 
 // Sentry error handler must be before any other error middleware
