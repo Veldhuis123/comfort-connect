@@ -19,13 +19,13 @@ const Hero = () => {
       {/* Background image with overlay */}
       <div className="absolute inset-0">
         <picture>
-          <source media="(max-width: 640px)" srcSet={heroImage1024} type="image/webp" />
+          <source media="(max-width: 640px)" srcSet={heroImage640} type="image/webp" />
           <source media="(max-width: 1024px)" srcSet={heroImage1024} type="image/webp" />
           {/* eslint-disable-next-line react/no-unknown-property */}
           <img
             src={heroImage}
             alt="Professionele airco installatie door R. Veldhuis Installatie"
-            className="w-full h-full object-cover object-[50%_82%] sm:object-[58%_62%] lg:object-center"
+            className="w-full h-full object-cover object-center"
             loading="eager"
             // @ts-ignore
             fetchpriority="high"
