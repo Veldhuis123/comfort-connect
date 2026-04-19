@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Phone, CheckCircle2 } from "lucide-react";
 import heroImage from "@/assets/hero-installation.webp";
-import heroImage1024 from "@/assets/hero-installation-1024.webp";
-import heroImage640 from "@/assets/hero-installation-640.webp";
+
+// Responsive variants — geserveerd vanuit dist/assets na build (server-side gegenereerd).
+// Fallback naar desktop image als variant ontbreekt (bv. in dev/sandbox).
+const heroImage1024 = new URL("../assets/hero-installation-1024.webp", import.meta.url).href;
+const heroImage640 = new URL("../assets/hero-installation-640.webp", import.meta.url).href;
 
 const Hero = () => {
   const highlights = [
