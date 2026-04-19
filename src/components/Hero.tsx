@@ -25,7 +25,7 @@ const Hero = () => {
           <img
             src={heroImage}
             alt="Professionele airco installatie door R. Veldhuis Installatie"
-            className="w-full h-full object-cover object-center lg:object-[center_42%]"
+            className="w-full h-full object-cover object-center"
             loading="eager"
             // @ts-ignore
             fetchpriority="high"
@@ -36,26 +36,12 @@ const Hero = () => {
         </picture>
         <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/75 to-primary/40" />
       </div>
-
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 hidden lg:flex w-[42vw] items-end justify-end pr-8 xl:pr-16">
-        {/* eslint-disable-next-line react/no-unknown-property */}
-        <img
-          src={heroImage}
-          alt=""
-          aria-hidden="true"
-          className="h-[78%] w-auto max-w-none object-contain object-right-bottom opacity-90"
-          loading="eager"
-          decoding="async"
-          width={1200}
-          height={1600}
-        />
-      </div>
       
       {/* Decorative elements */}
       <div className="absolute top-1/4 right-0 w-96 h-96 bg-accent/15 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-accent/10 rounded-full blur-3xl" />
 
-      <div className="container mx-auto px-4 relative z-20">
+      <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 bg-white/25 text-white px-4 py-2 rounded-full mb-6 backdrop-blur-sm border border-white/40">
             <span className="w-2 h-2 bg-accent rounded-full animate-pulse" aria-hidden="true" />
