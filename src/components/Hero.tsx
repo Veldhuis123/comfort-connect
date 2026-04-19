@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Phone, CheckCircle2 } from "lucide-react";
 import heroImage from "@/assets/hero-installation.webp";
-import heroPortraitImage from "@/assets/hero-installation-portrait.webp";
 
 // Responsive varianten staan in /public/ (server-side gegenereerd met cwebp).
 // Vaste paden — niet gehasht — zodat <picture> srcSet ze altijd kan vinden.
@@ -19,14 +18,14 @@ const Hero = () => {
     <section id="home" className="relative min-h-[75vh] md:min-h-[80vh] flex items-center pt-24 pb-12 overflow-hidden">
       {/* Background image with overlay */}
       <div className="absolute inset-0">
-        <picture className="absolute inset-0 block h-full w-full">
+        <picture>
           <source media="(max-width: 640px)" srcSet={heroImage640} type="image/webp" />
           <source media="(max-width: 1024px)" srcSet={heroImage1024} type="image/webp" />
           {/* eslint-disable-next-line react/no-unknown-property */}
           <img
             src={heroImage}
             alt="Professionele airco installatie door R. Veldhuis Installatie"
-            className="h-full w-full object-cover object-center"
+            className="w-full h-full object-cover object-center"
             loading="eager"
             // @ts-ignore
             fetchpriority="high"
@@ -35,21 +34,6 @@ const Hero = () => {
             height={720}
           />
         </picture>
-
-        <div className="absolute inset-0 hidden lg:block overflow-hidden">
-          {/* eslint-disable-next-line react/no-unknown-property */}
-          <img
-            src={heroPortraitImage}
-            alt=""
-            aria-hidden="true"
-            className="absolute bottom-0 right-[-2%] h-[118%] w-auto max-w-none opacity-95 [-webkit-mask-image:linear-gradient(to_left,black_68%,transparent_100%)] [mask-image:linear-gradient(to_left,black_68%,transparent_100%)]"
-            loading="eager"
-            decoding="async"
-            width={1200}
-            height={1600}
-          />
-        </div>
-
         <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/75 to-primary/40" />
       </div>
       
