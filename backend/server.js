@@ -74,12 +74,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting
+// Rate limiting — ruime limiet voor normaal verkeer; health-check uitgesloten
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minuten
-  max: 100, // max 100 requests per window
+  max: 1000, // max 1000 requests per IP per window
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path === '/api/health' || req.path === '/api/server-status',
 });
 
 // Middleware
@@ -100,6 +101,11 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' })); // Limit body size
 app.use(cookieParser());
 app.use(limiter);
+
+// Health check — vóór CSRF/limiter, lichtgewicht voor uptime monitoring
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 app.use(csrfCookie);           // Set CSRF cookie
 app.use(csrfProtection);       // Verify CSRF on state-changing requests
 app.use(logger.requestMiddleware); // BRL 100 audit logging
@@ -122,12 +128,6 @@ app.use('/api/server-status', serverStatusRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/projects', projectsRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 
 // Sentry error handler must be before any other error middleware
 if (process.env.SENTRY_DSN) {
