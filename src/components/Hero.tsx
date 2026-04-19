@@ -18,25 +18,23 @@ const Hero = () => {
   return (
     <section id="home" className="relative min-h-[75vh] md:min-h-[80vh] flex items-center pt-24 pb-12 overflow-hidden">
       {/* Background image with overlay */}
-      <div className="absolute inset-0 bg-primary">
-        <div className="absolute inset-0 lg:hidden">
-          <picture>
-            <source media="(max-width: 640px)" srcSet={heroImage640} type="image/webp" />
-            <source media="(max-width: 1024px)" srcSet={heroImage1024} type="image/webp" />
-            {/* eslint-disable-next-line react/no-unknown-property */}
-            <img
-              src={heroImage}
-              alt="Professionele airco installatie door R. Veldhuis Installatie"
-              className="w-full h-full object-cover object-center"
-              loading="eager"
-              // @ts-ignore
-              fetchpriority="high"
-              decoding="async"
-              width={1280}
-              height={720}
-            />
-          </picture>
-        </div>
+      <div className="absolute inset-0">
+        <picture className="absolute inset-0 block h-full w-full">
+          <source media="(max-width: 640px)" srcSet={heroImage640} type="image/webp" />
+          <source media="(max-width: 1024px)" srcSet={heroImage1024} type="image/webp" />
+          {/* eslint-disable-next-line react/no-unknown-property */}
+          <img
+            src={heroImage}
+            alt="Professionele airco installatie door R. Veldhuis Installatie"
+            className="h-full w-full object-cover object-center"
+            loading="eager"
+            // @ts-ignore
+            fetchpriority="high"
+            decoding="async"
+            width={1280}
+            height={720}
+          />
+        </picture>
 
         <div className="absolute inset-0 hidden lg:block overflow-hidden">
           {/* eslint-disable-next-line react/no-unknown-property */}
@@ -44,13 +42,12 @@ const Hero = () => {
             src={heroPortraitImage}
             alt=""
             aria-hidden="true"
-            className="absolute right-0 bottom-0 h-[118%] w-auto max-w-none"
+            className="absolute bottom-0 right-[-2%] h-[118%] w-auto max-w-none opacity-95 [-webkit-mask-image:linear-gradient(to_left,black_68%,transparent_100%)] [mask-image:linear-gradient(to_left,black_68%,transparent_100%)]"
             loading="eager"
             decoding="async"
             width={1200}
             height={1600}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/55 to-transparent" />
         </div>
 
         <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/75 to-primary/40" />
