@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Phone, CheckCircle2 } from "lucide-react";
 import heroImage from "@/assets/hero-installation.webp";
+import heroPortraitImage from "@/assets/hero-installation-portrait.webp";
 
 // Responsive varianten staan in /public/ (server-side gegenereerd met cwebp).
 // Vaste paden — niet gehasht — zodat <picture> srcSet ze altijd kan vinden.
