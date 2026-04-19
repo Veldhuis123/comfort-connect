@@ -17,23 +17,36 @@ const Hero = () => {
   return (
     <section id="home" className="relative min-h-[75vh] md:min-h-[80vh] flex items-center pt-24 pb-12 overflow-hidden">
       {/* Background image with overlay */}
-      <div className="absolute inset-0">
-        <picture>
-          <source media="(max-width: 640px)" srcSet={heroImage640} type="image/webp" />
-          <source media="(max-width: 1024px)" srcSet={heroImage1024} type="image/webp" />
-          {/* eslint-disable-next-line react/no-unknown-property */}
-          <img
-            src={heroImage}
-            alt="Professionele airco installatie door R. Veldhuis Installatie"
-            className="w-full h-full object-cover object-center"
-            loading="eager"
-            // @ts-ignore
-            fetchpriority="high"
-            decoding="async"
-            width={1280}
-            height={720}
-          />
-        </picture>
+      <div className="absolute inset-0 bg-primary">
+        <div className="absolute inset-0 lg:hidden">
+          <picture>
+            <source media="(max-width: 640px)" srcSet={heroImage640} type="image/webp" />
+            <source media="(max-width: 1024px)" srcSet={heroImage1024} type="image/webp" />
+            {/* eslint-disable-next-line react/no-unknown-property */}
+            <img
+              src={heroImage}
+              alt="Professionele airco installatie door R. Veldhuis Installatie"
+              className="w-full h-full object-cover object-center"
+              loading="eager"
+              // @ts-ignore
+              fetchpriority="high"
+              decoding="async"
+              width={1280}
+              height={720}
+            />
+          </picture>
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 hidden lg:block bg-no-repeat bg-right-bottom [background-size:auto_100%]"
+          style={{
+            backgroundImage: `url(${heroImage})`,
+            WebkitMaskImage: "linear-gradient(to left, black 76%, transparent 100%)",
+            maskImage: "linear-gradient(to left, black 76%, transparent 100%)",
+          }}
+        />
+
         <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/75 to-primary/40" />
       </div>
       
