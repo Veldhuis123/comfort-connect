@@ -25,7 +25,7 @@ const Hero = () => {
           <img
             src={heroImage}
             alt="Professionele airco installatie door R. Veldhuis Installatie"
-            className="w-full h-full object-cover object-[30%_bottom]"
+            className="w-full h-full object-cover object-[30%_85%]"
             loading="eager"
             // @ts-ignore
             fetchpriority="high"
