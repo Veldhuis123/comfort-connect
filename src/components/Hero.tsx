@@ -2,10 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Phone, CheckCircle2 } from "lucide-react";
 import heroImage from "@/assets/hero-installation.webp";
 
-// Responsive variants — geserveerd vanuit dist/assets na build (server-side gegenereerd).
-// Fallback naar desktop image als variant ontbreekt (bv. in dev/sandbox).
-const heroImage1024 = new URL("../assets/hero-installation-1024.webp", import.meta.url).href;
-const heroImage640 = new URL("../assets/hero-installation-640.webp", import.meta.url).href;
+// Responsive varianten worden server-side gegenereerd (cwebp) en geserveerd door Nginx
+// vanuit dezelfde map als de hoofd-asset. We leiden de paden af van de gebundelde URL
+// zodat Vite ze niet probeert te resolven tijdens de build (bestaan niet in sandbox).
+const heroBase = heroImage.replace(/\.webp$/, "");
+const heroImage1024 = `${heroBase}-1024.webp`;
+const heroImage640 = `${heroBase}-640.webp`;
 
 const Hero = () => {
   const highlights = [
