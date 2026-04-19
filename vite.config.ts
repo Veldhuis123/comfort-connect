@@ -32,17 +32,14 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react-router')) return 'vendor-router';
-            if (id.includes('react-dom') || id.includes('/react/') || id.includes('scheduler')) return 'vendor-react';
-            if (id.includes('@radix-ui')) return 'vendor-radix';
-            if (id.includes('@sentry')) return 'vendor-sentry';
-            if (id.includes('jspdf') || id.includes('qrcode') || id.includes('html2canvas')) return 'vendor-pdf';
-            if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
-            if (id.includes('leaflet')) return 'vendor-maps';
-            if (id.includes('barcode-detector') || id.includes('zxing')) return 'vendor-barcode';
-            if (id.includes('lucide-react')) return 'vendor-icons';
-          }
+          if (!id.includes('node_modules')) return;
+          // Houd React + router + alle @radix-ui (die React intern importeren) samen
+          // in de default vendor chunk om dubbele React instances te voorkomen.
+          if (id.includes('@sentry')) return 'vendor-sentry';
+          if (id.includes('jspdf') || id.includes('qrcode') || id.includes('html2canvas')) return 'vendor-pdf';
+          if (id.includes('recharts') || id.includes('/d3-')) return 'vendor-charts';
+          if (id.includes('leaflet')) return 'vendor-maps';
+          if (id.includes('barcode-detector') || id.includes('zxing')) return 'vendor-barcode';
         },
       },
     },
