@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Phone, CheckCircle2 } from "lucide-react";
 import heroImage from "@/assets/hero-installation.webp";
+import heroImage1024 from "@/assets/hero-installation-1024.webp";
+import heroImage640 from "@/assets/hero-installation-640.webp";
 
 const Hero = () => {
   const highlights = [
@@ -13,18 +15,22 @@ const Hero = () => {
     <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Background image with overlay */}
       <div className="absolute inset-0">
-        {/* eslint-disable-next-line react/no-unknown-property */}
-        <img 
-          src={heroImage} 
-          alt="Professionele airco installatie door R. Veldhuis Installatie" 
-          className="w-full h-full object-cover"
-          loading="eager"
-          // @ts-ignore
-          fetchpriority="high"
-          decoding="async"
-          width={1280}
-          height={720}
-        />
+        <picture>
+          <source media="(max-width: 640px)" srcSet={heroImage640} type="image/webp" />
+          <source media="(max-width: 1024px)" srcSet={heroImage1024} type="image/webp" />
+          {/* eslint-disable-next-line react/no-unknown-property */}
+          <img
+            src={heroImage}
+            alt="Professionele airco installatie door R. Veldhuis Installatie"
+            className="w-full h-full object-cover"
+            loading="eager"
+            // @ts-ignore
+            fetchpriority="high"
+            decoding="async"
+            width={1280}
+            height={720}
+          />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/75 to-primary/40" />
       </div>
       
