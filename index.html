@@ -144,8 +144,10 @@
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=Inter:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=Inter:wght@400;500&display=swap" /></noscript>
     
-    <!-- Preload hero (desktop). Mobile/tablet variants worden via <picture> srcSet geladen. -->
-    <link rel="preload" as="image" type="image/webp" href="/src/assets/hero-installation.webp" />
+    <!-- Preload hero (responsive: mobile/tablet uit /public, desktop uit bundel) -->
+    <link rel="preload" as="image" type="image/webp" href="/src/assets/hero-installation.webp" media="(min-width: 1025px)" />
+    <link rel="preload" as="image" type="image/webp" href="/hero-installation-1024.webp" media="(min-width: 641px) and (max-width: 1024px)" />
+    <link rel="preload" as="image" type="image/webp" href="/hero-installation-640.webp" media="(max-width: 640px)" />
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/favicon.png" />
