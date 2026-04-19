@@ -15,7 +15,7 @@ const Hero = () => {
   ];
 
   return (
-    <section id="home" className="relative min-h-[75vh] md:min-h-[80vh] flex items-center pt-24 pb-12 overflow-hidden">
+    <section id="home" className="relative min-h-[60vh] sm:min-h-[68vh] md:min-h-[80vh] flex items-center pt-24 pb-12 overflow-hidden">
       {/* Background image with overlay */}
       <div className="absolute inset-0">
         <picture>
@@ -25,7 +25,7 @@ const Hero = () => {
           <img
             src={heroImage}
             alt="Professionele airco installatie door R. Veldhuis Installatie"
-            className="w-full h-full object-cover object-center"
+            className="w-full h-full object-cover object-[62%_72%] sm:object-[58%_62%] lg:object-center"
             loading="eager"
             // @ts-ignore
             fetchpriority="high"
