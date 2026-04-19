@@ -130,8 +130,8 @@ router.get('/test', authMiddleware, adminMiddleware, async (req, res) => {
     if (!sessionData.token) {
       return res.status(500).json({ 
         error: 'Geen token ontvangen',
-        details: 'Session response bevat geen token',
-        response: sessionData
+        details: sessionData.message || 'Session response bevat geen token',
+        code: sessionData.code
       });
     }
 
