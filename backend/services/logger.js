@@ -15,14 +15,72 @@ const currentLevel = process.env.LOG_LEVEL
   ? LOG_LEVELS[process.env.LOG_LEVEL.toUpperCase()] || LOG_LEVELS.INFO
   : LOG_LEVELS.INFO;
 
-const formatTimestamp = () => {
-  return new Date().toISOString();
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Keys die nooit in logs mogen verschijnen (case-insensitive)
+const SENSITIVE_KEYS = [
+  'password', 'pass', 'pwd',
+  'token', 'accesstoken', 'access_token', 'refreshtoken', 'refresh_token',
+  'auth', 'authorization', 'cookie',
+  'secret', 'apikey', 'api_key', 'api-key',
+  'signature', 'sig',
+  'iban', 'bsn',
+  'creditcard', 'cvv', 'cvc',
+  'sessiontoken', 'session_token',
+];
+
+const isSensitiveKey = (key) => {
+  const k = String(key).toLowerCase().replace(/[-_]/g, '');
+  return SENSITIVE_KEYS.some(s => k.includes(s.replace(/[-_]/g, '')));
 };
 
+/**
+ * Diep filteren: vervang gevoelige waarden door ***
+ */
+const sanitize = (input, depth = 0) => {
+  if (depth > 5) return '[max-depth]';
+  if (input === null || input === undefined) return input;
+  if (typeof input === 'string') {
+    // Mask JWT-achtige tokens (3 base64 segmenten gescheiden door .)
+    if (/^[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}$/.test(input)) {
+      return '***JWT***';
+    }
+    // Mask Bearer tokens
+    if (/^Bearer\s+/i.test(input)) return 'Bearer ***';
+    return input;
+  }
+  if (typeof input !== 'object') return input;
+  if (Array.isArray(input)) return input.map(v => sanitize(v, depth + 1));
+  const out = {};
+  for (const [k, v] of Object.entries(input)) {
+    out[k] = isSensitiveKey(k) ? '***' : sanitize(v, depth + 1);
+  }
+  return out;
+};
+
+/**
+ * Maskeer dynamische ID/token segmenten in URL paths
+ * /api/quotes/sign/abc123token -> /api/quotes/sign/***
+ * /api/installations/by-qr/XYZ -> /api/installations/by-qr/***
+ */
+const sanitizePath = (path) => {
+  if (!path || typeof path !== 'string') return path;
+  return path
+    // Lange tokens of UUID-achtige segmenten
+    .replace(/\/[A-Za-z0-9_-]{16,}/g, '/***')
+    // Numerieke IDs op gevoelige routes vervangen we niet (te veel ruis)
+    // UUID v4 patroon
+    .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/***');
+};
+
+const formatTimestamp = () => new Date().toISOString();
+
 const formatLog = (level, category, message, data = {}) => {
-  // Remove undefined values for cleaner logs
+  // Sanitize voordat we serialiseren
+  const safe = sanitize(data);
+  // Verwijder undefined waarden
   const clean = Object.fromEntries(
-    Object.entries(data).filter(([, v]) => v !== undefined)
+    Object.entries(safe).filter(([, v]) => v !== undefined)
   );
   return JSON.stringify({
     timestamp: formatTimestamp(),
@@ -69,16 +127,17 @@ const logger = {
   
   error: (category, message, data) => {
     if (currentLevel <= LOG_LEVELS.ERROR) {
-      console.error(formatLog('ERROR', category, message, data));
+      // In productie: strip stack traces om interne paden niet te lekken
+      const safeData = isProduction && data && typeof data === 'object'
+        ? Object.fromEntries(Object.entries(data).filter(([k]) => k !== 'stack'))
+        : data;
+      console.error(formatLog('ERROR', category, message, safeData));
     }
   },
   
   /**
    * Audit log - ALWAYS logged regardless of level
    * Used for BRL 100 compliance tracking
-   * @param {string} action - Action name
-   * @param {object} data - Data to log
-   * @param {object} [req] - Express request object for source tracking
    */
   audit: (action, data, req) => {
     console.log(formatLog('AUDIT', 'COMPLIANCE', action, {
@@ -110,7 +169,7 @@ const logger = {
   },
   
   /**
-   * Request logging middleware with source detection
+   * Request logging middleware met sanitatie van query strings en paths
    */
   requestMiddleware: (req, res, next) => {
     const start = Date.now();
@@ -119,22 +178,27 @@ const logger = {
     req.requestId = requestId;
     
     const sourceInfo = extractSource(req);
+    const safePath = sanitizePath(req.path);
     
-    // Log request
-    logger.info('HTTP', `${req.method} ${req.path}`, {
+    // Filter gevoelige query keys
+    let safeQuery;
+    if (Object.keys(req.query).length > 0) {
+      safeQuery = sanitize(req.query);
+    }
+    
+    logger.info('HTTP', `${req.method} ${safePath}`, {
       requestId,
       method: req.method,
-      path: req.path,
-      query: Object.keys(req.query).length > 0 ? req.query : undefined,
+      path: safePath,
+      query: safeQuery,
       ...sourceInfo,
     });
     
-    // Log response
     res.on('finish', () => {
       const duration = Date.now() - start;
       const logFn = res.statusCode >= 400 ? logger.warn : logger.info;
       
-      logFn('HTTP', `${req.method} ${req.path} ${res.statusCode}`, {
+      logFn('HTTP', `${req.method} ${safePath} ${res.statusCode}`, {
         requestId,
         statusCode: res.statusCode,
         duration: `${duration}ms`,
