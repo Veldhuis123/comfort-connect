@@ -38,15 +38,20 @@ const Hero = () => {
           </picture>
         </div>
 
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 hidden lg:block bg-no-repeat bg-right-bottom [background-size:auto_100%]"
-          style={{
-            backgroundImage: `url(${heroImage})`,
-            WebkitMaskImage: "linear-gradient(to left, black 76%, transparent 100%)",
-            maskImage: "linear-gradient(to left, black 76%, transparent 100%)",
-          }}
-        />
+        <div className="absolute inset-0 hidden lg:block overflow-hidden">
+          {/* eslint-disable-next-line react/no-unknown-property */}
+          <img
+            src={heroPortraitImage}
+            alt=""
+            aria-hidden="true"
+            className="absolute right-0 bottom-0 h-[118%] w-auto max-w-none"
+            loading="eager"
+            decoding="async"
+            width={1200}
+            height={1600}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/55 to-transparent" />
+        </div>
 
         <div className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/75 to-primary/40" />
       </div>
