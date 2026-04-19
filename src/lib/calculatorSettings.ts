@@ -18,6 +18,17 @@ export const defaultCalculatorSettings: CalculatorSettings = {
   schema: { enabled: true, name: "Installatie" },
 };
 
+// Safe fallback used when backend is unreachable: alles UIT zodat er bij
+// een storing geen calculatoren ongewenst zichtbaar worden.
+export const fallbackCalculatorSettings: CalculatorSettings = {
+  airco: { enabled: false, name: "Airco" },
+  pv: { enabled: false, name: "Zonnepanelen" },
+  battery: { enabled: false, name: "Thuisaccu" },
+  unifi: { enabled: false, name: "UniFi Netwerk" },
+  charging: { enabled: false, name: "Laadpalen" },
+  schema: { enabled: false, name: "Installatie" },
+};
+
 // In-flight promise dedup — prevents multiple parallel requests
 let inflightPromise: Promise<CalculatorSettings> | null = null;
 
@@ -42,8 +53,13 @@ export const fetchCalculatorSettings = async (): Promise<CalculatorSettings> => 
       };
       cacheReady = true;
       return cachedSettings;
-    } catch {
-      return defaultCalculatorSettings;
+    } catch (err) {
+      console.warn('[calculatorSettings] Backend unreachable — falling back to all-disabled', err);
+      // Cache the fallback for the session zodat we niet blijven retryen en
+      // de UI niet plots calculatoren toont op basis van defaults.
+      cachedSettings = fallbackCalculatorSettings;
+      cacheReady = true;
+      return fallbackCalculatorSettings;
     } finally {
       inflightPromise = null;
     }
