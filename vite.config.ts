@@ -31,9 +31,18 @@ export default defineConfig(({ mode }) => ({
     cssMinify: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-tooltip', '@radix-ui/react-tabs'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-router')) return 'vendor-router';
+            if (id.includes('react-dom') || id.includes('/react/') || id.includes('scheduler')) return 'vendor-react';
+            if (id.includes('@radix-ui')) return 'vendor-radix';
+            if (id.includes('@sentry')) return 'vendor-sentry';
+            if (id.includes('jspdf') || id.includes('qrcode') || id.includes('html2canvas')) return 'vendor-pdf';
+            if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+            if (id.includes('leaflet')) return 'vendor-maps';
+            if (id.includes('barcode-detector') || id.includes('zxing')) return 'vendor-barcode';
+            if (id.includes('lucide-react')) return 'vendor-icons';
+          }
         },
       },
     },
