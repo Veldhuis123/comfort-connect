@@ -48,13 +48,12 @@ const ContactForm = () => {
       });
       (e.target as HTMLFormElement).reset();
     } catch (error) {
-      // Fallback: open email client if API not available
-      const subject = encodeURIComponent(`Contactformulier: ${data.subject || "Algemeen"}`);
-      const body = encodeURIComponent(`Naam: ${data.name}\nTelefoon: ${data.phone}\nEmail: ${data.email}\n\n${data.message}`);
-      window.location.href = `mailto:info@rv-installatie.nl?subject=${subject}&body=${body}`;
+      console.error('Contact form submit failed:', error);
+      const errMsg = error instanceof Error ? error.message : 'Onbekende fout';
       toast({
-        title: "E-mail client geopend",
-        description: "Verstuur het bericht via uw e-mail programma.",
+        title: "Verzenden mislukt",
+        description: `Probeer het opnieuw of bel 06 - 1362 9947. (${errMsg})`,
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
