@@ -7,7 +7,11 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api";
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "";
+// Public reCAPTCHA v3 site key — safe to commit (publishable key).
+// Falls back to the production key when the VITE_ env var is not injected at build time.
+const RECAPTCHA_SITE_KEY =
+  import.meta.env.VITE_RECAPTCHA_SITE_KEY ||
+  "6LedJY8sAAAAAEFw7iROOZHlOwV7nSo2b3KgpJ2C";
 
 const contactInfo = [
   { icon: Phone, label: "Telefoon", value: "06 - 1362 9947", href: "tel:0613629947" },
