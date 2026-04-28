@@ -61,9 +61,6 @@ const ContactForm = () => {
       setIsSubmitting(false);
     }
   }, [executeRecaptcha, toast]);
-      setIsSubmitting(false);
-    }
-  }, [executeRecaptcha, toast]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
