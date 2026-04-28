@@ -232,7 +232,11 @@ const Contact = () => {
                 <ContactForm />
               </GoogleReCaptchaProvider>
             ) : (
-              <ContactForm />
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+                Het contactformulier is tijdelijk niet beschikbaar (reCAPTCHA ontbreekt).
+                Bel direct: <a href="tel:0613629947" className="font-semibold underline">06 - 1362 9947</a> of mail naar{" "}
+                <a href="mailto:info@rv-installatie.nl" className="font-semibold underline">info@rv-installatie.nl</a>.
+              </div>
             )}
           </div>
         </div>
