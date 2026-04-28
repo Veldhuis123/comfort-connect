@@ -19,9 +19,7 @@ const contactInfo = [
 const ContactForm = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Only call the hook when reCAPTCHA is configured (provider is mounted)
-  const recaptcha = RECAPTCHA_SITE_KEY ? useGoogleReCaptcha() : null;
-  const executeRecaptcha = recaptcha?.executeRecaptcha;
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -37,10 +35,12 @@ const ContactForm = () => {
     };
 
     try {
-      // Get reCAPTCHA v3 token
-      let recaptchaToken: string | undefined;
-      if (executeRecaptcha) {
-        recaptchaToken = await executeRecaptcha('contact_form');
+      if (!executeRecaptcha) {
+        throw new Error('Beveiliging (reCAPTCHA) is nog niet geladen. Wacht een moment en probeer opnieuw.');
+      }
+      const recaptchaToken = await executeRecaptcha('contact_form');
+      if (!recaptchaToken) {
+        throw new Error('reCAPTCHA-token kon niet worden gegenereerd.');
       }
 
       await api.createMessage({ ...data, recaptchaToken });
@@ -54,10 +54,13 @@ const ContactForm = () => {
       const errMsg = error instanceof Error ? error.message : 'Onbekende fout';
       toast({
         title: "Verzenden mislukt",
-        description: `Probeer het opnieuw of bel 06 - 1362 9947. (${errMsg})`,
+        description: `${errMsg} Of bel direct: 06 - 1362 9947.`,
         variant: "destructive",
       });
     } finally {
+      setIsSubmitting(false);
+    }
+  }, [executeRecaptcha, toast]);
       setIsSubmitting(false);
     }
   }, [executeRecaptcha, toast]);
