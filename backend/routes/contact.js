@@ -96,38 +96,44 @@ router.post('/', contactSubmitLimiter, async (req, res) => {
     const sanitizedPhone = phone ? phone.trim() : null;
     const sanitizedSubject = subject ? subject.trim() : null;
 
-    // Verify reCAPTCHA v3 only if token is provided AND secret key is configured
-    if (recaptchaToken && process.env.RECAPTCHA_SECRET_KEY) {
-      try {
-        const recaptchaResponse = await axios.post(
-          'https://www.google.com/recaptcha/api/siteverify',
-          null,
-          {
-            params: {
-              secret: process.env.RECAPTCHA_SECRET_KEY,
-              response: recaptchaToken
-            }
+    // reCAPTCHA v3 is REQUIRED for all submissions
+    if (!process.env.RECAPTCHA_SECRET_KEY) {
+      logger.error('RECAPTCHA', 'RECAPTCHA_SECRET_KEY not configured on server');
+      return res.status(503).json({ error: 'Beveiliging niet geconfigureerd. Neem telefonisch contact op.' });
+    }
+    if (!recaptchaToken) {
+      logger.warn('RECAPTCHA', 'Submission rejected: missing token');
+      return res.status(400).json({ error: 'reCAPTCHA verificatie ontbreekt' });
+    }
+    try {
+      const recaptchaResponse = await axios.post(
+        'https://www.google.com/recaptcha/api/siteverify',
+        null,
+        {
+          params: {
+            secret: process.env.RECAPTCHA_SECRET_KEY,
+            response: recaptchaToken
           }
-        );
-
-        const { success, score, action } = recaptchaResponse.data;
-        
-        if (!success) {
-          logger.warn('RECAPTCHA', 'reCAPTCHA v3 failed', { errorCodes: recaptchaResponse.data['error-codes'] });
-          return res.status(400).json({ error: 'reCAPTCHA verificatie mislukt' });
         }
+      );
 
-        const threshold = parseFloat(process.env.RECAPTCHA_SCORE_THRESHOLD || '0.5');
-        if (score < threshold) {
-          logger.warn('RECAPTCHA', 'Score too low', { score, threshold, action });
-          return res.status(400).json({ error: 'Spam detectie - probeer het opnieuw' });
-        }
+      const { success, score, action } = recaptchaResponse.data;
 
-        logger.debug('RECAPTCHA', 'Passed', { score, action });
-      } catch (recaptchaError) {
-        logger.error('RECAPTCHA', 'Verification error', { error: recaptchaError.message });
-        return res.status(500).json({ error: 'reCAPTCHA verificatie fout' });
+      if (!success) {
+        logger.warn('RECAPTCHA', 'reCAPTCHA v3 failed', { errorCodes: recaptchaResponse.data['error-codes'] });
+        return res.status(400).json({ error: 'reCAPTCHA verificatie mislukt' });
       }
+
+      const threshold = parseFloat(process.env.RECAPTCHA_SCORE_THRESHOLD || '0.5');
+      if (score < threshold) {
+        logger.warn('RECAPTCHA', 'Score too low', { score, threshold, action });
+        return res.status(400).json({ error: 'Spam detectie - probeer het opnieuw' });
+      }
+
+      logger.debug('RECAPTCHA', 'Passed', { score, action });
+    } catch (recaptchaError) {
+      logger.error('RECAPTCHA', 'Verification error', { error: recaptchaError.message });
+      return res.status(500).json({ error: 'reCAPTCHA verificatie fout' });
     }
 
     const [result] = await db.query(
