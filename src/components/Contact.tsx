@@ -19,7 +19,9 @@ const contactInfo = [
 const ContactForm = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  // Only call the hook when reCAPTCHA is configured (provider is mounted)
+  const recaptcha = RECAPTCHA_SITE_KEY ? useGoogleReCaptcha() : null;
+  const executeRecaptcha = recaptcha?.executeRecaptcha;
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
