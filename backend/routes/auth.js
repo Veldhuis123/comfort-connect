@@ -125,7 +125,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
 // Logout (invalidate cookie)
 router.post('/logout', (req, res) => {
-  res.clearCookie('auth_token');
+  res.clearCookie('auth_token', { path: '/' });
   res.json({ message: 'Uitgelogd' });
 });
 
