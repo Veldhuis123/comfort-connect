@@ -44,7 +44,26 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    mode === "development" && componentTagger(),
+    {
+      // Voeg nonce-placeholder toe aan alle door Vite gegenereerde
+      // <script>, <link rel="modulepreload"> en <link rel="stylesheet"> tags.
+      // Nginx vervangt __CSP_NONCE__ per request via sub_filter.
+      name: "inject-csp-nonce-placeholder",
+      apply: "build",
+      enforce: "post",
+      transformIndexHtml(html: string) {
+        return html
+          .replace(/<script(?![^>]*\bnonce=)/g, '<script nonce="__CSP_NONCE__"')
+          .replace(
+            /<link(?=[^>]*\brel="(?:modulepreload|stylesheet|preload)")(?![^>]*\bnonce=)/g,
+            '<link nonce="__CSP_NONCE__"'
+          );
+      },
+    },
+  ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
