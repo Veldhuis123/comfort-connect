@@ -264,9 +264,10 @@ router.put('/password', authMiddleware, async (req, res) => {
       [hashedPassword, req.user.id]
     );
 
-    // Clear cookie to force re-login with new credentials
-    res.clearCookie('auth_token');
-    
+    // Revoke ALLE refresh tokens van deze user — dwingt re-login op alle apparaten
+    await revokeAllUserTokens(req.user.id);
+    clearAuthCookies(res);
+
     res.json({ message: 'Wachtwoord gewijzigd. Log opnieuw in.' });
   } catch (error) {
     logger.error('AUTH', 'Password change error', { error: error.message });
@@ -274,45 +275,66 @@ router.put('/password', authMiddleware, async (req, res) => {
   }
 });
 
-// Token refresh endpoint
-router.post('/refresh', authMiddleware, async (req, res) => {
+// Token refresh endpoint — geen authMiddleware (access-token mag verlopen zijn).
+// Gebruikt het refresh-token cookie en past rotation + theft-detection toe.
+router.post('/refresh', async (req, res) => {
+  const raw = req.cookies?.[REFRESH_COOKIE];
+  if (!raw) {
+    return res.status(401).json({ error: 'Geen refresh token' });
+  }
+
   try {
-    // Verify user still exists and is active
-    const [users] = await db.query(
-      'SELECT id, email, name, role FROM admin_users WHERE id = ?',
-      [req.user.id]
+    const tokenHash = hashToken(raw);
+    const [rows] = await db.query(
+      `SELECT id, user_id, family_id, expires_at, revoked_at, replaced_by_id
+       FROM refresh_tokens WHERE token_hash = ? LIMIT 1`,
+      [tokenHash]
     );
 
-    if (users.length === 0) {
-      return res.status(401).json({ error: 'Gebruiker niet gevonden' });
+    if (rows.length === 0) {
+      // Onbekend token — kan oude/gestolen zijn. Wis cookies.
+      clearAuthCookies(res);
+      return res.status(401).json({ error: 'Ongeldig refresh token' });
+    }
+
+    const stored = rows[0];
+
+    // Theft detection: token is al gerevokeerd maar wordt opnieuw aangeboden
+    if (stored.revoked_at) {
+      await revokeFamily(stored.family_id, 'reuse-detected');
+      clearAuthCookies(res);
+      return res.status(401).json({ error: 'Refresh token hergebruikt — sessie ingetrokken' });
+    }
+
+    if (new Date(stored.expires_at) < new Date()) {
+      clearAuthCookies(res);
+      return res.status(401).json({ error: 'Refresh token verlopen' });
+    }
+
+    // Verify user still exists and is active
+    const [users] = await db.query(
+      'SELECT id, email, name, role, is_active FROM admin_users WHERE id = ?',
+      [stored.user_id]
+    );
+    if (users.length === 0 || users[0].is_active === false) {
+      await revokeFamily(stored.family_id, 'user-inactive');
+      clearAuthCookies(res);
+      return res.status(401).json({ error: 'Gebruiker niet actief' });
     }
 
     const user = users[0];
 
-    // Issue new token
-    const token = jwt.sign(
-      { 
-        id: user.id, 
-        role: user.role,
-        v: 1
-      },
-      process.env.JWT_SECRET,
-      { 
-        expiresIn: '8h',
-        issuer: 'rv-installatie',
-        audience: 'rv-admin'
-      }
+    // Rotation: maak nieuw refresh-token in dezelfde familie, revoke oude
+    const { raw: newRaw, id: newId } = await issueRefreshToken(user.id, stored.family_id, req);
+    await db.query(
+      `UPDATE refresh_tokens SET revoked_at = NOW(), replaced_by_id = ? WHERE id = ?`,
+      [newId, stored.id]
     );
 
-    res.cookie('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 8 * 60 * 60 * 1000,
-      path: '/',
-    });
+    const accessToken = signAccessToken(user);
+    setAuthCookies(res, accessToken, newRaw);
 
-    res.json({ user });
+    res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (error) {
     logger.error('AUTH', 'Token refresh error', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
