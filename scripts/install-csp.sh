@@ -49,7 +49,7 @@ script-src-elem 'self' 'unsafe-inline' https://static.cloudflareinsights.com htt
 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
 font-src 'self' data: https://fonts.gstatic.com; \
 img-src 'self' data: blob: https:; \
-connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://static.cloudflareinsights.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com; \
+connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://static.cloudflareinsights.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org; \
 frame-src 'self' https://www.google.com https://googleads.g.doubleclick.net https://*.googlesyndication.com https://fundingchoicesmessages.google.com; \
 worker-src 'self' blob:; \
 media-src 'self' blob: data:; \
