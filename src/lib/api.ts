@@ -45,21 +45,18 @@ export const getUploadUrl = (path: string): string => {
   return appendUploadCacheBuster(resolvedPath);
 };
 
-// Auth token management
-export const getAuthToken = (): string | null => {
-  return localStorage.getItem('auth_token');
-};
-
-export const setAuthToken = (token: string): void => {
-  localStorage.setItem('auth_token', token);
-};
-
-export const removeAuthToken = (): void => {
-  localStorage.removeItem('auth_token');
-};
+// Auth wordt beheerd via httpOnly cookies (XSS-bestendig).
+// Tokens zitten NIET meer in localStorage. Cookies worden automatisch
+// meegestuurd via `credentials: 'include'`.
+//
+// Eenmalige opruim van oude localStorage tokens van vóór de migratie:
+if (typeof window !== 'undefined') {
+  try { localStorage.removeItem('auth_token'); } catch { /* noop */ }
+}
 
 // Get CSRF token from cookie
 const getCsrfToken = (): string | null => {
+  if (typeof document === 'undefined') return null;
   const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
   return match ? decodeURIComponent(match[1]) : null;
 };
@@ -69,16 +66,10 @@ export const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const token = getAuthToken();
-  
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
-
-  if (token) {
-    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-  }
 
   // Add CSRF token for state-changing requests
   const method = (options.method || 'GET').toUpperCase();
@@ -92,7 +83,7 @@ export const apiRequest = async <T>(
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
-    credentials: 'include', // Ensure cookies are sent
+    credentials: 'include', // httpOnly auth cookie wordt automatisch meegestuurd
   });
 
   if (!response.ok) {
