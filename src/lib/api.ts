@@ -61,10 +61,33 @@ const getCsrfToken = (): string | null => {
   return match ? decodeURIComponent(match[1]) : null;
 };
 
+// Single in-flight refresh promise — voorkomt dat parallelle 401's meerdere refreshes triggeren
+let refreshPromise: Promise<boolean> | null = null;
+
+const tryRefresh = (): Promise<boolean> => {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: (() => {
+        const h: Record<string, string> = { 'Content-Type': 'application/json' };
+        const t = getCsrfToken();
+        if (t) h['x-csrf-token'] = t;
+        return h;
+      })(),
+    })
+      .then((r) => r.ok)
+      .catch(() => false)
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+};
+
 // API request helper
 export const apiRequest = async <T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  _retry = false
 ): Promise<T> => {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -83,8 +106,22 @@ export const apiRequest = async <T>(
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
-    credentials: 'include', // httpOnly auth cookie wordt automatisch meegestuurd
+    credentials: 'include',
   });
+
+  // Bij 401 op een normale call (geen auth-endpoint, geen retry): probeer refresh + één retry.
+  if (
+    response.status === 401 &&
+    !_retry &&
+    !endpoint.startsWith('/auth/login') &&
+    !endpoint.startsWith('/auth/refresh') &&
+    !endpoint.startsWith('/auth/logout')
+  ) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      return apiRequest<T>(endpoint, options, true);
+    }
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Server fout' }));
@@ -93,6 +130,9 @@ export const apiRequest = async <T>(
 
   return response.json();
 };
+
+// Expliciet aan te roepen vanuit AuthProvider bij app-start
+export const refreshSession = (): Promise<boolean> => tryRefresh();
 
 // API endpoints
 export const api = {
