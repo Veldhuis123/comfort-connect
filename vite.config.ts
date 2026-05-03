@@ -84,7 +84,8 @@ export default defineConfig(({ mode }) => ({
           );
       },
     },
-  ].filter(Boolean),
+    analyzePlugin(),
+  ].filter(Boolean) as PluginOption[],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
