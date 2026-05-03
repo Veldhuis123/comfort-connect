@@ -52,8 +52,8 @@ export default defineConfig(({ mode }) => ({
       // <script>, <link rel="modulepreload"> en <link rel="stylesheet"> tags.
       // Nginx vervangt __CSP_NONCE__ per request via sub_filter.
       name: "inject-csp-nonce-placeholder",
-      apply: "build",
-      enforce: "post",
+      apply: "build" as const,
+      enforce: "post" as const,
       transformIndexHtml(html: string) {
         return html
           .replace(/<script(?![^>]*\bnonce=)/g, '<script nonce="__CSP_NONCE__"')
