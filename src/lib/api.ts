@@ -96,12 +96,13 @@ export const apiRequest = async <T>(
 
 // API endpoints
 export const api = {
-  // Auth
+  // Auth — token wordt server-side in een httpOnly cookie gezet
   login: (email: string, password: string) =>
-    apiRequest<{ token: string; user: AdminUser }>('/auth/login', {
+    apiRequest<{ user: AdminUser }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+  logout: () => apiRequest<{ message: string }>('/auth/logout', { method: 'POST' }),
   
   getMe: () => apiRequest<AdminUser>('/auth/me'),
   
