@@ -49,7 +49,6 @@ BACKUP_FILE="${BACKUP_DIR}/$(basename "${NGINX_CONF:-unknown}").${TIMESTAMP}.bak
 INCLUDE_LINE="    include snippets/csp-rv.conf;  # === MANAGED CSP (install-csp.sh) ==="
 SUBFILTER_LINE="    sub_filter '__CSP_NONCE__' \$csp_nonce;  # === MANAGED CSP (install-csp.sh) ==="
 SUBFILTER_ONCE="    sub_filter_once off;  # === MANAGED CSP (install-csp.sh) ==="
-SUBFILTER_TYPES="    sub_filter_types text/html;  # === MANAGED CSP (install-csp.sh) ==="
 MARKER="MANAGED CSP (install-csp.sh)"
 
 # Note: \$csp_nonce wordt door Nginx geëvalueerd, NIET door bash.
