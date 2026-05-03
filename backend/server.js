@@ -50,33 +50,17 @@ const PORT = process.env.PORT || 3001;
 app.set('trust proxy', 1);
 
 // Security headers
-// LET OP: De productie-CSP wordt beheerd door Nginx (scripts/install-csp.sh).
-// Deze helmet CSP is een fallback die exact overeenkomt met de Nginx-snippet,
-// zodat directe backend-responses (API, /uploads) dezelfde policy krijgen
-// en niets stuk gaat als Nginx er (lokaal/dev) niet tussenzit.
+// LET OP: De productie-CSP wordt beheerd door Nginx (scripts/install-csp.sh)
+// met per-request nonces. Deze helmet CSP is een fallback voor directe
+// backend-responses (API, /uploads) — die hebben geen inline scripts nodig,
+// dus we kunnen 'unsafe-inline' voor scripts hier ook weglaten.
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: [
-        "'self'", "'unsafe-inline'",
-        "https://static.cloudflareinsights.com",
-        "https://*.sentry.io",
-        "https://browser.sentry-cdn.com",
-        "https://js.sentry-cdn.com",
-        "https://www.google.com",
-        "https://www.gstatic.com",
-      ],
-      scriptSrcElem: [
-        "'self'", "'unsafe-inline'",
-        "https://static.cloudflareinsights.com",
-        "https://*.sentry.io",
-        "https://browser.sentry-cdn.com",
-        "https://js.sentry-cdn.com",
-        "https://www.google.com",
-        "https://www.gstatic.com",
-      ],
+      scriptSrc: ["'self'"],
+      scriptSrcElem: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
@@ -89,10 +73,7 @@ app.use(helmet({
         "https://nominatim.openstreetmap.org",
         "https://*.tile.openstreetmap.org",
       ],
-      frameSrc: [
-        "'self'",
-        "https://www.google.com",
-      ],
+      frameSrc: ["'self'", "https://www.google.com"],
       workerSrc: ["'self'", "blob:"],
       mediaSrc: ["'self'", "blob:", "data:"],
       objectSrc: ["'none'"],

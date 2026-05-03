@@ -41,7 +41,7 @@
     <meta name="msapplication-TileColor" content="#1e40af" />
     
     <!-- Structured Data: LocalBusiness -->
-    <script type="application/ld+json">
+    <script type="application/ld+json" nonce="__CSP_NONCE__">
     {
       "@context": "https://schema.org",
       "@type": "LocalBusiness",
@@ -140,7 +140,14 @@
     <!-- Google Fonts async (non-render-blocking) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=Inter:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=Inter:wght@400;500&display=swap" id="gfont-preload" />
+    <script nonce="__CSP_NONCE__">
+      // CSP-vriendelijke font swap (vervangt inline onload= attribuut)
+      (function () {
+        var l = document.getElementById('gfont-preload');
+        if (l) l.addEventListener('load', function () { l.rel = 'stylesheet'; }, { once: true });
+      })();
+    </script>
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&family=Inter:wght@400;500&display=swap" /></noscript>
     
     <!-- Preload hero (responsive: mobile/tablet uit /public, desktop uit bundel) -->
@@ -155,6 +162,6 @@
 
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" nonce="__CSP_NONCE__" src="/src/main.tsx"></script>
   </body>
 </html>
