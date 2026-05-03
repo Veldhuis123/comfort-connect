@@ -260,7 +260,11 @@ router.post('/:id/image', authMiddleware, adminMiddleware, upload.single('image'
     if (oldImage && oldImage.startsWith('/uploads/') && fs.existsSync('.' + oldImage)) {
       fs.unlinkSync('.' + oldImage);
     }
-    
+
+    // Converteer naar WebP indien sharp beschikbaar
+    const { convertFilesToWebp } = require('../services/imageOptimizer');
+    await convertFilesToWebp([file], { quality: 85, maxWidth: 1600 });
+
     const imageUrl = `/uploads/products/${file.filename}`;
     await db.query('UPDATE products SET image_url = ? WHERE id = ?', [imageUrl, id]);
     
