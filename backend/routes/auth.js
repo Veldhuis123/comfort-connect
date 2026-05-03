@@ -100,16 +100,16 @@ router.post('/login', loginLimiter, async (req, res) => {
       }
     );
 
-    // Set secure cookie for additional security (in addition to response)
+    // Set httpOnly cookie — token is NIET meer in response body (XSS-bescherming)
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 8 * 60 * 60 * 1000 // 8 hours
+      maxAge: 8 * 60 * 60 * 1000, // 8 hours
+      path: '/',
     });
 
     res.json({
-      token,
       user: {
         id: user.id,
         email: user.email,
@@ -125,7 +125,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
 // Logout (invalidate cookie)
 router.post('/logout', (req, res) => {
-  res.clearCookie('auth_token');
+  res.clearCookie('auth_token', { path: '/' });
   res.json({ message: 'Uitgelogd' });
 });
 
@@ -237,10 +237,11 @@ router.post('/refresh', authMiddleware, async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 8 * 60 * 60 * 1000
+      maxAge: 8 * 60 * 60 * 1000,
+      path: '/',
     });
 
-    res.json({ token, user });
+    res.json({ user });
   } catch (error) {
     logger.error('AUTH', 'Token refresh error', { error: error.message });
     res.status(500).json({ error: 'Server fout' });

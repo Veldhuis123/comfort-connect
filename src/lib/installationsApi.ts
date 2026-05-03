@@ -1,4 +1,4 @@
-import { apiRequest, API_URL, getAuthToken } from "./api";
+import { apiRequest, API_URL } from "./api";
 import type { BRLReport } from "./brlTypes";
 
 // =============================================
