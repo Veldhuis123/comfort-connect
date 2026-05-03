@@ -49,7 +49,6 @@ BACKUP_FILE="${BACKUP_DIR}/$(basename "${NGINX_CONF:-unknown}").${TIMESTAMP}.bak
 INCLUDE_LINE="    include snippets/csp-rv.conf;  # === MANAGED CSP (install-csp.sh) ==="
 SUBFILTER_LINE="    sub_filter '__CSP_NONCE__' \$csp_nonce;  # === MANAGED CSP (install-csp.sh) ==="
 SUBFILTER_ONCE="    sub_filter_once off;  # === MANAGED CSP (install-csp.sh) ==="
-SUBFILTER_TYPES="    sub_filter_types text/html;  # === MANAGED CSP (install-csp.sh) ==="
 MARKER="MANAGED CSP (install-csp.sh)"
 
 # Note: \$csp_nonce wordt door Nginx geëvalueerd, NIET door bash.
@@ -122,13 +121,12 @@ fi
 #    - na elke 'server {'   → CSP include + sub_filter setup
 #    - na elke 'location {' → CSP include + sub_filter regels (non-inherit fix)
 # -----------------------------------------------------------------------------
-awk -v inc="$INCLUDE_LINE" -v sf="$SUBFILTER_LINE" -v sfo="$SUBFILTER_ONCE" -v sft="$SUBFILTER_TYPES" '
+awk -v inc="$INCLUDE_LINE" -v sf="$SUBFILTER_LINE" -v sfo="$SUBFILTER_ONCE" '
   /^[[:space:]]*server[[:space:]]*\{/ {
     print
     print inc
     print sf
     print sfo
-    print sft
     next
   }
   /^[[:space:]]*location[[:space:]].*\{[[:space:]]*$/ {
@@ -136,7 +134,6 @@ awk -v inc="$INCLUDE_LINE" -v sf="$SUBFILTER_LINE" -v sfo="$SUBFILTER_ONCE" -v s
     print inc
     print sf
     print sfo
-    print sft
     next
   }
   { print }
