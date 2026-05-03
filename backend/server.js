@@ -141,8 +141,64 @@ app.use(cookieParser());
 app.use(limiter);
 
 // Health check — vóór CSRF/limiter, lichtgewicht voor uptime monitoring
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// /api/health           → snelle liveness (alleen process)
+// /api/health?deep=1    → DB + SMTP probe (langzamer, voor monitoring)
+const db = require('./config/database');
+const nodemailer = require('nodemailer');
+
+app.get('/api/health', async (req, res) => {
+  const started = Date.now();
+  const result = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: Math.round(process.uptime()),
+    version: process.env.APP_VERSION || 'unknown',
+  };
+
+  if (req.query.deep === '1' || req.query.deep === 'true') {
+    const checks = { db: { ok: false }, smtp: { ok: false } };
+
+    // DB check (timeout 2s)
+    try {
+      const t0 = Date.now();
+      await Promise.race([
+        db.query('SELECT 1'),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 2000)),
+      ]);
+      checks.db = { ok: true, latencyMs: Date.now() - t0 };
+    } catch (e) {
+      checks.db = { ok: false, error: e.message };
+    }
+
+    // SMTP check (timeout 3s) — alleen verify, verstuurt geen mail
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      try {
+        const t0 = Date.now();
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST || 'smtp.transip.email',
+          port: parseInt(process.env.SMTP_PORT) || 465,
+          secure: process.env.SMTP_SECURE !== 'false',
+          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+          connectionTimeout: 3000,
+          greetingTimeout: 3000,
+          socketTimeout: 3000,
+        });
+        await transporter.verify();
+        checks.smtp = { ok: true, latencyMs: Date.now() - t0 };
+      } catch (e) {
+        checks.smtp = { ok: false, error: e.message };
+      }
+    } else {
+      checks.smtp = { ok: false, error: 'not_configured' };
+    }
+
+    result.checks = checks;
+    result.status = checks.db.ok && checks.smtp.ok ? 'ok' : 'degraded';
+    result.totalMs = Date.now() - started;
+    return res.status(checks.db.ok ? 200 : 503).json(result);
+  }
+
+  res.json(result);
 });
 app.use(csrfCookie);           // Set CSRF cookie
 app.use(csrfProtection);       // Verify CSRF on state-changing requests
