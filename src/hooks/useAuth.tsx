@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api, AdminUser, getAuthToken, setAuthToken, removeAuthToken } from '@/lib/api';
+import { api, AdminUser } from '@/lib/api';
 
 interface AuthContextType {
   user: AdminUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,29 +16,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Auth wordt bepaald door de httpOnly cookie. We vragen de server
+    // wie we zijn; krijgen we 401, dan zijn we niet ingelogd.
     const checkAuth = async () => {
-      const token = getAuthToken();
-      if (token) {
-        try {
-          const userData = await api.getMe();
-          setUser(userData);
-        } catch {
-          removeAuthToken();
-        }
+      try {
+        const userData = await api.getMe();
+        setUser(userData);
+      } catch {
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
     checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await api.login(email, password);
-    setAuthToken(response.token);
     setUser(response.user);
   };
 
-  const logout = () => {
-    removeAuthToken();
+  const logout = async () => {
+    try { await api.logout(); } catch { /* ignore */ }
     setUser(null);
   };
 

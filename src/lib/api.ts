@@ -188,11 +188,12 @@ export const api = {
   uploadProductImage: async (id: string, file: File) => {
     const formData = new FormData();
     formData.append('image', file);
-    const token = getAuthToken();
+    const csrfToken = getCsrfToken();
     const response = await fetch(`${API_URL}/products/${id}/image`, {
       method: 'POST',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      headers: csrfToken ? { 'x-csrf-token': csrfToken } : {},
       body: formData,
+      credentials: 'include',
     });
     if (!response.ok) throw new Error('Upload mislukt');
     return response.json() as Promise<{ image_url: string }>;
@@ -282,10 +283,8 @@ export const api = {
   uploadProjectImage: async (id: number, file: File) => {
     const formData = new FormData();
     formData.append('image', file);
-    const token = getAuthToken();
     const csrfToken = getCsrfToken();
     const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
     if (csrfToken) headers['x-csrf-token'] = csrfToken;
     const response = await fetch(`${API_URL}/projects/${id}/image`, {
       method: 'POST',
