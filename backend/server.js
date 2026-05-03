@@ -45,6 +45,10 @@ const projectsRoutes = require('./routes/projects');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Achter Nginx reverse proxy — vertrouw 1 hop voor correcte client-IP
+// (anders weigert express-rate-limit de X-Forwarded-For header).
+app.set('trust proxy', 1);
+
 // Security headers
 // LET OP: De productie-CSP wordt beheerd door Nginx (scripts/install-csp.sh).
 // Deze helmet CSP is een fallback die exact overeenkomt met de Nginx-snippet,
