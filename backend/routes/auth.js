@@ -1,11 +1,87 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
 const { authMiddleware } = require('../middleware/auth');
 const logger = require('../services/logger');
 const router = express.Router();
+
+// === Token configuratie ===
+const ACCESS_TOKEN_TTL_SEC = 15 * 60;            // 15 minuten
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dagen
+const REFRESH_COOKIE = 'refresh_token';
+const ACCESS_COOKIE = 'auth_token';
+const REFRESH_PATH = '/api/auth';                // cookie alleen meegestuurd op /api/auth/*
+
+const isProd = process.env.NODE_ENV === 'production';
+
+const accessCookieOpts = {
+  httpOnly: true,
+  secure: isProd,
+  sameSite: 'strict',
+  maxAge: ACCESS_TOKEN_TTL_SEC * 1000,
+  path: '/',
+};
+
+const refreshCookieOpts = {
+  httpOnly: true,
+  secure: isProd,
+  sameSite: 'strict',
+  maxAge: REFRESH_TOKEN_TTL_MS,
+  path: REFRESH_PATH,
+};
+
+const signAccessToken = (user) => jwt.sign(
+  { id: user.id, role: user.role, v: 1 },
+  process.env.JWT_SECRET,
+  { expiresIn: ACCESS_TOKEN_TTL_SEC, issuer: 'rv-installatie', audience: 'rv-admin' }
+);
+
+const hashToken = (raw) => crypto.createHash('sha256').update(raw).digest('hex');
+
+// Maak een nieuw refresh-token aan en sla de hash op (rotation-ready).
+// familyId hergebruiken bij rotation; bij eerste login => nieuwe familie.
+const issueRefreshToken = async (userId, familyId, req) => {
+  const raw = crypto.randomBytes(48).toString('hex'); // 96 hex chars
+  const tokenHash = hashToken(raw);
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+  const ua = (req.headers['user-agent'] || '').slice(0, 255);
+  const ip = (req.ip || req.connection?.remoteAddress || '').slice(0, 45);
+  const [result] = await db.query(
+    `INSERT INTO refresh_tokens (user_id, family_id, token_hash, expires_at, user_agent, ip)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [userId, familyId, tokenHash, expiresAt, ua, ip]
+  );
+  return { raw, id: result.insertId };
+};
+
+const setAuthCookies = (res, accessToken, refreshRaw) => {
+  res.cookie(ACCESS_COOKIE, accessToken, accessCookieOpts);
+  res.cookie(REFRESH_COOKIE, refreshRaw, refreshCookieOpts);
+};
+
+const clearAuthCookies = (res) => {
+  res.clearCookie(ACCESS_COOKIE, { path: '/' });
+  res.clearCookie(REFRESH_COOKIE, { path: REFRESH_PATH });
+};
+
+// Revoke alle (nog niet gerevokeerde) tokens van een familie — gebruikt bij theft-detection
+const revokeFamily = async (familyId, reason) => {
+  await db.query(
+    `UPDATE refresh_tokens SET revoked_at = NOW() WHERE family_id = ? AND revoked_at IS NULL`,
+    [familyId]
+  );
+  logger.warn('AUTH', 'Refresh token family revoked', { familyId, reason });
+};
+
+const revokeAllUserTokens = async (userId) => {
+  await db.query(
+    `UPDATE refresh_tokens SET revoked_at = NOW() WHERE user_id = ? AND revoked_at IS NULL`,
+    [userId]
+  );
+};
 
 // Rate limiting specifically for login attempts (stricter than general API limit)
 const loginLimiter = rateLimit({
