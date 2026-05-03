@@ -35,6 +35,12 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Spring naar inhoud
+          </a>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/calculators" element={<Suspense fallback={null}><Calculators /></Suspense>} />
