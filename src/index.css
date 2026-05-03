@@ -120,11 +120,12 @@
     @apply font-heading;
   }
 
-  /* Consistente, zichtbare focus-ring voor toetsenbord-navigatie */
+  /* Consistente, zichtbare focus-ring voor toetsenbord-navigatie.
+     Alleen op elementen die geen eigen ring/outline definiëren (shadcn componenten
+     gebruiken `outline-none` + ring, die blijven dus intact). */
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
-    border-radius: 4px;
   }
 
   /* Optimize below-fold rendering */
