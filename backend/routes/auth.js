@@ -160,30 +160,11 @@ router.post('/login', loginLimiter, async (req, res) => {
       [user.id]
     );
 
-    // Create token with minimal claims
-    const token = jwt.sign(
-      { 
-        id: user.id, 
-        role: user.role,
-        // Add token version for invalidation capability
-        v: 1
-      },
-      process.env.JWT_SECRET,
-      { 
-        expiresIn: '8h', // Shortened from 24h for better security
-        issuer: 'rv-installatie',
-        audience: 'rv-admin'
-      }
-    );
-
-    // Set httpOnly cookie — token is NIET meer in response body (XSS-bescherming)
-    res.cookie('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 8 * 60 * 60 * 1000, // 8 hours
-      path: '/',
-    });
+    // Issue korte access-token + nieuw refresh-token (nieuwe familie)
+    const accessToken = signAccessToken(user);
+    const familyId = crypto.randomUUID();
+    const { raw: refreshRaw } = await issueRefreshToken(user.id, familyId, req);
+    setAuthCookies(res, accessToken, refreshRaw);
 
     res.json({
       user: {
@@ -199,9 +180,23 @@ router.post('/login', loginLimiter, async (req, res) => {
   }
 });
 
-// Logout (invalidate cookie)
-router.post('/logout', (req, res) => {
-  res.clearCookie('auth_token', { path: '/' });
+// Logout — revoke refresh-token familie en wis cookies
+router.post('/logout', async (req, res) => {
+  try {
+    const raw = req.cookies?.[REFRESH_COOKIE];
+    if (raw) {
+      const [rows] = await db.query(
+        'SELECT family_id FROM refresh_tokens WHERE token_hash = ? LIMIT 1',
+        [hashToken(raw)]
+      );
+      if (rows.length > 0) {
+        await revokeFamily(rows[0].family_id, 'logout');
+      }
+    }
+  } catch (err) {
+    logger.error('AUTH', 'Logout error', { error: err.message });
+  }
+  clearAuthCookies(res);
   res.json({ message: 'Uitgelogd' });
 });
 
