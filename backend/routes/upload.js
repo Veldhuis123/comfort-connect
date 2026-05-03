@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const db = require('../config/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const logger = require('../services/logger');
+const { convertFilesToWebp } = require('../services/imageOptimizer');
 
 const router = express.Router();
 
@@ -82,6 +83,9 @@ router.post('/quote/:quoteId', uploadLimiter, upload.array('photos', 10), async 
     if (!files || files.length === 0) {
       return res.status(400).json({ error: 'Geen bestanden geüpload' });
     }
+
+    // Converteer naar WebP voor kleinere bestanden + sneller laden
+    await convertFilesToWebp(files, { quality: 82, maxWidth: 2400 });
 
     const insertPromises = files.map(file => {
       return db.query(
