@@ -121,13 +121,12 @@ fi
 #    - na elke 'server {'   → CSP include + sub_filter setup
 #    - na elke 'location {' → CSP include + sub_filter regels (non-inherit fix)
 # -----------------------------------------------------------------------------
-awk -v inc="$INCLUDE_LINE" -v sf="$SUBFILTER_LINE" -v sfo="$SUBFILTER_ONCE" -v sft="$SUBFILTER_TYPES" '
+awk -v inc="$INCLUDE_LINE" -v sf="$SUBFILTER_LINE" -v sfo="$SUBFILTER_ONCE" '
   /^[[:space:]]*server[[:space:]]*\{/ {
     print
     print inc
     print sf
     print sfo
-    print sft
     next
   }
   /^[[:space:]]*location[[:space:]].*\{[[:space:]]*$/ {
@@ -135,7 +134,6 @@ awk -v inc="$INCLUDE_LINE" -v sf="$SUBFILTER_LINE" -v sfo="$SUBFILTER_ONCE" -v s
     print inc
     print sf
     print sfo
-    print sft
     next
   }
   { print }
