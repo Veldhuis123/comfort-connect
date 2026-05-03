@@ -237,10 +237,11 @@ router.post('/refresh', authMiddleware, async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 8 * 60 * 60 * 1000
+      maxAge: 8 * 60 * 60 * 1000,
+      path: '/',
     });
 
-    res.json({ token, user });
+    res.json({ user });
   } catch (error) {
     logger.error('AUTH', 'Token refresh error', { error: error.message });
     res.status(500).json({ error: 'Server fout' });
