@@ -9,6 +9,8 @@ Sentry.init({
   environment: import.meta.env.MODE,
   integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 0.1,
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 1.0,
   sendDefaultPii: true,
   beforeSend(event) {
     if (import.meta.env.DEV) return null;
