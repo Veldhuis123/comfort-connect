@@ -1,7 +1,28 @@
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+
+// Optionele bundle-analyzer — alleen actief als ANALYZE=1 én pakket geïnstalleerd is.
+// Installeer eenmalig: npm i -D rollup-plugin-visualizer
+// Run: ANALYZE=1 npm run build  → opent dist/stats.html
+const analyzePlugin = (): PluginOption | null => {
+  if (process.env.ANALYZE !== "1") return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { visualizer } = require("rollup-plugin-visualizer");
+    return visualizer({
+      filename: "dist/stats.html",
+      template: "treemap",
+      gzipSize: true,
+      brotliSize: true,
+      open: false,
+    }) as PluginOption;
+  } catch {
+    console.warn("[analyze] rollup-plugin-visualizer niet geïnstalleerd — sla over.");
+    return null;
+  }
+};
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -63,7 +84,8 @@ export default defineConfig(({ mode }) => ({
           );
       },
     },
-  ].filter(Boolean),
+    analyzePlugin(),
+  ].filter(Boolean) as PluginOption[],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

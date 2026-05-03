@@ -121,6 +121,10 @@ router.post('/:id/image', authMiddleware, (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'Geen bestand ontvangen' });
 
     try {
+      // Converteer naar WebP indien sharp beschikbaar
+      const { convertFilesToWebp } = require('../services/imageOptimizer');
+      await convertFilesToWebp([req.file], { quality: 82, maxWidth: 2000 });
+
       const imageUrl = `/uploads/projects/${req.file.filename}`;
       const [rows] = await db.query('SELECT photos FROM projects WHERE id = ?', [req.params.id]);
       if (rows.length === 0) return res.status(404).json({ error: 'Project niet gevonden' });
