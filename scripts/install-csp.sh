@@ -44,13 +44,13 @@ INCLUDE_LINE="    include snippets/csp-rv.conf;  # === MANAGED CSP (install-csp.
 MARKER="MANAGED CSP (install-csp.sh)"
 
 CSP_VALUE="default-src 'self'; \
-script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://*.sentry.io https://browser.sentry-cdn.com https://js.sentry-cdn.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://www.gstatic.com https://fundingchoicesmessages.google.com; \
-script-src-elem 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://*.sentry.io https://browser.sentry-cdn.com https://js.sentry-cdn.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://www.google.com https://www.gstatic.com https://fundingchoicesmessages.google.com; \
+script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://*.sentry.io https://browser.sentry-cdn.com https://js.sentry-cdn.com https://www.google.com https://www.gstatic.com; \
+script-src-elem 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://*.sentry.io https://browser.sentry-cdn.com https://js.sentry-cdn.com https://www.google.com https://www.gstatic.com; \
 style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
 font-src 'self' data: https://fonts.gstatic.com; \
 img-src 'self' data: blob: https:; \
-connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://static.cloudflareinsights.com https://www.google-analytics.com https://pagead2.googlesyndication.com https://fundingchoicesmessages.google.com https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org; \
-frame-src 'self' https://www.google.com https://googleads.g.doubleclick.net https://*.googlesyndication.com https://fundingchoicesmessages.google.com; \
+connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io https://static.cloudflareinsights.com https://nominatim.openstreetmap.org https://*.tile.openstreetmap.org; \
+frame-src 'self' https://www.google.com; \
 worker-src 'self' blob:; \
 media-src 'self' blob: data:; \
 object-src 'none'; \
