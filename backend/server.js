@@ -46,22 +46,72 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Security headers
+// LET OP: De productie-CSP wordt beheerd door Nginx (scripts/install-csp.sh).
+// Deze helmet CSP is een fallback die exact overeenkomt met de Nginx-snippet,
+// zodat directe backend-responses (API, /uploads) dezelfde policy krijgen
+// en niets stuk gaat als Nginx er (lokaal/dev) niet tussenzit.
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "https://www.google.com"],
-      frameSrc: ["'none'"],
+      scriptSrc: [
+        "'self'", "'unsafe-inline'", "'unsafe-eval'",
+        "https://static.cloudflareinsights.com",
+        "https://*.sentry.io",
+        "https://browser.sentry-cdn.com",
+        "https://js.sentry-cdn.com",
+        "https://pagead2.googlesyndication.com",
+        "https://*.googlesyndication.com",
+        "https://www.google.com",
+        "https://www.gstatic.com",
+        "https://fundingchoicesmessages.google.com",
+      ],
+      scriptSrcElem: [
+        "'self'", "'unsafe-inline'",
+        "https://static.cloudflareinsights.com",
+        "https://*.sentry.io",
+        "https://browser.sentry-cdn.com",
+        "https://js.sentry-cdn.com",
+        "https://pagead2.googlesyndication.com",
+        "https://*.googlesyndication.com",
+        "https://www.google.com",
+        "https://www.gstatic.com",
+        "https://fundingchoicesmessages.google.com",
+      ],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: [
+        "'self'",
+        "https://*.sentry.io",
+        "https://*.ingest.sentry.io",
+        "https://*.ingest.de.sentry.io",
+        "https://static.cloudflareinsights.com",
+        "https://www.google-analytics.com",
+        "https://pagead2.googlesyndication.com",
+        "https://fundingchoicesmessages.google.com",
+        "https://nominatim.openstreetmap.org",
+        "https://*.tile.openstreetmap.org",
+      ],
+      frameSrc: [
+        "'self'",
+        "https://www.google.com",
+        "https://googleads.g.doubleclick.net",
+        "https://*.googlesyndication.com",
+        "https://fundingchoicesmessages.google.com",
+      ],
+      workerSrc: ["'self'", "blob:"],
+      mediaSrc: ["'self'", "blob:", "data:"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+      upgradeInsecureRequests: [],
     },
   },
   crossOriginEmbedderPolicy: false,
-  // Extra security headers
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
 }));
